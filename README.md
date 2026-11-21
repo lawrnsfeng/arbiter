@@ -52,4 +52,31 @@ The flags `--harness`, `--model` and `--verify-model` override the environment.
 
 ## Accuracy
 
-Filled in from `eval/results/` (`arbiter eval seeded run`, `arbiter eval martian run`).
+Seeded corpus: 20 bug cases and 8 clean cases, 5 bug and 2 clean per language, at `standard` effort with the `omp` harness.
+A main-section finding counts as a match when it is in the same file, within 3 lines of the expected line, and on one of
+the expected axes. The targets were precision ≥ 0.80, recall ≥ 0.70 and no findings on clean cases.
+Precision missed its target after the 2 allowed brief revisions.
+
+| Run | Models (finder / verify) | Precision | Recall | Clean-case findings |
+|---|---|---|---|---|
+| round 0 (as built) | omp default `anthropic/claude-opus-5-5` / same | 0.40 | 0.83 | 1 |
+| round 1 (A1c A6a A6b A6c tightened) | same | 0.585 | 0.83 | 0 |
+| round 2 (final briefs) | same | 0.606 | 0.76 | 0 |
+| cheap model, final briefs | `anthropic/claude-haiku-5-5` / same | 0.69 | 0.62 | 1 |
+
+In round 2, 13 of the 33 main findings did not match the corpus:
+- 5 are deterministic gate hits. staticcheck reports SA4006 and SA4017 on the shadowed `err`, and rustfmt diffs 3 files.
+- 4 are real defects on an axis the corpus does not list. Examples: the missing `Cancelled` case as logic rather than idiom, and `Box<dyn Error>` as errors rather than idiom.
+- 4 are judgment findings: 2 on tests, 1 on observability and 1 on docs.
+
+Martian golden set: `withmartian/code-review-benchmark` at the commit recorded in `eval/martian/golden/SOURCE.json`.
+The sample is the first 3 PRs per repo. An LLM judge (`ARBITER_VERIFY_MODEL`) pairs findings with golden comments.
+Scoring uses the Core categories. The model is the omp default, at `standard` effort.
+
+| Repo | PRs | Precision | Recall | F1 | F2 |
+|---|---|---|---|---|---|
+| sentry (Python) | 3 | 0.50 | 0.73 | 0.59 | 0.67 |
+| grafana (Go) | 3 | 0.40 | 0.18 | 0.25 | 0.20 |
+| cal.com (TS) | 3 | 0.25 | 0.30 | 0.27 | 0.29 |
+
+For reference, Martian publishes 47.7 F2 Core for Claude Code CLI over the full set. This 9-PR sample is too small to compare against it.
