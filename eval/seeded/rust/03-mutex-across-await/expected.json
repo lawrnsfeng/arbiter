@@ -1,0 +1,11 @@
+[
+  {
+    "file": "src/lib.rs",
+    "line": 28,
+    "axes": [
+      "concurrency"
+    ],
+    "must": true,
+    "note": "std::sync::MutexGuard taken here is held across fetch().await on line 32: the future is !Send and every other task touching the cache blocks the executor thread (deadlock on a current-thread runtime if another task locks). clippy::await_holding_lock warns here. Base refresh() shows the correct pattern."
+  }
+]

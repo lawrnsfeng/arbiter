@@ -1,0 +1,12 @@
+[
+  {
+    "file": "src/report.ts",
+    "line": 8,
+    "axes": [
+      "logic",
+      "edge"
+    ],
+    "must": true,
+    "note": "doc says both days included but `< to` excludes bookings on the last day"
+  }
+]

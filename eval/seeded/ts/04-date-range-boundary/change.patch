@@ -1,0 +1,41 @@
+diff --git a/src/report.ts b/src/report.ts
+new file mode 100644
+index 0000000..32dd6f4
+--- /dev/null
++++ b/src/report.ts
+@@ -0,0 +1,14 @@
++import { totalGuests, type Booking } from "./booking.ts";
++
++/**
++ * Bookings whose day falls between `from` and `to`, both days included.
++ * Days are ISO YYYY-MM-DD strings, so string comparison orders them by date.
++ */
++export function bookingsBetween(bookings: Booking[], from: string, to: string): Booking[] {
++  return bookings.filter((b) => b.day >= from && b.day < to);
++}
++
++/** Guests for a reporting period, e.g. the 1st to the last day of a month. */
++export function guestsInPeriod(bookings: Booking[], from: string, to: string): number {
++  return totalGuests(bookingsBetween(bookings, from, to));
++}
+diff --git a/test/report.test.ts b/test/report.test.ts
+new file mode 100644
+index 0000000..de44f65
+--- /dev/null
++++ b/test/report.test.ts
+@@ -0,0 +1,15 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { bookingsBetween } from "../src/report.ts";
++
++test("bookingsBetween keeps bookings inside the period", () => {
++  const bookings = [
++    { id: "1", day: "2026-02-28", guests: 1 },
++    { id: "2", day: "2026-03-10", guests: 2 },
++    { id: "3", day: "2026-04-02", guests: 4 },
++  ];
++  assert.deepEqual(
++    bookingsBetween(bookings, "2026-03-01", "2026-03-31").map((b) => b.id),
++    ["2"],
++  );
++});

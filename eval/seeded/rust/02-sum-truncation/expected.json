@@ -1,0 +1,11 @@
+[
+  {
+    "file": "src/lib.rs",
+    "line": 39,
+    "axes": [
+      "logic"
+    ],
+    "must": true,
+    "note": "(head.len() + body.len()) as u16 silently truncates totals above 65535, so the header declares a wrong length while the full payload is written; encode() rejects this case with FrameError::TooLarge. Repro: encode_pair(0, &[0;65535], &[0;2]) gives declared_len 1."
+  }
+]

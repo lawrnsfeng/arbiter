@@ -1,0 +1,34 @@
+diff --git a/fetcher/load.py b/fetcher/load.py
+index 04f4bd8..8a38ca5 100644
+--- a/fetcher/load.py
++++ b/fetcher/load.py
+@@ -1,6 +1,7 @@
+ """Concurrent loading of values by key."""
+ 
+ import asyncio
++import time
+ from collections.abc import Awaitable, Callable
+ 
+ Loader = Callable[[str], Awaitable[str]]
+@@ -10,3 +11,21 @@ async def load_all(keys: list[str], loader: Loader) -> dict[str, str]:
+     """Load every key concurrently and return a key -> value map."""
+     values = await asyncio.gather(*(loader(key) for key in keys))
+     return dict(zip(keys, values, strict=True))
++
++
++async def warm_cache(keys: list[str], loader: Loader) -> None:
++    """Start loading every key in the background so later reads are fast."""
++    for key in keys:
++        asyncio.create_task(loader(key))
++
++
++async def load_with_retry(key: str, loader: Loader, attempts: int = 3, delay: float = 0.5) -> str:
++    """Load `key`, retrying up to `attempts` times with `delay` seconds between tries."""
++    for attempt in range(attempts):
++        try:
++            return await loader(key)
++        except ConnectionError:
++            if attempt == attempts - 1:
++                raise
++            time.sleep(delay)
++    raise ValueError("attempts must be positive")

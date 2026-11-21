@@ -1,0 +1,36 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index e7bf275..1724267 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -33,6 +33,19 @@ pub fn encode(kind: u8, payload: &[u8]) -> Result<Vec<u8>, FrameError> {
+     Ok(out)
+ }
+ 
++/// Encodes a frame whose payload is `head` followed by `body`, without first
++/// joining the two slices.
++pub fn encode_pair(kind: u8, head: &[u8], body: &[u8]) -> Vec<u8> {
++    let len = (head.len() + body.len()) as u16;
++    let mut out = Vec::with_capacity(HEADER_LEN + head.len() + body.len());
++    out.push(MAGIC);
++    out.push(kind);
++    out.extend_from_slice(&len.to_be_bytes());
++    out.extend_from_slice(head);
++    out.extend_from_slice(body);
++    out
++}
++
+ /// Returns the payload length written in a frame header, if the header is complete.
+ pub fn declared_len(frame: &[u8]) -> Option<u16> {
+     match frame {
+@@ -52,6 +65,11 @@ mod tests {
+         assert_eq!(declared_len(&f), Some(3));
+     }
+ 
++    #[test]
++    fn pair_matches_joined_payload() {
++        assert_eq!(encode_pair(5, b"ab", b"cd"), encode(5, b"abcd").unwrap());
++    }
++
+     #[test]
+     fn rejects_oversized_payload() {
+         let big = vec![0u8; 70_000];

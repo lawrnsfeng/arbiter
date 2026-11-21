@@ -1,0 +1,62 @@
+diff --git a/mathx.go b/mathx.go
+index e097ad2..8baa25a 100644
+--- a/mathx.go
++++ b/mathx.go
+@@ -1,7 +1,9 @@
+ // Package mathx holds small numeric helpers.
+ package mathx
+ 
+-    // Abs returns the absolute value of x.
++import "cmp"
++
++// Abs returns the absolute value of x.
+ func Abs[T ~int | ~int64 | ~float64](x T) T {
+ 	var zero T
+ 	if x < zero {
+@@ -9,3 +11,12 @@ func Abs[T ~int | ~int64 | ~float64](x T) T {
+ 	}
+ 	return x
+ }
++
++// Clamp returns x limited to the closed range [lo, hi].
++// It panics if lo > hi.
++func Clamp[T cmp.Ordered](x, lo, hi T) T {
++	if lo > hi {
++		panic("mathx: Clamp called with lo > hi")
++	}
++	return min(max(x, lo), hi)
++}
+diff --git a/mathx_test.go b/mathx_test.go
+index 38a705b..8414146 100644
+--- a/mathx_test.go
++++ b/mathx_test.go
+@@ -7,3 +7,29 @@ func TestAbs(t *testing.T) {
+ 		t.Fatal("Abs wrong")
+ 	}
+ }
++
++func TestClamp(t *testing.T) {
++	cases := []struct{ x, lo, hi, want int }{
++		{5, 0, 10, 5},
++		{-1, 0, 10, 0},
++		{11, 0, 10, 10},
++		{0, 0, 0, 0},
++	}
++	for _, c := range cases {
++		if got := Clamp(c.x, c.lo, c.hi); got != c.want {
++			t.Errorf("Clamp(%d, %d, %d) = %d, want %d", c.x, c.lo, c.hi, got, c.want)
++		}
++	}
++	if got := Clamp("m", "a", "k"); got != "k" {
++		t.Errorf("Clamp on strings = %q, want %q", got, "k")
++	}
++}
++
++func TestClampPanicsOnInvertedRange(t *testing.T) {
++	defer func() {
++		if recover() == nil {
++			t.Fatal("want panic for lo > hi")
++		}
++	}()
++	Clamp(1, 2, 0)
++}

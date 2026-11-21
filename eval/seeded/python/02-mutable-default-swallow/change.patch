@@ -1,0 +1,35 @@
+diff --git a/notes/store.py b/notes/store.py
+index b924d61..8d74623 100644
+--- a/notes/store.py
++++ b/notes/store.py
+@@ -3,10 +3,28 @@
+ from pathlib import Path
+ 
+ 
++def add(note: str, bucket: list[str] = []) -> list[str]:
++    """Append the stripped `note` to `bucket` and return the bucket."""
++    bucket.append(note.strip())
++    return bucket
++
++
++def new_list(first_note: str) -> list[str]:
++    """Start a fresh note list holding `first_note`."""
++    return add(first_note)
++
++
+ def load_notes(path: Path) -> list[str]:
+     """Return the non-blank lines of `path`, stripped."""
+-    text = path.read_text(encoding="utf-8")
+-    return [line.strip() for line in text.splitlines() if line.strip()]
++    notes: list[str] = []
++    try:
++        text = path.read_text(encoding="utf-8")
++        for line in text.splitlines():
++            if line.strip():
++                add(line, notes)
++    except Exception:
++        pass
++    return notes
+ 
+ 
+ def save_notes(path: Path, notes: list[str]) -> None:

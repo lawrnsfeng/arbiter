@@ -1,0 +1,22 @@
+[
+  {
+    "file": "notes/store.py",
+    "line": 6,
+    "axes": [
+      "edge",
+      "logic"
+    ],
+    "must": true,
+    "note": "mutable default argument: new_list() returns the same shared list, which grows across calls"
+  },
+  {
+    "file": "notes/store.py",
+    "line": 25,
+    "axes": [
+      "errors",
+      "edge"
+    ],
+    "must": true,
+    "note": "except Exception: pass swallows missing-file, permission and decode errors; caller gets [] and may overwrite the file"
+  }
+]

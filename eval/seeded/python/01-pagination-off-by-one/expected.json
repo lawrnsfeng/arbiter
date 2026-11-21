@@ -1,0 +1,12 @@
+[
+  {
+    "file": "pager/core.py",
+    "line": 19,
+    "axes": [
+      "logic",
+      "edge"
+    ],
+    "must": true,
+    "note": "slice end is inclusive: each page returns per_page + 1 items and overlaps the next page"
+  }
+]

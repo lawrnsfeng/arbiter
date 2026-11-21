@@ -1,0 +1,51 @@
+diff --git a/user/user.go b/user/user.go
+index 5f6b3c2..509c1b6 100644
+--- a/user/user.go
++++ b/user/user.go
+@@ -11,3 +11,46 @@ type User struct {
+ 	ID   int
+ 	Name string
+ }
++
++// UserService looks users up by id.
++type UserService interface {
++	GetName(id int) (string, error)
++	Checks() []func() error
++}
++
++type userService struct {
++	users map[int]User
++}
++
++// NewUserService returns a UserService over users.
++func NewUserService(users []User) UserService {
++	m := make(map[int]User, len(users))
++	for _, u := range users {
++		m[u.ID] = u
++	}
++	return &userService{users: m}
++}
++
++// GetName returns the name of the user with the given id.
++func (s *userService) GetName(id int) (string, error) {
++	u, ok := s.users[id]
++	if !ok {
++		return "", ErrNotFound
++	}
++	return u.Name, nil
++}
++
++// Checks returns one validation func per user.
++func (s *userService) Checks() []func() error {
++	var checks []func() error
++	for _, u := range s.users {
++		u := u
++		checks = append(checks, func() error {
++			if u.Name == "" {
++				return errors.New("user: empty name")
++			}
++			return nil
++		})
++	}
++	return checks
++}

@@ -1,0 +1,12 @@
+[
+  {
+    "file": "src/lib.rs",
+    "line": 28,
+    "axes": [
+      "resources",
+      "edge"
+    ],
+    "must": true,
+    "note": "Safe pub fn at() calls get_unchecked without a bounds check or // SAFETY: comment; at(i) or window_sum with i >= len is undefined behavior (out-of-bounds read). Miri reports UB for Samples::new(vec![]).at(0)."
+  }
+]

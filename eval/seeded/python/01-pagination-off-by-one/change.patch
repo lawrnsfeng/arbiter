@@ -1,0 +1,56 @@
+diff --git a/pager/__init__.py b/pager/__init__.py
+index aabc6d2..7077507 100644
+--- a/pager/__init__.py
++++ b/pager/__init__.py
+@@ -1,5 +1,5 @@
+ """Paging helpers."""
+ 
+-from pager.core import total_pages
++from pager.core import paginate, total_pages
+ 
+-__all__ = ["total_pages"]
++__all__ = ["paginate", "total_pages"]
+diff --git a/pager/core.py b/pager/core.py
+index ae1a2f5..0c87250 100644
+--- a/pager/core.py
++++ b/pager/core.py
+@@ -6,3 +6,14 @@ def total_pages(count: int, per_page: int) -> int:
+     if per_page <= 0:
+         raise ValueError("per_page must be positive")
+     return (count + per_page - 1) // per_page
++
++
++def paginate[T](items: list[T], page: int, per_page: int) -> list[T]:
++    """Return the items on 1-based `page`, with `per_page` items per page."""
++    if page < 1:
++        raise ValueError("page must be >= 1")
++    if per_page <= 0:
++        raise ValueError("per_page must be positive")
++    start = (page - 1) * per_page
++    end = start + per_page
++    return items[start:end + 1]
+diff --git a/tests/test_core.py b/tests/test_core.py
+index 6e0e6ba..8dbe204 100644
+--- a/tests/test_core.py
++++ b/tests/test_core.py
+@@ -1,6 +1,6 @@
+ import pytest
+ 
+-from pager import total_pages
++from pager import paginate, total_pages
+ 
+ 
+ def test_total_pages_rounds_up():
+@@ -14,3 +14,12 @@ def test_total_pages_exact():
+ def test_total_pages_rejects_zero():
+     with pytest.raises(ValueError):
+         total_pages(1, 0)
++
++
++def test_paginate_past_end_is_empty():
++    assert paginate([1, 2, 3], 5, 2) == []
++
++
++def test_paginate_rejects_page_zero():
++    with pytest.raises(ValueError):
++        paginate([1, 2, 3], 0, 2)

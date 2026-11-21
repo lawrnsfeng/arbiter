@@ -1,0 +1,11 @@
+[
+  {
+    "file": "config.go",
+    "line": 29,
+    "axes": [
+      "errors"
+    ],
+    "must": true,
+    "note": "inner err := shadows the outer err, so a missing or malformed include file is wrapped into the shadow and dropped; Load returns (cfg, nil)"
+  }
+]

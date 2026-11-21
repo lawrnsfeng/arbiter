@@ -1,0 +1,37 @@
+diff --git a/src/status.ts b/src/status.ts
+new file mode 100644
+index 0000000..d045c1e
+--- /dev/null
++++ b/src/status.ts
+@@ -0,0 +1,18 @@
++export enum OrderStatus {
++  Pending = "pending",
++  Shipped = "shipped",
++  Delivered = "delivered",
++  Cancelled = "cancelled",
++}
++
++export default function statusLabel(status: OrderStatus, order: any): string {
++  switch (status) {
++    case OrderStatus.Pending:
++      return `Order ${order.id} is being prepared`;
++    case OrderStatus.Shipped:
++      return `Order ${order.id} is on its way`;
++    case OrderStatus.Delivered:
++      return `Order ${order.id} was delivered`;
++  }
++  return "";
++}
+diff --git a/test/status.test.ts b/test/status.test.ts
+new file mode 100644
+index 0000000..90146f1
+--- /dev/null
++++ b/test/status.test.ts
+@@ -0,0 +1,7 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import statusLabel, { OrderStatus } from "../src/status.ts";
++
++test("statusLabel describes a shipped order", () => {
++  assert.equal(statusLabel(OrderStatus.Shipped, { id: "o1" }), "Order o1 is on its way");
++});

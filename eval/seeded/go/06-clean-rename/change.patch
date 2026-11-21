@@ -1,0 +1,54 @@
+diff --git a/geometry.go b/geometry.go
+index 87a515a..e00df0e 100644
+--- a/geometry.go
++++ b/geometry.go
+@@ -8,16 +8,16 @@ type Point struct{ X, Y float64 }
+ 
+ // Distance returns the Euclidean distance between p and q.
+ func Distance(p, q Point) float64 {
+-	return math.Sqrt(sq(q.X-p.X) + sq(q.Y-p.Y))
++	return math.Sqrt(square(q.X-p.X) + square(q.Y-p.Y))
+ }
+ 
+ // Perimeter returns the length of the closed path through pts.
+ func Perimeter(pts []Point) float64 {
+-	var tot float64
++	var total float64
+ 	for i := range pts {
+-		tot += Distance(pts[i], pts[(i+1)%len(pts)])
++		total += Distance(pts[i], pts[(i+1)%len(pts)])
+ 	}
+-	return tot
++	return total
+ }
+ 
+-func sq(x float64) float64 { return x * x }
++func square(x float64) float64 { return x * x }
+diff --git a/geometry_test.go b/geometry_test.go
+index 4fe20cd..d1e3772 100644
+--- a/geometry_test.go
++++ b/geometry_test.go
+@@ -2,9 +2,9 @@ package geometry
+ 
+ import "testing"
+ 
+-func TestSq(t *testing.T) {
+-	if sq(-3) != 9 {
+-		t.Fatal(sq(-3))
++func TestSquare(t *testing.T) {
++	if square(-3) != 9 {
++		t.Fatal(square(-3))
+ 	}
+ }
+ 
+@@ -15,8 +15,8 @@ func TestDistance(t *testing.T) {
+ }
+ 
+ func TestPerimeter(t *testing.T) {
+-	sq := []Point{{0, 0}, {1, 0}, {1, 1}, {0, 1}}
+-	if p := Perimeter(sq); p != 4 {
++	unit := []Point{{0, 0}, {1, 0}, {1, 1}, {0, 1}}
++	if p := Perimeter(unit); p != 4 {
+ 		t.Fatal(p)
+ 	}
+ 	if p := Perimeter(nil); p != 0 {

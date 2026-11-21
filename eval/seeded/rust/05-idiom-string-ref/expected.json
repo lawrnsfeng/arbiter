@@ -1,0 +1,41 @@
+[
+  {
+    "file": "src/lib.rs",
+    "line": 24,
+    "axes": [
+      "idiom",
+      "design"
+    ],
+    "must": true,
+    "note": "&Vec<Item> and &String parameters in a pub API instead of &[Item] and &str (clippy::ptr_arg, Rust API Guidelines C-GENERIC/flexible inputs)."
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 25,
+    "axes": [
+      "idiom"
+    ],
+    "must": false,
+    "note": "Index loop over 0..items.len() instead of iterating (clippy::needless_range_loop); should be items.iter().find(...).cloned()."
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 26,
+    "axes": [
+      "idiom",
+      "performance"
+    ],
+    "must": false,
+    "note": "name.clone() allocates a String on every comparison; compare items[i].name == *name."
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 34,
+    "axes": [
+      "idiom",
+      "design"
+    ],
+    "must": true,
+    "note": "Box<dyn std::error::Error> as the error type of a pub library function: callers cannot match on failure kinds (Rust API Guidelines C-GOOD-ERR); also &String param (clippy::ptr_arg)."
+  }
+]

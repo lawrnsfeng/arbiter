@@ -1,0 +1,27 @@
+diff --git a/src/heading.ts b/src/heading.ts
+new file mode 100644
+index 0000000..4aa43f4
+--- /dev/null
++++ b/src/heading.ts
+@@ -0,0 +1,6 @@
++/** Shows the search term from the page URL above the results, e.g. ?q=shoes. */
++export function renderHeading(el: HTMLElement, search: string): void {
++  const params = new URLSearchParams(search);
++  const q = params.get("q") ?? "";
++  el.innerHTML = `Results for <strong>${q}</strong>`;
++}
+diff --git a/test/heading.test.ts b/test/heading.test.ts
+new file mode 100644
+index 0000000..7e01436
+--- /dev/null
++++ b/test/heading.test.ts
+@@ -0,0 +1,9 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { renderHeading } from "../src/heading.ts";
++
++test("renderHeading shows the query in bold", () => {
++  const el = { innerHTML: "" } as unknown as HTMLElement;
++  renderHeading(el, "?q=shoes");
++  assert.equal(el.innerHTML, "Results for <strong>shoes</strong>");
++});

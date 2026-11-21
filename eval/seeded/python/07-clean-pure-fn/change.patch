@@ -1,0 +1,47 @@
+diff --git a/mathutil/core.py b/mathutil/core.py
+index 107e0d0..915f6ee 100644
+--- a/mathutil/core.py
++++ b/mathutil/core.py
+@@ -4,3 +4,13 @@
+ def lerp(start: float, end: float, t: float) -> float:
+     """Return the point `t` of the way from `start` to `end`."""
+     return start + (end - start) * t
++
++
++def clamp(value: float, low: float, high: float) -> float:
++    """Return `value` limited to the closed range [`low`, `high`].
++
++    Raises ValueError when `low` is greater than `high`.
++    """
++    if low > high:
++        raise ValueError(f"low ({low}) must not exceed high ({high})")
++    return max(low, min(value, high))
+diff --git a/tests/test_core.py b/tests/test_core.py
+index 959984d..5988a39 100644
+--- a/tests/test_core.py
++++ b/tests/test_core.py
+@@ -1,4 +1,6 @@
+-from mathutil.core import lerp
++import pytest
++
++from mathutil.core import clamp, lerp
+ 
+ 
+ def test_lerp_midpoint():
+@@ -8,3 +10,16 @@ def test_lerp_midpoint():
+ def test_lerp_ends():
+     assert lerp(2.0, 4.0, 0.0) == 2.0
+     assert lerp(2.0, 4.0, 1.0) == 4.0
++
++
++@pytest.mark.parametrize(
++    ("value", "expected"),
++    [(-1.0, 0.0), (0.0, 0.0), (0.5, 0.5), (1.0, 1.0), (2.0, 1.0)],
++)
++def test_clamp(value, expected):
++    assert clamp(value, 0.0, 1.0) == expected
++
++
++def test_clamp_rejects_inverted_range():
++    with pytest.raises(ValueError):
++        clamp(0.0, 1.0, 0.0)

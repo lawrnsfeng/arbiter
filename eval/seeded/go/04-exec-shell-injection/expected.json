@@ -1,0 +1,11 @@
+[
+  {
+    "file": "server.go",
+    "line": 30,
+    "axes": [
+      "security"
+    ],
+    "must": true,
+    "note": "CWE-78 OS command injection: the host query parameter is concatenated into a sh -c command line; GET /ping?host=x;id runs arbitrary commands"
+  }
+]

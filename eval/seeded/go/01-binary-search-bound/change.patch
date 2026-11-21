@@ -1,0 +1,27 @@
+diff --git a/inventory.go b/inventory.go
+index 291b4e4..dbcfb4b 100644
+--- a/inventory.go
++++ b/inventory.go
+@@ -15,11 +15,19 @@ func New(ids ...int) *Inventory {
+ 	return &Inventory{ids: s}
+ }
+ 
+-// Has reports whether id is stocked.
++// Has reports whether id is stocked. The ids are sorted, so it uses
++// binary search instead of a linear scan.
+ func (inv *Inventory) Has(id int) bool {
+-	for _, v := range inv.ids {
+-		if v == id {
++	lo, hi := 0, len(inv.ids)
++	for lo <= hi {
++		mid := lo + (hi-lo)/2
++		switch {
++		case inv.ids[mid] == id:
+ 			return true
++		case inv.ids[mid] < id:
++			lo = mid + 1
++		default:
++			hi = mid - 1
+ 		}
+ 	}
+ 	return false

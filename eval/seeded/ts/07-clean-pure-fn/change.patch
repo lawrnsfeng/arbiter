@@ -1,0 +1,55 @@
+diff --git a/src/text.ts b/src/text.ts
+index bffe194..a41bdf2 100644
+--- a/src/text.ts
++++ b/src/text.ts
+@@ -6,3 +6,18 @@ export function slugify(text: string): string {
+     .filter(Boolean)
+     .join("-");
+ }
++
++/**
++ * Shortens text to at most `max` characters (Unicode code points),
++ * replacing the cut tail with a single "…".
++ */
++export function truncate(text: string, max: number): string {
++  if (!Number.isInteger(max) || max < 1) {
++    throw new RangeError(`max must be a positive integer, got ${max}`);
++  }
++  const chars = Array.from(text);
++  if (chars.length <= max) {
++    return text;
++  }
++  return chars.slice(0, max - 1).join("") + "…";
++}
+diff --git a/test/text.test.ts b/test/text.test.ts
+index 34f308c..ecc6487 100644
+--- a/test/text.test.ts
++++ b/test/text.test.ts
+@@ -1,7 +1,26 @@
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+-import { slugify } from "../src/text.ts";
++import { slugify, truncate } from "../src/text.ts";
+ 
+ test("slugify joins words with hyphens", () => {
+   assert.equal(slugify("  Hello, World! "), "hello-world");
+ });
++
++test("truncate leaves short text unchanged", () => {
++  assert.equal(truncate("abc", 3), "abc");
++  assert.equal(truncate("", 1), "");
++});
++
++test("truncate cuts long text and adds an ellipsis", () => {
++  assert.equal(truncate("abcdef", 4), "abc…");
++  assert.equal(truncate("abcdef", 1), "…");
++});
++
++test("truncate counts code points, not UTF-16 units", () => {
++  assert.equal(truncate("😀😀😀", 2), "😀…");
++});
++
++test("truncate rejects a max below 1", () => {
++  assert.throws(() => truncate("abc", 0), RangeError);
++  assert.throws(() => truncate("abc", 1.5), RangeError);
++});

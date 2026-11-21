@@ -1,0 +1,49 @@
+diff --git a/src/cli.ts b/src/cli.ts
+new file mode 100644
+index 0000000..208098b
+--- /dev/null
++++ b/src/cli.ts
+@@ -0,0 +1,8 @@
++import { Store } from "./store.ts";
++import { syncItems } from "./sync.ts";
++import type { Item } from "./store.ts";
++
++export async function main(items: Item[]): Promise<string> {
++  const result = await syncItems(items, new Store());
++  return `synced ${result.stored} of ${items.length} items`;
++}
+diff --git a/src/sync.ts b/src/sync.ts
+new file mode 100644
+index 0000000..2228799
+--- /dev/null
++++ b/src/sync.ts
+@@ -0,0 +1,16 @@
++import type { Item, Store } from "./store.ts";
++
++export interface SyncResult {
++  stored: number;
++}
++
++/** Upper-cases SKUs and drops negative quantities before they reach the store. */
++export function normalize(item: Item): Item {
++  return { sku: item.sku.trim().toUpperCase(), qty: Math.max(0, item.qty) };
++}
++
++/** Writes every item to the store and reports how many items the store now holds. */
++export async function syncItems(items: Item[], store: Store): Promise<SyncResult> {
++  items.forEach(async (x) => await store.save(normalize(x)));
++  return { stored: store.size() };
++}
+diff --git a/test/sync.test.ts b/test/sync.test.ts
+new file mode 100644
+index 0000000..0491e22
+--- /dev/null
++++ b/test/sync.test.ts
+@@ -0,0 +1,7 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { normalize } from "../src/sync.ts";
++
++test("normalize upper-cases the sku and clamps qty", () => {
++  assert.deepEqual(normalize({ sku: " ab ", qty: -2 }), { sku: "AB", qty: 0 });
++});

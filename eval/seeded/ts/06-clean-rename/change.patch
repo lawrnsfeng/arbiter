@@ -1,0 +1,49 @@
+diff --git a/src/cart.ts b/src/cart.ts
+index 5f6bb80..3acb39f 100644
+--- a/src/cart.ts
++++ b/src/cart.ts
+@@ -5,6 +5,6 @@ export interface CartLine {
+ }
+ 
+ /** Sum of all line totals, in cents. */
+-export function calc(lines: readonly CartLine[]): number {
++export function cartTotalCents(lines: readonly CartLine[]): number {
+   return lines.reduce((sum, line) => sum + line.unitCents * line.qty, 0);
+ }
+diff --git a/src/checkout.ts b/src/checkout.ts
+index da6b468..4bdbcab 100644
+--- a/src/checkout.ts
++++ b/src/checkout.ts
+@@ -1,5 +1,5 @@
+-import { calc, type CartLine } from "./cart.ts";
++import { cartTotalCents, type CartLine } from "./cart.ts";
+ 
+ export function formatTotal(lines: readonly CartLine[]): string {
+-  return `$${(calc(lines) / 100).toFixed(2)}`;
++  return `$${(cartTotalCents(lines) / 100).toFixed(2)}`;
+ }
+diff --git a/test/cart.test.ts b/test/cart.test.ts
+index 82245f6..5fb340a 100644
+--- a/test/cart.test.ts
++++ b/test/cart.test.ts
+@@ -1,6 +1,6 @@
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+-import { calc } from "../src/cart.ts";
++import { cartTotalCents } from "../src/cart.ts";
+ import { formatTotal } from "../src/checkout.ts";
+ 
+ const lines = [
+@@ -8,9 +8,9 @@ const lines = [
+   { sku: "b", unitCents: 99, qty: 1 },
+ ];
+ 
+-test("calc sums line totals in cents", () => {
+-  assert.equal(calc(lines), 599);
+-  assert.equal(calc([]), 0);
++test("cartTotalCents sums line totals in cents", () => {
++  assert.equal(cartTotalCents(lines), 599);
++  assert.equal(cartTotalCents([]), 0);
+ });
+ 
+ test("formatTotal renders dollars", () => {

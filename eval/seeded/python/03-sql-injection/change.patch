@@ -1,0 +1,95 @@
+diff --git a/inventory/cli.py b/inventory/cli.py
+index 5f523b1..89b697d 100644
+--- a/inventory/cli.py
++++ b/inventory/cli.py
+@@ -3,7 +3,7 @@
+ import argparse
+ import sys
+ 
+-from inventory import db
++from inventory import db, web
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
+@@ -14,6 +14,9 @@ def main(argv: list[str] | None = None) -> int:
+     add.add_argument("name")
+     add.add_argument("qty", type=int)
+     sub.add_parser("list")
++    serve = sub.add_parser("serve")
++    serve.add_argument("--host", default="0.0.0.0")
++    serve.add_argument("--port", type=int, default=8000)
+     args = parser.parse_args(argv)
+ 
+     conn = db.connect(args.database)
+@@ -22,6 +25,9 @@ def main(argv: list[str] | None = None) -> int:
+     elif args.command == "list":
+         for name, qty in db.list_items(conn):
+             print(f"{name}\t{qty}")
++    elif args.command == "serve":
++        conn.close()
++        web.serve(args.database, args.host, args.port)
+     return 0
+ 
+ 
+diff --git a/inventory/db.py b/inventory/db.py
+index b368b23..3ec3a38 100644
+--- a/inventory/db.py
++++ b/inventory/db.py
+@@ -23,3 +23,9 @@ def add_item(conn: sqlite3.Connection, name: str, qty: int) -> None:
+ def list_items(conn: sqlite3.Connection) -> list[tuple[str, int]]:
+     """Return every item as (name, qty), sorted by name."""
+     return conn.execute("SELECT name, qty FROM items ORDER BY name").fetchall()
++
++
++def find_items(conn: sqlite3.Connection, name: str) -> list[tuple[str, int]]:
++    """Return items whose name contains `name`, sorted by name."""
++    query = f"SELECT name, qty FROM items WHERE name LIKE '%{name}%' ORDER BY name"
++    return conn.execute(query).fetchall()
+diff --git a/inventory/web.py b/inventory/web.py
+new file mode 100644
+index 0000000..a3e4f7e
+--- /dev/null
++++ b/inventory/web.py
+@@ -0,0 +1,42 @@
++"""Read-only HTTP API: GET /search?q=TEXT returns matching items as JSON."""
++
++import json
++import sqlite3
++from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++from urllib.parse import parse_qs, urlsplit
++
++from inventory import db
++
++
++def make_handler(database: str) -> type[BaseHTTPRequestHandler]:
++    """Build a request handler class bound to the database at `database`."""
++
++    class Handler(BaseHTTPRequestHandler):
++        def do_GET(self) -> None:
++            url = urlsplit(self.path)
++            if url.path != "/search":
++                self.send_error(404)
++                return
++            q = parse_qs(url.query).get("q", [""])[0]
++            conn = db.connect(database)
++            try:
++                rows = db.find_items(conn, q)
++            except sqlite3.Error:
++                self.send_error(500)
++                return
++            finally:
++                conn.close()
++            body = json.dumps([{"name": n, "qty": qty} for n, qty in rows]).encode()
++            self.send_response(200)
++            self.send_header("Content-Type", "application/json")
++            self.send_header("Content-Length", str(len(body)))
++            self.end_headers()
++            self.wfile.write(body)
++
++    return Handler
++
++
++def serve(database: str, host: str, port: int) -> None:
++    """Serve the search API until interrupted."""
++    with ThreadingHTTPServer((host, port), make_handler(database)) as server:
++        server.serve_forever()

@@ -1,0 +1,40 @@
+diff --git a/tests/test_core.py b/tests/test_core.py
+index 354b3ea..09dd87a 100644
+--- a/tests/test_core.py
++++ b/tests/test_core.py
+@@ -1,12 +1,12 @@
+-from textutil.core import post_url, slugfy
++from textutil.core import post_url, slugify
+ 
+ 
+-def test_slugfy_basic():
+-    assert slugfy("Hello, World!") == "hello-world"
++def test_slugify_basic():
++    assert slugify("Hello, World!") == "hello-world"
+ 
+ 
+-def test_slugfy_collapses_runs():
+-    assert slugfy("a  --  b") == "a-b"
++def test_slugify_collapses_runs():
++    assert slugify("a  --  b") == "a-b"
+ 
+ 
+ def test_post_url():
+diff --git a/textutil/core.py b/textutil/core.py
+index 8a637b8..742690a 100644
+--- a/textutil/core.py
++++ b/textutil/core.py
+@@ -5,11 +5,11 @@ import re
+ _NON_WORD = re.compile(r"[^a-z0-9]+")
+ 
+ 
+-def slugfy(title: str) -> str:
++def slugify(title: str) -> str:
+     """Return a lowercase, hyphen-separated slug for `title`."""
+     return _NON_WORD.sub("-", title.lower()).strip("-")
+ 
+ 
+ def post_url(title: str, year: int) -> str:
+     """Return the blog path for a post."""
+-    return f"/{year}/{slugfy(title)}/"
++    return f"/{year}/{slugify(title)}/"

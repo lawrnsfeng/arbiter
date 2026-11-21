@@ -1,0 +1,30 @@
+[
+  {
+    "file": "user/user.go",
+    "line": 16,
+    "axes": [
+      "idiom",
+      "design"
+    ],
+    "must": true,
+    "note": "producer-side interface returned by the constructor (accept interfaces, return structs; define interfaces at the consumer) and user.UserService stutters (Go Code Review Comments: package names / interfaces)"
+  },
+  {
+    "file": "user/user.go",
+    "line": 35,
+    "axes": [
+      "idiom"
+    ],
+    "must": true,
+    "note": "Get prefix on an accessor (Effective Go getters: Name, not GetName)"
+  },
+  {
+    "file": "user/user.go",
+    "line": 47,
+    "axes": [
+      "idiom"
+    ],
+    "must": true,
+    "note": "leftover loop-variable copy; redundant since Go 1.22 per-iteration loop vars and go.mod says go 1.22 (copyloopvar)"
+  }
+]
