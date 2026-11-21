@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 from pathlib import Path
 
 from . import SKILLS, harness, lang as langmod
@@ -156,7 +157,13 @@ def run(agent_id: str, role: str, prompt: str, validate, *, tools: str, cwd: Pat
     for attempt in (1, 2):
         p = prompt if attempt == 1 else f"{prompt}\n\nYour previous output was invalid: {err}. Reply with only the JSON."
         try:
-            text = harness.call(role, p, tools=tools, cwd=cwd, timeout=timeout)
+            try:
+                text = harness.call(role, p, tools=tools, cwd=cwd, timeout=timeout)
+            except harness.HarnessError as e:
+                if "timeout" in str(e):
+                    raise
+                time.sleep(30)  # provider hiccups and rate limits are transient; one paced retry
+                text = harness.call(role, p, tools=tools, cwd=cwd, timeout=timeout)
             value = extract_json(text)
             validate(value)
             return value, None

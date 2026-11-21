@@ -16,6 +16,7 @@ ALWAYS["deep"] = ALWAYS["standard"]
 CORRECTNESS = {"A1a", "A1b", "A2", "A3"}  # all that runs on files with no arbiter language skill
 K3 = {"A1a", "A1b", "A2", "A3", "A4"}
 SKIP_ORDER = ("A9", "A7", "A8", "A5", "A5b", "A4")
+MAX_FAILED_SHARE = 0.25
 LENSES = {"functional": ["REACHABILITY", "CLAIM", "ATTRIBUTION"], "security": ["REACHABILITY", "IMPACT", "DEFENSES"]}
 RULE_FILES = ("CLAUDE.md", "AGENTS.md", "CONTRIBUTING.md")
 THREAT_MODELS = ("THREAT_MODEL.md", "docs/THREAT_MODEL.md")
@@ -253,6 +254,8 @@ def gates(run: Path, p: dict) -> dict:
     added = {f["path"]: {n for h in f["hunks"] for n, _ in h["added"]} for f in p["files"] if not f["excluded"]}
     first_line = next(((f, min(ls)) for f, ls in added.items() if ls), (None, 1))
     out = {"findings": [], "preexisting": [], "results": [], "analyzer_hits": []}
+    # roots whose HEAD or base dependency fetch failed: a HEAD/base gate difference there may be environmental
+    fetch_failed = {f["root"] for f in load(run, "sandbox.json", {}).get("fetch", []) if f["exit_code"]}
     (run / "tools").mkdir(exist_ok=True)
 
     def finding(s, r, path, line, claim, axis, sev, rung, rule, after=None):
@@ -295,7 +298,10 @@ def gates(run: Path, p: dict) -> dict:
             sev = "block" if is_err else ("nit" if s["name"] == "rustfmt" else "should-fix")
             finding(s, r, dg["path"], dg["line"], f"{s['name']}: {dg['msg']}", "logic" if is_err else "idiom",
                     sev, "E1", dg["rule"] or s["name"])
-        if r["exit_code"] and s["kind"] in ("build", "type", "test") and not hits:
+        if r["exit_code"] and s["kind"] in ("build", "type", "test") and not hits and s["root"] in fetch_failed:
+            cov(run, notes=[f"gate {s['name']} fails, but dependency fetch failed in {s['root'] or '.'}: "
+                            "HEAD-vs-base comparison skipped"])
+        elif r["exit_code"] and s["kind"] in ("build", "type", "test") and not hits:
             rb = _exec_tool(run, s, base=True)
             if rb and rb["exit_code"] == 0:
                 loc = next(((dg["path"], dg["line"]) for dg in diags if dg["path"] in added), first_line)
@@ -573,5 +579,12 @@ def run_all(repo: Path, base: str | None, effort: str, langs: list[str] | None, 
         cov(run, wall_time_s=round(time.monotonic() - t0, 1))
     from . import report
     v = F.verdict(allf)
+    c = load(run, "coverage.json", {})
+    failed, ran = len(c.get("agent_failures", [])), len(c.get("agents_run", [])) + c.get("verifier_calls", 0)
+    if v == "pass" and ran and failed > MAX_FAILED_SHARE * ran:
+        # a gate must not pass on silence: too many agents produced nothing
+        report.write(run, p, allf, "incomplete")
+        raise ArbiterExit(5, f"arbiter: {failed} of {ran} agent calls failed; verdict withheld "
+                             f"(report {run / 'report.md'})")
     report.write(run, p, allf, v)
     return run, v

@@ -154,6 +154,8 @@ def prepare(run: Path, repo: Path, base: str, head: str, roots: list[str], log) 
             d = run / wtname / root
             for cmd in _fetch_cmds(d):
                 r = exec_(run, cmd, net=True, timeout=900, cwd=d)
+                if r["exit_code"] and not r["timed_out"]:  # registry and shared-cache hiccups are transient
+                    r = exec_(run, cmd, net=True, timeout=900, cwd=d)
                 st["fetch"].append({"wt": wtname, "root": root, "cmd": r["cmd"], "exit_code": r["exit_code"]})
                 if r["exit_code"]:
                     log(f"dependency fetch failed in {wtname}/{root}: {r['cmd']} -> {r['exit_code']}: "

@@ -85,7 +85,8 @@ def run(cs: list[Path], a) -> dict:
                             "--effort", a.effort, "--out", str(rd)], env=env, capture_output=True, text=True,
                            stdin=subprocess.DEVNULL, cwd=HOME)
         (rd / "arbiter.log").write_text(p.stdout + "\n--- stderr ---\n" + p.stderr) if rd.exists() else None
-        rep = json.loads((rd / "report.json").read_text()) if (rd / "report.json").exists() else None
+        ok = p.returncode in (0, 1) and (rd / "report.json").exists()
+        rep = json.loads((rd / "report.json").read_text()) if ok else None
         row = score(c, rep)
         row.update(exit_code=p.returncode, wall_s=round(time.monotonic() - t0))
         print(f"{row['case']}: exit {p.returncode} main {row.get('main')} matched {row.get('matched')} "

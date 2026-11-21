@@ -94,7 +94,7 @@ def run(a) -> dict:
         p = subprocess.run([sys.executable, "-m", "arbiter.cli", "run", "--repo", str(repo), "--base", base,
                             "--effort", a.effort, "--out", str(out)], capture_output=True, text=True,
                            stdin=subprocess.DEVNULL, cwd=HOME)
-        if not (out / "report.json").exists():
+        if p.returncode not in (0, 1) or not (out / "report.json").exists():
             rows.append({"url": url, "status": f"arbiter exit {p.returncode}", "stderr": p.stderr[-300:]})
             continue
         main = [f for f in json.loads((out / "report.json").read_text())["findings"] if f.get("placement") == "main"]

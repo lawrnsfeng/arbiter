@@ -53,7 +53,8 @@ def call(role: str, prompt: str, *, tools: str = "", cwd: Path, timeout: int = 6
     except subprocess.TimeoutExpired:
         raise HarnessError(f"timeout after {timeout}s") from None
     if p.returncode:
-        raise HarnessError(f"exit {p.returncode}: {(p.stderr or p.stdout).strip()[-300:]}")
+        out = " | ".join(x.strip().replace("\n", " ")[-400:] for x in (p.stderr, p.stdout) if x.strip())
+        raise HarnessError(f"exit {p.returncode}: {out}")
     return p.stdout
 
 
