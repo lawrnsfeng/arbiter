@@ -23,6 +23,7 @@ Find added code that breaks the language's canon or the repo's established idiom
 - Code silenced with an ignore comment that gives a reason.
 - Design or structure (A6b), docs (A6c), bugs (A1a–A3).
 - An idiom breach whose real harm is a functional defect: SQL or shell built by string formatting, `unwrap`/`!`/bare casts on untrusted input, a dropped task or promise, a swallowed error, a shadowed `err`. The bug agents own these; an idiom copy is a duplicate.
+- "Use the standard library instead of hand-rolled code" unless the repo already calls that function for the same job (cite it as `precedent`).
 - Lines this change did not add.
 ## Proof plan hints
 None needed: evolvability findings are gated on `rule` plus `precedent` or a linter id. Omit `proof_plan`.

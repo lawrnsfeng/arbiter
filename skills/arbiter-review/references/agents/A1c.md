@@ -20,6 +20,7 @@ Find changed behaviour that no test would catch: missing tests, assertion-free t
 ## Do not report
 - "No test covers X" for new code, new branches, new handlers or new subcommands, unless checklist item 3 applies.
 - Untested edge cases (empty input, boundaries, error paths) and mutants you have not run. A bug there belongs to the bug agents; a missing case is not a defect.
+- Added tests whose fixtures miss a boundary or a branch ("only tests the middle of the range"). That is a missing case, not a broken test; checklist item 4 covers only tests that assert nothing or assert the bug.
 - Missing tests for trivial code: getters, re-exports, constants, pure renames.
 - Test coverage in general. Tools raise testing more than humans, so false positives are likely (S8).
 - Bugs in production code (other agents) and style of test code.
