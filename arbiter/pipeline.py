@@ -296,7 +296,8 @@ def gates(run: Path, p: dict) -> dict:
         for dg in hits if s["kind"] != "test" else []:
             is_err = s["kind"] == "build" or (s["kind"] == "type" and re.search(r"\berror\b", dg["msg"], re.I))
             sev = "block" if is_err else ("nit" if s["name"] == "rustfmt" else "should-fix")
-            finding(s, r, dg["path"], dg["line"], f"{s['name']}: {dg['msg']}", "logic" if is_err else "idiom",
+            msg = dg["msg"] or "the code differs from the formatter's output here"
+            finding(s, r, dg["path"], dg["line"], f"{s['name']}: {msg}", "logic" if is_err else "idiom",
                     sev, "E1", dg["rule"] or s["name"])
         if r["exit_code"] and s["kind"] in ("build", "type", "test") and not hits and s["root"] in fetch_failed:
             cov(run, notes=[f"gate {s['name']} fails, but dependency fetch failed in {s['root'] or '.'}: "
