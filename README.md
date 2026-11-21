@@ -5,7 +5,14 @@ Autonomous, evidence-gated code review for Python, Go, Rust and TypeScript. A de
 errors, security, concurrency, contracts, supply chain, performance, ops, a11y, idiom, design and docs. A disprove
 panel votes on every candidate. Functional findings must be proven in a bubblewrap sandbox (repro test, snippet,
 race detector, ...) before they can block. It never asks questions and ends with a verdict and an exit code.
-Research and citations: `research/`.
+
+Documentation:
+- [docs/methodology.md](docs/methodology.md): design, the evidence behind each decision, decision log, limitations
+- [docs/sources.md](docs/sources.md): papers, benchmarks and documents used, and what each changed
+- [docs/benchmarks.md](docs/benchmarks.md): datasets, ground truth, scoring, full results, threats to validity
+- [docs/roadmap.md](docs/roadmap.md): Python-first improvement plan, next datasets, path to an independent agent
+
+The raw research files are in `research/`.
 
 ## Install
 
