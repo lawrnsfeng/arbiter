@@ -22,7 +22,10 @@ Find design problems the added code introduces: logic in the wrong layer, needle
 - Taste: "could be cleaner", renames, splitting a short function, patterns the repo already uses consistently.
 - Rearrangements that do not remove code or concepts.
 - Idiom details (A6a), docs (A6c), bugs (A1a–A3).
+- A design point whose real harm is a bug the other agents own (an unvalidated cast, a missing check, a duplicated helper that now disagrees with the original). Report the bug's design cause only if it would remain after the bug is fixed.
+- Small duplication: under about 10 repeated lines, or two call sites. Hand-rolled code that a library call could replace, unless the repo already uses that call for the same job (cite it).
 - Pre-existing structure this change did not make worse.
+- More than one design finding per unit: keep the one a maintainer of this repo would most likely block the merge for, or none.
 ## Proof plan hints
 - E1 measured facts only: `wc -l` before and after, the duplicate helper's `path:line`, `grep -c` of a scattered feature check, an import edge.
 ## Output
