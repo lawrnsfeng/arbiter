@@ -2,3 +2,5 @@ __pycache__/
 .venv/
 eval/martian/cache/
 eval/results/
+eval/swr/upstream/
+eval/swr/cache/
