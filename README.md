@@ -6,13 +6,44 @@ errors, security, concurrency, contracts, supply chain, performance, ops, a11y, 
 panel votes on every candidate. Functional findings must be proven in a bubblewrap sandbox (repro test, snippet,
 race detector, ...) before they can block. It never asks questions and ends with a verdict and an exit code.
 
+**Current scores:** see [Accuracy](#accuracy) below. Full results are in [docs/benchmarks.md](docs/benchmarks.md), and the score files in [eval/scores/](eval/scores/).
+
+## Material
+
 Documentation:
-- [docs/methodology.md](docs/methodology.md): design, the evidence behind each decision, decision log, limitations
+- [docs/methodology.md](docs/methodology.md): design, the evidence behind each decision, decision log, deviations from the plan, limitations
 - [docs/sources.md](docs/sources.md): papers, benchmarks and documents used, and what each changed
 - [docs/benchmarks.md](docs/benchmarks.md): datasets, ground truth, scoring, full results, threats to validity
 - [docs/roadmap.md](docs/roadmap.md): Python-first improvement plan, next datasets, path to an independent agent
 
-The raw research files are in `research/`.
+Research (byte-identical copies from the 2026-11-21 research session; each file has its own source table with URLs):
+- [research/research-axes.md](research/research-axes.md): review-axis taxonomy, agent grouping, priority
+- [research/research-decompose-verify.md](research/research-decompose-verify.md): unit sizing, per-language command cookbook, evidence ladder, sandbox rules
+- [research/research-security.md](research/research-security.md): security review method, per-language checklists, supply chain, LLM vulnerability-detection accuracy
+- [research/research-ai-review-systems.md](research/research-ai-review-systems.md): how current AI review systems work, published benchmarks, precision techniques
+- [research/prior-mint-review-research.md](research/prior-mint-review-research.md): OCR, mattpocock, Google eng-practices, pstack code judo
+- [research/review-python.md](research/review-python.md), [research/review-go.md](research/review-go.md), [research/review-rust.md](research/review-rust.md), [research/review-typescript.md](research/review-typescript.md): per-language canon, tool layer, idioms, patterns, smells, severity
+
+Skills and agent prompts:
+- [skills/arbiter-review/SKILL.md](skills/arbiter-review/SKILL.md): the core launcher
+- [skills/arbiter-review/references/](skills/arbiter-review/references/): the shared material, listed in the table below
+- Language skills, each with `references/` (canon, tools, idioms, design, severity, security, cookbook): [python-review](skills/python-review/), [go-review](skills/go-review/), [rust-review](skills/rust-review/), [ts-review](skills/ts-review/)
+
+| File | Contents |
+|---|---|
+| [agent-preamble.md](skills/arbiter-review/references/agent-preamble.md) | rules shared by every agent |
+| [schema.md](skills/arbiter-review/references/schema.md) | the JSON output schemas |
+| [axes.md](skills/arbiter-review/references/axes.md) | the review axes |
+| [evidence.md](skills/arbiter-review/references/evidence.md) | the evidence ladder |
+| [security-method.md](skills/arbiter-review/references/security-method.md) | the security review method |
+| [exclusions.md](skills/arbiter-review/references/exclusions.md) | known false-positive patterns to exclude |
+| [threat-model-template.md](skills/arbiter-review/references/threat-model-template.md) | the threat-model template |
+| [agents/](skills/arbiter-review/references/agents/) | the 18 agent briefs |
+
+Evaluation data:
+- [eval/seeded/](eval/seeded/): 28 seeded cases. Each has `base/`, `change.patch` and the ground truth in `expected.json`.
+- [eval/martian/golden/](eval/martian/golden/): the Martian golden comments for sentry, grafana and cal.com. [SOURCE.json](eval/martian/golden/SOURCE.json) pins the upstream commit and records the MIT licence.
+- [eval/scores/](eval/scores/): the score file of every reported run.
 
 ## Install
 
@@ -87,3 +118,6 @@ Scoring uses the Core categories. The model is the omp default, at `standard` ef
 | cal.com (TS) | 3 | 0.25 | 0.30 | 0.27 | 0.29 |
 
 For reference, Martian publishes 47.7 F2 Core for Claude Code CLI over the full set. This 9-PR sample is too small to compare against it.
+
+Per-case and per-PR tables, the ground truth for each case, and threats to validity are in
+[docs/benchmarks.md](docs/benchmarks.md). The score files are in [eval/scores/](eval/scores/).
