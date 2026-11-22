@@ -216,20 +216,28 @@ For reference, Martian publishes F2 Core of 47.7 for "Claude Code CLI" and 65.1 
 - **Non-determinism.** Every run was done once; variance across runs was not measured.
 - **No token counts.** Cost is approximated by model calls and wall time.
 
-## 6. Raw results
+## 6. Result files
 
-The result files are in `eval/results/`, which git ignores, so they exist only on the machine that ran them.
+The score files for every run reported here are tracked in git under [`eval/scores/`](../eval/scores/). Each holds
+the summary (precision, recall, model, effort) and one row per case or PR. For seeded runs, each row also lists the
+unmatched findings.
 
 | File | Run |
 |---|---|
-| `seeded-20261121045059.json` | r0 |
-| `seeded-20261121073701.json` | r1 |
-| `seeded-20261121082622.json` | r2 |
-| `seeded-20261121090807.json` | Haiku |
-| `martian-sentry-20261121083041.json` | sentry |
-| `martian-grafana-20261121092410.json` | grafana |
-| `martian-cal_dot_com-*` | cal.com; the latest file is the rerun |
-| `eval/results/runs/<timestamp>/<case>/` and `eval/results/martian/<timestamp>/<pr>/` | every RUN directory: plan, prompts, votes, proofs, exec records, `report.md` |
+| [`seeded-20261121045059.json`](../eval/scores/seeded-20261121045059.json) | seeded r0 |
+| [`seeded-20261121073701.json`](../eval/scores/seeded-20261121073701.json) | seeded r1 |
+| [`seeded-20261121082622.json`](../eval/scores/seeded-20261121082622.json) | seeded r2 (current briefs) |
+| [`seeded-20261121090807.json`](../eval/scores/seeded-20261121090807.json) | seeded, Haiku |
+| [`martian-sentry-20261121083041.json`](../eval/scores/martian-sentry-20261121083041.json) | Martian sentry |
+| [`martian-grafana-20261121092410.json`](../eval/scores/martian-grafana-20261121092410.json) | Martian grafana |
+| [`martian-cal_dot_com-20261121171127.json`](../eval/scores/martian-cal_dot_com-20261121171127.json) | Martian cal.com, rerun after the rate limit reset |
+
+Four earlier Martian files are not tracked: one per repo, plus a second for cal.com. The API rate limit made agents fail in all four, and the reruns above replace them.
+
+Every review's full RUN directory (plan, prompts, votes, proofs, exec records, `report.md`) stays in
+`eval/results/runs/<timestamp>/<case>/` and `eval/results/martian/<timestamp>/<pr>/`. Git ignores these because
+they are large, so they exist only on the machine that ran them. `arbiter eval` writes new score files to
+`eval/results/`; copy them into `eval/scores/` when they are reported.
 
 Reproduce with:
 
