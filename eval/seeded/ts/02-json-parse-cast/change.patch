@@ -1,0 +1,37 @@
+diff --git a/src/signup.ts b/src/signup.ts
+new file mode 100644
+index 0000000..a9fc70e
+--- /dev/null
++++ b/src/signup.ts
+@@ -0,0 +1,14 @@
++import { displayName, type User } from "./user.ts";
++
++export interface SignupResponse {
++  status: number;
++  message: string;
++  canManageUsers: boolean;
++}
++
++/** Handles the raw JSON body of POST /signup sent by the browser. */
++export function handleSignup(body: string): SignupResponse {
++  const user = JSON.parse(body) as User;
++  const greeting = `Welcome, ${displayName(user).trim()}`;
++  return { status: 201, message: greeting, canManageUsers: user.role === "admin" };
++}
+diff --git a/test/signup.test.ts b/test/signup.test.ts
+new file mode 100644
+index 0000000..ccac735
+--- /dev/null
++++ b/test/signup.test.ts
+@@ -0,0 +1,11 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { handleSignup } from "../src/signup.ts";
++
++test("handleSignup greets a new member", () => {
++  const body = JSON.stringify({ id: 7, name: "Lin", email: "lin@example.com", role: "member" });
++  const res = handleSignup(body);
++  assert.equal(res.status, 201);
++  assert.equal(res.message, "Welcome, Lin <lin@example.com>");
++  assert.equal(res.canManageUsers, false);
++});

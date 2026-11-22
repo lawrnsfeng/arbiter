@@ -1,0 +1,32 @@
+[
+  {
+    "file": "src/status.ts",
+    "line": 1,
+    "axes": [
+      "idiom",
+      "design"
+    ],
+    "must": true,
+    "note": "string enum where a union of literals fits (non-erasable syntax; needs --experimental-transform-types)"
+  },
+  {
+    "file": "src/status.ts",
+    "line": 8,
+    "axes": [
+      "idiom",
+      "design"
+    ],
+    "must": true,
+    "note": "default export and `order: any` parameter instead of a named export typed as Order"
+  },
+  {
+    "file": "src/status.ts",
+    "line": 9,
+    "axes": [
+      "idiom",
+      "design"
+    ],
+    "must": true,
+    "note": "switch is not exhaustive (Cancelled missing) and has no never check; falls through to an empty label"
+  }
+]

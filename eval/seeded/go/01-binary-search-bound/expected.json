@@ -1,0 +1,12 @@
+[
+  {
+    "file": "inventory.go",
+    "line": 21,
+    "axes": [
+      "logic",
+      "edge"
+    ],
+    "must": true,
+    "note": "hi starts at len(ids) with lo <= hi: Has(id) for an id above the largest stocked id indexes ids[len] and panics (index out of range); empty inventory panics too"
+  }
+]

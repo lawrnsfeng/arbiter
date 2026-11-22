@@ -1,0 +1,24 @@
+[
+  {
+    "file": "fetcher/load.py",
+    "line": 19,
+    "axes": [
+      "concurrency",
+      "errors",
+      "performance"
+    ],
+    "must": true,
+    "note": "task reference not kept: tasks may be garbage-collected mid-flight and their exceptions are never retrieved"
+  },
+  {
+    "file": "fetcher/load.py",
+    "line": 30,
+    "axes": [
+      "concurrency",
+      "performance",
+      "errors"
+    ],
+    "must": true,
+    "note": "blocking time.sleep inside async def stalls the whole event loop; use await asyncio.sleep"
+  }
+]

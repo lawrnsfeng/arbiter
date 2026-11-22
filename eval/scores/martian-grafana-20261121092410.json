@@ -1,0 +1,58 @@
+{
+  "repo": "grafana",
+  "prs": 3,
+  "ok": 3,
+  "precision": 0.4,
+  "recall": 0.182,
+  "f1": 0.25,
+  "f2": 0.204,
+  "model": "(default)",
+  "source": {
+    "repo": "withmartian/code-review-benchmark",
+    "sha": "23a35d0d64f7de5a68e5679da08414e0edacea9b",
+    "license": "MIT",
+    "fetched": "2026-11-21T04:32:10Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/grafana/grafana/pull/79265",
+      "status": "ok",
+      "findings": 4,
+      "tp": 1,
+      "fp": 3,
+      "core": 5,
+      "core_hit": 1,
+      "categories": [
+        "bug",
+        "concurrency",
+        "doc_defect"
+      ]
+    },
+    {
+      "url": "https://github.com/grafana/grafana/pull/103633",
+      "status": "ok",
+      "findings": 1,
+      "tp": 1,
+      "fp": 0,
+      "core": 3,
+      "core_hit": 1,
+      "categories": [
+        "data",
+        "doc_defect",
+        "security"
+      ]
+    },
+    {
+      "url": "https://github.com/grafana/grafana/pull/76186",
+      "status": "ok",
+      "findings": 0,
+      "tp": 0,
+      "fp": 0,
+      "core": 3,
+      "core_hit": 0,
+      "categories": [
+        "bug"
+      ]
+    }
+  ]
+}

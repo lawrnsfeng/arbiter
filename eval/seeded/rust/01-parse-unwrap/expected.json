@@ -1,0 +1,12 @@
+[
+  {
+    "file": "src/lib.rs",
+    "line": 28,
+    "axes": [
+      "edge",
+      "errors"
+    ],
+    "must": true,
+    "note": "Addr::parse is public and takes CLI/config text; a non-numeric or out-of-range port (\"host:abc\", \"host:\", \"host:99999999999\") panics via unwrap instead of returning an error. Repro: Addr::parse(\"h:x\") panics."
+  }
+]

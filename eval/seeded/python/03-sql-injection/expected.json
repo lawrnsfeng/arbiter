@@ -1,0 +1,11 @@
+[
+  {
+    "file": "inventory/db.py",
+    "line": 30,
+    "axes": [
+      "security"
+    ],
+    "must": true,
+    "note": "CWE-89: the HTTP query parameter q (GET /search, inventory/web.py) reaches db.find_items and is interpolated into SQL via f-string; use a ? parameter"
+  }
+]

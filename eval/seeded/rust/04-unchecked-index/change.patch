@@ -1,0 +1,33 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index 83d771b..ec7c5c4 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -22,6 +22,16 @@ impl Samples {
+     pub fn get(&self, i: usize) -> Option<f64> {
+         self.values.get(i).copied()
+     }
++
++    /// Returns sample `i` without the `Option` wrapper, for hot loops.
++    pub fn at(&self, i: usize) -> f64 {
++        unsafe { *self.values.get_unchecked(i) }
++    }
++
++    /// Sum of samples in `start..end`.
++    pub fn window_sum(&self, start: usize, end: usize) -> f64 {
++        (start..end).map(|i| self.at(i)).sum()
++    }
+ }
+ 
+ #[cfg(test)]
+@@ -35,4 +45,11 @@ mod tests {
+         assert_eq!(s.get(2), None);
+         assert_eq!(s.len(), 2);
+     }
++
++    #[test]
++    fn window_sum_adds_range() {
++        let s = Samples::new(vec![1.0, 2.0, 4.0]);
++        assert_eq!(s.at(2), 4.0);
++        assert_eq!(s.window_sum(1, 3), 6.0);
++    }
+ }

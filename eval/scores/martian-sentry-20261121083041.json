@@ -1,0 +1,55 @@
+{
+  "repo": "sentry",
+  "prs": 3,
+  "ok": 3,
+  "precision": 0.5,
+  "recall": 0.727,
+  "f1": 0.593,
+  "f2": 0.667,
+  "model": "(default)",
+  "source": {
+    "repo": "withmartian/code-review-benchmark",
+    "sha": "23a35d0d64f7de5a68e5679da08414e0edacea9b",
+    "license": "MIT",
+    "fetched": "2026-11-21T04:32:10Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1",
+      "status": "ok",
+      "findings": 5,
+      "tp": 4,
+      "fp": 1,
+      "core": 4,
+      "core_hit": 3,
+      "categories": [
+        "bug"
+      ]
+    },
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2",
+      "status": "ok",
+      "findings": 6,
+      "tp": 4,
+      "fp": 2,
+      "core": 4,
+      "core_hit": 4,
+      "categories": [
+        "bug"
+      ]
+    },
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3",
+      "status": "ok",
+      "findings": 7,
+      "tp": 1,
+      "fp": 6,
+      "core": 3,
+      "core_hit": 1,
+      "categories": [
+        "bug",
+        "data"
+      ]
+    }
+  ]
+}

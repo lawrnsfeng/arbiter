@@ -1,0 +1,32 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index 737e548..7ae36c7 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -20,6 +20,16 @@ impl Addr {
+     pub fn render(&self) -> String {
+         format!("{}:{}", self.host, self.port)
+     }
++
++    /// Parses `host:port` as given on the command line or in a config file.
++    /// A missing port defaults to 80.
++    pub fn parse(s: &str) -> Addr {
++        let (host, port) = match s.rsplit_once(':') {
++            Some((host, port)) => (host, port.parse::<u32>().unwrap()),
++            None => (s, 80),
++        };
++        Addr::new(host, port)
++    }
+ }
+ 
+ #[cfg(test)]
+@@ -30,4 +40,10 @@ mod tests {
+     fn renders_host_and_port() {
+         assert_eq!(Addr::new("localhost", 8080).render(), "localhost:8080");
+     }
++
++    #[test]
++    fn parses_host_and_port() {
++        assert_eq!(Addr::parse("example.org:443"), Addr::new("example.org", 443));
++        assert_eq!(Addr::parse("example.org"), Addr::new("example.org", 80));
++    }
+ }

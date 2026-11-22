@@ -1,0 +1,44 @@
+diff --git a/config.go b/config.go
+index f4bbdba..64a6a99 100644
+--- a/config.go
++++ b/config.go
+@@ -4,6 +4,7 @@ package config
+ import (
+ 	"fmt"
+ 	"os"
++	"path/filepath"
+ 	"strings"
+ )
+ 
+@@ -12,17 +13,28 @@ type Config struct {
+ 	Values map[string]string
+ }
+ 
+-// Load reads and parses the file at path.
++// Load reads and parses the file at path. If the file sets "include",
++// the named file (relative to path's directory) is parsed on top of it.
+ func Load(path string) (*Config, error) {
+ 	data, err := os.ReadFile(path)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("config: read %s: %w", path, err)
+ 	}
+ 	cfg := &Config{Values: map[string]string{}}
+-	if err := parse(data, cfg); err != nil {
++	if err = parse(data, cfg); err != nil {
+ 		return nil, fmt.Errorf("config: parse %s: %w", path, err)
+ 	}
+-	return cfg, nil
++	if inc := cfg.Values["include"]; inc != "" {
++		incPath := filepath.Join(filepath.Dir(path), inc)
++		extra, err := os.ReadFile(incPath)
++		if err == nil {
++			err = parse(extra, cfg)
++		}
++		if err != nil {
++			err = fmt.Errorf("config: include %s: %w", incPath, err)
++		}
++	}
++	return cfg, err
+ }
+ 
+ func parse(data []byte, cfg *Config) error {

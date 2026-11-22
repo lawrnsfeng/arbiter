@@ -1,0 +1,12 @@
+[
+  {
+    "file": "src/sync.ts",
+    "line": 14,
+    "axes": [
+      "errors",
+      "concurrency"
+    ],
+    "must": true,
+    "note": "forEach discards the async callbacks' promises; syncItems returns before saves finish, so stored is 0 and save errors are unhandled"
+  }
+]

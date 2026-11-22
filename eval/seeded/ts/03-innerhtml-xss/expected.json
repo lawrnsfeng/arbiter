@@ -1,0 +1,11 @@
+[
+  {
+    "file": "src/heading.ts",
+    "line": 5,
+    "axes": [
+      "security"
+    ],
+    "must": true,
+    "note": "CWE-79: the q URL parameter is written into innerHTML unescaped (reflected/DOM XSS)"
+  }
+]

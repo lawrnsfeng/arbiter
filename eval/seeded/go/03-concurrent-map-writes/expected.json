@@ -1,0 +1,11 @@
+[
+  {
+    "file": "count.go",
+    "line": 19,
+    "axes": [
+      "concurrency"
+    ],
+    "must": true,
+    "note": "goroutines write the shared counts map without a mutex: data race (go test -race with >=2 docs reports it; runtime may fatal 'concurrent map writes'). Existing tests use <=1 doc so they pass and do not exercise the race"
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "file": "plugins/registry.py",
+    "line": 11,
+    "axes": [
+      "design",
+      "idiom"
+    ],
+    "must": true,
+    "note": "GoF Singleton via __new__; Pythonic form is a module-level instance (python-patterns.guide)"
+  },
+  {
+    "file": "plugins/registry.py",
+    "line": 7,
+    "axes": [
+      "idiom",
+      "design"
+    ],
+    "must": true,
+    "note": "TypeVar/Generic[T] in a requires-python>=3.12 project; use PEP 695 `class Registry[T]:`"
+  },
+  {
+    "file": "plugins/registry.py",
+    "line": 28,
+    "axes": [
+      "idiom",
+      "design"
+    ],
+    "must": true,
+    "note": "range(len(...)) indexing; use zip(names, items, strict=True)"
+  }
+]

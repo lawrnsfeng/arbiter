@@ -1,0 +1,52 @@
+diff --git a/plugins/registry.py b/plugins/registry.py
+new file mode 100644
+index 0000000..1940524
+--- /dev/null
++++ b/plugins/registry.py
+@@ -0,0 +1,30 @@
++"""Process-wide registry of named plugins."""
++
++from typing import Generic, TypeVar
++
++from plugins.names import normalize
++
++T = TypeVar("T")
++
++
++class Registry(Generic[T]):
++    _instance = None
++
++    def __new__(cls):
++        if cls._instance is None:
++            cls._instance = super().__new__(cls)
++            cls._instance._items = {}
++        return cls._instance
++
++    def register(self, name: str, item: T) -> None:
++        self._items[normalize(name)] = item
++
++    def get(self, name: str) -> T:
++        return self._items[normalize(name)]
++
++
++def register_all(names: list[str], items: list[T]) -> Registry[T]:
++    registry: Registry[T] = Registry()
++    for i in range(len(names)):
++        registry.register(names[i], items[i])
++    return registry
+diff --git a/tests/test_registry.py b/tests/test_registry.py
+new file mode 100644
+index 0000000..626b202
+--- /dev/null
++++ b/tests/test_registry.py
+@@ -0,0 +1,10 @@
++from plugins.registry import Registry, register_all
++
++
++def test_register_all_then_get():
++    registry = register_all(["Alpha_One"], [1])
++    assert registry.get("alpha-one") == 1
++
++
++def test_registry_is_shared():
++    assert Registry() is Registry()

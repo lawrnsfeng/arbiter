@@ -1,0 +1,61 @@
+{
+  "repo": "cal_dot_com",
+  "prs": 3,
+  "ok": 3,
+  "precision": 0.25,
+  "recall": 0.3,
+  "f1": 0.273,
+  "f2": 0.288,
+  "model": "(default)",
+  "source": {
+    "repo": "withmartian/code-review-benchmark",
+    "sha": "23a35d0d64f7de5a68e5679da08414e0edacea9b",
+    "license": "MIT",
+    "fetched": "2026-11-21T04:32:10Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/calcom/cal.com/pull/8087",
+      "status": "ok",
+      "findings": 3,
+      "tp": 3,
+      "fp": 0,
+      "core": 1,
+      "core_hit": 1,
+      "categories": [
+        "concurrency",
+        "speculative"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/10600",
+      "status": "ok",
+      "findings": 5,
+      "tp": 1,
+      "fp": 4,
+      "core": 4,
+      "core_hit": 1,
+      "categories": [
+        "bug",
+        "concurrency",
+        "doc_defect",
+        "perf",
+        "style"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/10967",
+      "status": "ok",
+      "findings": 12,
+      "tp": 1,
+      "fp": 11,
+      "core": 5,
+      "core_hit": 1,
+      "categories": [
+        "api",
+        "bug",
+        "style"
+      ]
+    }
+  ]
+}

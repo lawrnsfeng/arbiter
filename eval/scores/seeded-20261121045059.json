@@ -1,0 +1,457 @@
+{
+  "effort": "standard",
+  "harness": "omp",
+  "model": "(default)",
+  "verify_model": "(default)",
+  "precision": 0.4,
+  "recall": 0.828,
+  "clean_case_findings": 1,
+  "suspected": 5,
+  "errors": [],
+  "rows": [
+    {
+      "case": "go-01-binary-search-bound",
+      "clean": false,
+      "verdict": "block",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "inventory.go:21 [design] Has hand-rolls a binary search, but the already imported sort package provides sort.SearchInts for t"
+      ],
+      "exit_code": 1,
+      "wall_s": 276
+    },
+    {
+      "case": "go-02-err-shadowing",
+      "clean": false,
+      "verdict": "pass",
+      "main": 4,
+      "matched": 1,
+      "fp": 3,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "config.go:34 [idiom] staticcheck: this value of err is never used (SA4006)",
+        "config.go:34 [idiom] staticcheck: Errorf doesn't have side effects and its return value is ignored (SA4017)",
+        "config.go:29 [idiom] The include block declares a new `err` with `:=` inside the `if`, which hides the outer `err`. It th"
+      ],
+      "exit_code": 0,
+      "wall_s": 302
+    },
+    {
+      "case": "go-03-concurrent-map-writes",
+      "clean": false,
+      "verdict": "block",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 1,
+      "wall_s": 339
+    },
+    {
+      "case": "go-04-exec-shell-injection",
+      "clean": false,
+      "verdict": "block",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 1,
+      "wall_s": 215
+    },
+    {
+      "case": "go-05-idiom-stutter-getter",
+      "clean": false,
+      "verdict": "pass",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 3,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "user/user.go:35 [tests] No test calls GetName, so nothing checks that it returns ErrNotFound for an unknown id or the right "
+      ],
+      "exit_code": 0,
+      "wall_s": 210
+    },
+    {
+      "case": "go-06-clean-rename",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 110
+    },
+    {
+      "case": "go-07-clean-pure-fn",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 68
+    },
+    {
+      "case": "python-01-pagination-off-by-one",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "tests/test_core.py:19 [tests] No test checks what a valid in-range page returns, so the page-size slice at pager/core.py:19 is nev",
+        "pager/core.py:12 [docs] The paginate() docstring promises `per_page` items per page, but the slice items[start:end + 1] retu"
+      ],
+      "exit_code": 0,
+      "wall_s": 215
+    },
+    {
+      "case": "python-02-mutable-default-swallow",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 2,
+      "fp": 1,
+      "must": 2,
+      "must_hit": 2,
+      "suspected": 0,
+      "fp_findings": [
+        "notes/store.py:19 [maintainability] load_notes replaces a one-line comprehension with an accumulator loop that calls add(line, notes) fo"
+      ],
+      "exit_code": 0,
+      "wall_s": 232
+    },
+    {
+      "case": "python-03-sql-injection",
+      "clean": false,
+      "verdict": "block",
+      "main": 4,
+      "matched": 1,
+      "fp": 3,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "inventory/web.py:21 [errors] db.connect is called outside the try block, so sqlite3.Error from opening the database or creating t",
+        "inventory/cli.py:17 [tests] No test covers the new serve subcommand, including its default 0.0.0.0 host and its dispatch to web.",
+        "inventory/db.py:30 [idiom] find_items builds its SQL with an f-string that interpolates `name`, where the rest of this module p"
+      ],
+      "exit_code": 1,
+      "wall_s": 350
+    },
+    {
+      "case": "python-04-async-task-sleep",
+      "clean": false,
+      "verdict": "pass",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 2,
+      "must_hit": 1,
+      "suspected": 1,
+      "fp_findings": [
+        "fetcher/load.py:19 [idiom] warm_cache calls bare asyncio.create_task and drops the result, so nothing holds a strong reference "
+      ],
+      "exit_code": 0,
+      "wall_s": 432
+    },
+    {
+      "case": "python-05-singleton-generic-rangelen",
+      "clean": false,
+      "verdict": "pass",
+      "main": 4,
+      "matched": 2,
+      "fp": 2,
+      "must": 3,
+      "must_hit": 3,
+      "suspected": 0,
+      "fp_findings": [
+        "plugins/registry.py:28 [edge] register_all loops over len(names) and reads items[i] without checking that both lists are the same ",
+        "plugins/registry.py:11 [tests] Registry[int] and Registry[str] share one singleton and one _items dict, and no test covers this. Th"
+      ],
+      "exit_code": 0,
+      "wall_s": 357
+    },
+    {
+      "case": "python-06-clean-rename",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 196
+    },
+    {
+      "case": "python-07-clean-pure-fn",
+      "clean": true,
+      "verdict": "pass",
+      "main": 1,
+      "matched": 0,
+      "fp": 1,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [
+        "mathutil/core.py:14 [tests] No test covers the degenerate range low == high, so mutating the guard `low > high` to `low >= high`"
+      ],
+      "exit_code": 0,
+      "wall_s": 129
+    },
+    {
+      "case": "rust-01-parse-unwrap",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "src/lib.rs:43 [idiom] rustfmt: ",
+        "src/lib.rs:26 [idiom] Public library parser `Addr::parse` calls `unwrap()` on a port parsed from CLI or config text and re"
+      ],
+      "exit_code": 0,
+      "wall_s": 121
+    },
+    {
+      "case": "rust-02-sum-truncation",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "src/lib.rs:69 [tests] The only encode_pair test uses a 4-byte payload, so nothing tests the case where head.len()+body.len",
+        "src/lib.rs:38 [design] encode_pair copies encode's header-writing body (MAGIC, kind, length bytes, payload extend) and leav"
+      ],
+      "exit_code": 0,
+      "wall_s": 214
+    },
+    {
+      "case": "rust-03-mutex-across-await",
+      "clean": false,
+      "verdict": "block",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "src/lib.rs:64 [tests] The only test for get_or_fetch makes two calls one after the other, so it cannot detect that get_or_",
+        "src/lib.rs:28 [design] get_or_fetch reimplements the lookup in `get` (src/lib.rs:18-20) and the fetch-then-insert in `refre"
+      ],
+      "exit_code": 1,
+      "wall_s": 310
+    },
+    {
+      "case": "rust-04-unchecked-index",
+      "clean": false,
+      "verdict": "block",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "src/lib.rs:26 [docs] The rustdoc for the new safe pub fn `at` doesn't say what happens when `i` is out of range. The body"
+      ],
+      "exit_code": 1,
+      "wall_s": 175
+    },
+    {
+      "case": "rust-05-idiom-string-ref",
+      "clean": false,
+      "verdict": "pass",
+      "main": 5,
+      "matched": 2,
+      "fp": 3,
+      "must": 2,
+      "must_hit": 2,
+      "suspected": 0,
+      "fp_findings": [
+        "src/lib.rs:53 [idiom] rustfmt: ",
+        "src/lib.rs:30 [tests] No test covers find_by_name's not-found path: the only call looks up a name that exists, so a mutant",
+        "src/lib.rs:34 [errors] The new public library function parse_items returns Box<dyn std::error::Error>. Callers cannot match"
+      ],
+      "exit_code": 0,
+      "wall_s": 260
+    },
+    {
+      "case": "rust-06-clean-rename",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 131
+    },
+    {
+      "case": "rust-07-clean-pure-fn",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 76
+    },
+    {
+      "case": "ts-01-foreach-async",
+      "clean": false,
+      "verdict": "block",
+      "main": 6,
+      "matched": 1,
+      "fp": 5,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "src/cli.ts:1 [logic] `npx --no-install tsc --noEmit -p .` fails on HEAD (exit 1) and passes on base",
+        "src/cli.ts:6 [spec] main is meant to sync the given items and report 'synced N of M items'. It always reports 'synced 0 ",
+        "src/sync.ts:14 [idiom] An async callback is passed to Array.prototype.forEach. forEach ignores the returned promises, so th",
+        "src/cli.ts:5 [docs] The newly exported `main` has no doc comment. It does not say that it writes every item to a new Sto",
+        "src/sync.ts:3 [docs] The newly exported `SyncResult` interface and its `stored` field have no doc comment, so nothing say"
+      ],
+      "exit_code": 1,
+      "wall_s": 328
+    },
+    {
+      "case": "ts-02-json-parse-cast",
+      "clean": false,
+      "verdict": "block",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "src/signup.ts:11 [design] handleSignup is the I/O edge for the browser's POST /signup body, but it casts JSON.parse output wit"
+      ],
+      "exit_code": 1,
+      "wall_s": 278
+    },
+    {
+      "case": "ts-03-innerhtml-xss",
+      "clean": false,
+      "verdict": "block",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "test/heading.test.ts:5 [tests] The only test uses the benign query `shoes`. No test covers a query that contains HTML metacharacter"
+      ],
+      "exit_code": 1,
+      "wall_s": 378
+    },
+    {
+      "case": "ts-04-date-range-boundary",
+      "clean": false,
+      "verdict": "pass",
+      "main": 1,
+      "matched": 0,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 0,
+      "suspected": 3,
+      "fp_findings": [
+        "src/report.ts:4 [docs] The docstring for bookingsBetween says both `from` and `to` are included, but the filter uses `b.day"
+      ],
+      "exit_code": 0,
+      "wall_s": 392
+    },
+    {
+      "case": "ts-05-idiom-enum-any",
+      "clean": false,
+      "verdict": "pass",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 3,
+      "must_hit": 2,
+      "suspected": 1,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 340
+    },
+    {
+      "case": "ts-06-clean-rename",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 216
+    },
+    {
+      "case": "ts-07-clean-pure-fn",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 95
+    }
+  ],
+  "runs": "/home/lawrence/relic/curve/eval/results/runs/20261121045059"
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "file": "src/signup.ts",
+    "line": 11,
+    "axes": [
+      "edge",
+      "security"
+    ],
+    "must": true,
+    "note": "untrusted request body is cast to User without validation; missing fields produce wrong output and a client-supplied role grants admin"
+  }
+]
