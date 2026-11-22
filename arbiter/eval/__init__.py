@@ -21,6 +21,7 @@ def main(argv: list[str]) -> int:
     m.add_argument("action", choices=("fetch", "run"))
     m.add_argument("--repo", choices=("sentry", "grafana", "cal_dot_com"))
     m.add_argument("--limit", type=int)
+    m.add_argument("--offset", type=int, default=0, help="skip the first N PRs (continue an earlier sample)")
     m.add_argument("--effort", default="standard", choices=("quick", "standard", "deep"))
     m.add_argument("--harness")
     m.add_argument("--model")

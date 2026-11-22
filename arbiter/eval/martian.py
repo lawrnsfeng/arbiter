@@ -77,7 +77,8 @@ def _prepare_pr(url: str) -> tuple[Path, str] | None:
 
 
 def run(a) -> dict:
-    golden = json.loads((GOLDEN / f"{a.repo}.json").read_text())[: a.limit or None]
+    golden = json.loads((GOLDEN / f"{a.repo}.json").read_text())
+    golden = golden[a.offset:][: a.limit or None]
     for flag, var in (("harness", "ARBITER_HARNESS"), ("model", "ARBITER_MODEL"), ("verify_model", "ARBITER_VERIFY_MODEL")):
         if getattr(a, flag, None):
             os.environ[var] = getattr(a, flag)
