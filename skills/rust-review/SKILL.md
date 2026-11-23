@@ -6,10 +6,11 @@ argument-hint: "[base-ref] [--effort quick|standard|deep]"
 
 1. Never ask the user anything. Never edit the reviewed repo.
 2. Run:
+   ```bash
+   arbiter run --repo . --lang rust $ARGUMENTS </dev/null
    ```
-   ARBITER_HOME=$(dirname "$(dirname "$(readlink -f ~/.claude/skills/arbiter-review)")")
-   uv run --project "$ARBITER_HOME" arbiter run --repo . --lang rust $ARGUMENTS
-   ```
+   If the shell says `arbiter: command not found`, report "arbiter is not installed: run `make install` in the
+   arbiter checkout" and stop.
 3. The first stdout line is the RUN path. Read `RUN/report.md` and relay it verbatim, followed by one line with the verdict and the exit code.
 4. Do not add, re-rank or soften findings. The report is the review.
 5. If the exit code is 2–5, print the stderr line and stop.

@@ -219,7 +219,13 @@ The design follows the sandbox rules in `[DV-§4]`:
 - An agent that returns invalid JSON gets one automatic retry with the parser error appended. A harness error other than a timeout gets one paced retry after 30 s.
 - **Fail-closed rule.** If more than 25% of agent calls fail, a would-be pass becomes exit 5 with an INCOMPLETE report.
   - This was added after a real failure: during the first Martian run the account hit its API rate limit, every agent failed, and the run reported PASS on silence.
-- **Cost ceiling.** Finders, A0 and SPEC run on Haiku by default; the verifier, proof agent and eval judge run on Sonnet. arbiter always passes `--model` explicitly, and refuses any model whose name contains `opus` with exit 2.
+- **Models and cost ceiling.** arbiter is model-agnostic: any model the harness can call works.
+  - Finders, A0 and SPEC use `--model` / `ARBITER_MODEL`, else the omp role `arbiter-finder`, else `smol`, else Haiku.
+  - The verifier, proof agent and eval judge use `--verify-model` / `ARBITER_VERIFY_MODEL`, else the omp role `arbiter-verify`, else Sonnet.
+  - omp's `default` and `slow` roles are never used, because they usually name the premium model.
+  - Roles are resolved from `omp config get modelRoles` (first candidate, `@alias` followed, `:thinking` dropped), and the resolved id is passed explicitly with `--model`.
+  - A resolved model matching `ARBITER_BLOCKED_MODELS` (default `opus,fable`) exits 2.
+  - A preflight makes one tiny call per model before any review work. The model must read a file with its tool and answer in JSON. Without it, an unconfigured model crashes every omp call after about 80 s, and a model without tool use cannot run the finders.
   - Before 2026-11-22 no model was set, so every call fell through to the omp default model, Opus. The Martian and SWR-Bench runs drained the account's token budget that way.
   - The split follows the evidence: cheap independent finders, with the stronger model where precision is decided `[AI-§4 #9]`. The seeded Haiku-only run already scored precision 0.69 and recall 0.62.
 
@@ -243,6 +249,8 @@ The design follows the sandbox rules in `[DV-§4]`:
 | 2026-11-21 | Brief revisions after seeded rounds 0 and 1 (see [benchmarks.md](benchmarks.md)) | False positives clustered in A1c (missing tests), A6a (idiom copies of bugs), A6b (small duplication) and A6c (docs restating bugs) |
 | 2026-11-21 | Project renamed curve → arbiter in a new repository | User decision |
 | 2026-11-22 | Default models Haiku (finders) and Sonnet (verifier, proof, judge); Opus refused | Opus-by-default runs drained the user's token budget; the user set Sonnet as the ceiling |
+| 2026-11-23 | Models resolved from omp roles (`arbiter-finder` or `smol`; `arbiter-verify`), Haiku/Sonnet fallbacks, `opus,fable` blocked by default, preflight per model | arbiter must run on any cheap model omp can reach (Haiku, DeepSeek, GPT…); an unknown model made every omp call crash |
+| 2026-11-23 | `make install` puts `arbiter` on PATH (`uv tool install --editable`) and links the skills into `~/.omp/agent/skills`; the proof agent gets its sandbox command from the inputs | The skills had found arbiter through a `~/.claude/skills` symlink, and the proof brief hard-coded this machine's checkout path |
 
 ## 5. Deviations from the approved plan
 

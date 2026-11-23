@@ -48,8 +48,10 @@ Evaluation data:
 ## Install
 
 ```bash
-make install     # symlinks skills/* into ~/.claude/skills (omp loads them via skills.enableClaudeUser)
-make test        # unit tests (no network, no LLM)
+make install          # `arbiter` on PATH (uv tool, editable) + skills linked into ~/.omp/agent/skills
+make install-claude   # optional: also link the skills into ~/.claude/skills (Claude Code)
+make check            # ruff, mypy and the unit tests (no network, no LLM)
+make uninstall        # removes the tool and only the symlinks that point into this checkout
 ```
 
 Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-review`, `ts-review`.
@@ -57,7 +59,7 @@ Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-re
 ## Run
 
 ```bash
-uv run --project ~/relic/arbiter arbiter run [--repo .] [--base REF] [--effort quick|standard|deep] \
+arbiter run [--repo .] [--base REF] [--effort quick|standard|deep] \
   [--lang python,go,rust,typescript] [--harness omp|claude] [--model M] [--verify-model M] [--out RUN] [--jobs N] [--max-agents N]
 ```
 
@@ -84,16 +86,24 @@ The report is `RUN/report.md` (human) and `RUN/report.json` (machine).
 
 ## Models
 
-| Role | Default on `omp` | Default on `claude` | Override |
+arbiter works with any model its harness can call: Haiku, Sonnet, DeepSeek, GPT and other cheap models. Pick the
+harness with `--harness` or `ARBITER_HARNESS` (`omp`, the default, or `claude`). Each role resolves in this order:
+
+| Role | 1. flag or environment | 2. omp role | 3. fallback (`omp` / `claude`) |
 |---|---|---|---|
-| Finders, A0, SPEC | `anthropic/claude-haiku-5-5` | `haiku` | `ARBITER_MODEL` or `--model` |
-| Verifier, proof agent, eval judge | `anthropic/claude-sonnet-5-5` | `sonnet` | `ARBITER_VERIFY_MODEL` or `--verify-model` |
+| Finders, A0, SPEC | `--model`, `ARBITER_MODEL` | `arbiter-finder`, then `smol` | `anthropic/claude-haiku-5-5` / `haiku` |
+| Verifier, proof agent, eval judge | `--verify-model`, `ARBITER_VERIFY_MODEL` | `arbiter-verify` | `anthropic/claude-sonnet-5-5` / `sonnet` |
 
-Pick the harness with `ARBITER_HARNESS` (`omp`, the default, or `claude`) or `--harness`.
-
-- arbiter always passes a model explicitly, so it never falls back to the harness's own default, which is often Opus.
-- Any model whose name contains `opus` is refused with exit 2. Sonnet is the cost ceiling.
-- A DeepSeek model works the same way once its provider is configured in the harness. For example, set `--model <deepseek id>`.
+- A flag value may name an omp role (`--model @smol`). Role values are resolved the way omp does: first candidate, `@alias` followed, `:thinking` suffix dropped.
+- omp's `default` and `slow` roles are never used: they are usually the premium model.
+- To route arbiter without flags, add the roles to `~/.omp/agent/config.yml`. For example, to use DeepSeek for finders and Sonnet to verify:
+  ```yaml
+  modelRoles:
+    arbiter-finder: deepseek/deepseek-v4.1
+    arbiter-verify: anthropic/claude-sonnet-5-5
+  ```
+- **Cost ceiling.** A resolved model whose name contains an entry of `ARBITER_BLOCKED_MODELS` (default `opus,fable`) is refused with exit 2.
+- **Preflight.** Before any review work, each model must read a file with its tool and answer in JSON. A model the harness cannot call, or one without tool use, exits 2 with the reason instead of failing every agent call.
 
 ## Accuracy
 
