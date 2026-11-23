@@ -1,0 +1,87 @@
+{
+  "repo": "sentry",
+  "prs": 7,
+  "ok": 4,
+  "precision": 0.3,
+  "recall": 0.25,
+  "f1": 0.273,
+  "f2": 0.259,
+  "model": "(default)",
+  "source": {
+    "repo": "withmartian/code-review-benchmark",
+    "sha": "23a35d0d64f7de5a68e5679da08414e0edacea9b",
+    "license": "MIT",
+    "fetched": "2026-11-21T04:32:10Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/getsentry/sentry/pull/67876",
+      "status": "ok",
+      "findings": 2,
+      "tp": 1,
+      "fp": 1,
+      "core": 3,
+      "core_hit": 1,
+      "categories": [
+        "bug",
+        "security"
+      ]
+    },
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5",
+      "status": "ok",
+      "findings": 5,
+      "tp": 1,
+      "fp": 4,
+      "core": 6,
+      "core_hit": 1,
+      "categories": [
+        "api",
+        "bug"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/93824",
+      "status": "ok",
+      "findings": 3,
+      "tp": 1,
+      "fp": 2,
+      "core": 5,
+      "core_hit": 2,
+      "categories": [
+        "bug",
+        "concurrency",
+        "test_gap"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/77754",
+      "status": "ok",
+      "findings": 0,
+      "tp": 0,
+      "fp": 0,
+      "core": 2,
+      "core_hit": 0,
+      "categories": [
+        "bug",
+        "concurrency",
+        "style"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/80528",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 40 of 40 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/martian/20261122152534/getsentry-sentry-pull-80528/report.md)\n"
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/95633",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 67 of 67 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/martian/20261122152534/getsentry-sentry-pull-95633/report.md)\n"
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/80168",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 38 of 38 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/martian/20261122152534/getsentry-sentry-pull-80168/report.md)\n"
+    }
+  ]
+}

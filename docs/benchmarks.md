@@ -60,6 +60,21 @@ The corpus has 28 small projects: 7 per language, 5 with a planted bug and 2 cle
 - Martian's full set has 50 PRs and 173 comments over 5 repos `[AI-§3]`. The other two repos are Java and Ruby, which arbiter does not support.
 - arbiter clones each PR's repository with a blob-less filter (`--filter=blob:none`), checks out `pull/<n>/head`, and reviews it against `origin/<base.ref>`.
 
+### 1.3 SWR-Bench
+
+- Source: `ZZR0/SWRench`, MIT licence, pinned at commit `67ae1d4`. It has 1,000 real Python PRs from 12 SWE-bench repositories.
+- 500 of the PRs contain issues that reviewers confirmed during the real review; the other 500 merged clean.
+- **Ground truth.** Each issue PR lists its `changes`, each with:
+  - a type: functional `F.1`–`F.6` (interface, logic, resource, check, support, larger defects) or evolvability `E.*`
+  - the commit that introduced it
+  - a summary of the reviewer discussion
+- **What arbiter reviews.** Upstream's `build_dataset.py` takes the parent of the first PR commit as the base and the last pre-review PR commit as the head; arbiter does the same, so it sees the PR as the reviewers first saw it.
+- **Sample** ([`eval/swr/sample.json`](../eval/swr/sample.json)): 28 issue PRs with at least one functional change and 12 clean PRs, all with diffs of at most 300 lines. They are stratified over the 12 repositories with seed 20261122. 267 issue PRs and 461 clean PRs were eligible.
+- **Scoring.** The official judge prompts and answer parsers are loaded from `swrbench/evaluation_struct.py` at the pinned commit. arbiter's main findings are rendered as a plain review and judged per PR.
+  - Issue PRs: true positives are review points that hit a ground-truth change. Precision, recall and F1 are pooled over PRs, as upstream's `*_total` metrics are.
+  - Clean PRs: the score is whether the review is judged "good" and how many points it raises.
+  - The judge is a model call through arbiter's harness, not upstream's `run_chat`.
+
 ## 2. Scoring
 
 ### 2.1 Seeded
@@ -193,6 +208,40 @@ Things that limited these numbers:
 For reference, Martian publishes F2 Core of 47.7 for "Claude Code CLI" and 65.1 for the top tool, over the full
 50 PRs with three judges `[AI-§3]`.
 
+### 3.5 Martian sentry, all 10 PRs (r2 briefs, omp default model = Opus)
+
+The run of PRs 4–10 (`--offset 3`) hit the API rate limit on 3 of them: getsentry/sentry 80528, 95633 and 80168.
+Those 3 exited 5 with the verdict withheld, and are excluded from the score.
+
+| PRs scored | Main findings | TP | FP | Core comments hit | Precision | Recall | F1 | F2 |
+|---|---|---|---|---|---|---|---|---|
+| 3 (PRs 1–3) | 18 | 9 | 9 | 8/11 | 0.50 | 0.73 | 0.59 | 0.67 |
+| 4 (PRs 4–7) | 10 | 3 | 7 | 4/16 | 0.30 | 0.25 | 0.27 | 0.26 |
+| **7 of 10 (pooled)** | 28 | 12 | 16 | 12/27 | **0.43** | **0.44** | **0.44** | **0.44** |
+
+Per PR (findings / TP / Core comments hit):
+
+| PR | Result |
+|---|---|
+| getsentry/sentry 67876 | 2 / 1 / 1 of 3 |
+| sentry-greptile 5 | 5 / 1 / 1 of 6 |
+| getsentry/sentry 93824 | 3 / 1 / 2 of 5 |
+| getsentry/sentry 77754 | 0 / 0 / 0 of 2 |
+
+### 3.6 SWR-Bench, partial (r2 briefs, omp default model = Opus)
+
+The rate limit stopped this run too. Of the 40 sampled PRs, 27 exited 5 because every agent call failed, and the
+judge failed on 1 more. Only 12 PRs were scored: the first 12 issue PRs in sample order, one from each repository.
+None of the clean PRs was scored, so false alarms on clean code are still unmeasured.
+
+| PRs scored | Precision | Recall | F1 | Functional-change recall | Blocked |
+|---|---|---|---|---|---|
+| 12 issue PRs | 0.58 (7 TP, 5 FP) | 0.37 (7 of 19 changes) | 0.45 | 0.50 | 4 of 12 |
+
+- In 6 of the 12 PRs arbiter reported nothing. The judge rated those reviews "LGTM" and counted every ground-truth change as missed.
+- SWR-Bench's paper reports a best F1 of 18.73% for the strongest tool `[AX-S7]`, but over all 1,000 PRs, clean ones included. Twelve issue-only PRs are not comparable to that.
+- **Cost.** These Martian and SWR runs used the omp default model, Opus, for every role, and drained the account's token budget. From now on, finders run on Haiku and the verifier, proof agent and judge on Sonnet, and Opus is refused (methodology §3.7). Benchmarks are paused until the user resumes them.
+
 ## 4. Verdict-level view (r2)
 
 - Of the 15 functional bug cases, 10 ended with a BLOCK verdict.
@@ -231,6 +280,8 @@ unmatched findings.
 | [`martian-sentry-20261121083041.json`](../eval/scores/martian-sentry-20261121083041.json) | Martian sentry |
 | [`martian-grafana-20261121092410.json`](../eval/scores/martian-grafana-20261121092410.json) | Martian grafana |
 | [`martian-cal_dot_com-20261121171127.json`](../eval/scores/martian-cal_dot_com-20261121171127.json) | Martian cal.com, rerun after the rate limit reset |
+| [`martian-sentry-20261122152534.json`](../eval/scores/martian-sentry-20261122152534.json) | Martian sentry PRs 4–10 (4 scored, 3 rate-limited) |
+| [`swr-20261122154039.json`](../eval/scores/swr-20261122154039.json) | SWR-Bench, partial (12 of 40 scored) |
 
 Four earlier Martian files are not tracked: one per repo, plus a second for cal.com. The API rate limit made agents fail in all four, and the reruns above replace them.
 
