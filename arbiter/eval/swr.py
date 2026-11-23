@@ -51,7 +51,7 @@ def _diff_lines(d: Instance) -> int:
         for c in d["pr_commits"]
         for f in c.get("diff") or []
         for ln in (f.get("patch") or "").splitlines()
-        if ln[:1] in "+-"
+        if ln.startswith(("+", "-"))
     )
 
 
@@ -123,8 +123,24 @@ class _Quiet:
     warning = error
 
 
+GIT_TIMEOUT_S = 900
+
+
+class Unavailable(Exception):
+    """The instance cannot be reviewed: its repository, commits or worktree could not be prepared."""
+
+
 def _git(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    try:
+        return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, timeout=GIT_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(["git", *args], 124, "", f"timed out after {GIT_TIMEOUT_S}s")
+
+
+def _must(p: subprocess.CompletedProcess[str], what: str) -> subprocess.CompletedProcess[str]:
+    if p.returncode:
+        raise Unavailable(f"{what}: {p.stderr.strip()[:200]}")
+    return p
 
 
 def _has(clone: Path, rev: str) -> bool:
@@ -135,35 +151,38 @@ _LOCKS: dict[str, threading.Lock] = {}
 _LOCKS_GUARD = threading.Lock()
 
 
-def _prepare(d: Instance) -> tuple[Path, str] | None:
+def _prepare(d: Instance) -> tuple[Path, str]:
     with _LOCKS_GUARD:
         lock = _LOCKS.setdefault(d["repo"], threading.Lock())
     with lock:  # one git operation per clone at a time
         return _prepare_locked(d)
 
 
-def _prepare_locked(d: Instance) -> tuple[Path, str] | None:
+def _prepare_locked(d: Instance) -> tuple[Path, str]:
     """Worktree at the PR head (the state reviewers saw); base = parent of the first PR commit (upstream build)."""
     clone = CACHE / d["repo"].replace("/", "__")
     head, first = d["pr_commits"][-1]["sha"], d["pr_commits"][0]["sha"]
     if not clone.exists():
         CACHE.mkdir(parents=True, exist_ok=True)
-        _git("clone", "-q", "--filter=blob:none", "--no-checkout", f"https://github.com/{d['repo']}", str(clone))
+        url = f"https://github.com/{d['repo']}"
+        _must(_git("clone", "-q", "--filter=blob:none", "--no-checkout", url, str(clone)), "clone")
     n = d["instance_id"].rsplit("-", 1)[1]
     for ref in (head, f"+pull/{n}/head:refs/arbiter/pr-{n}"):
         if _has(clone, f"{head}^{{commit}}"):
             break
         _git("fetch", "-q", "origin", ref, cwd=clone)
     if not _has(clone, f"{head}^{{commit}}"):
-        return None
+        raise Unavailable(f"head {head[:12]} not fetchable")
     if not _has(clone, f"{first}~1"):
         _git("fetch", "-q", "origin", first, cwd=clone)
     wt = CACHE / "wt" / d["instance_id"]
-    if wt.exists():
-        _git("worktree", "remove", "--force", str(wt), cwd=clone)
-    _git("worktree", "add", "-q", "--detach", str(wt), head, cwd=clone)
+    _git("worktree", "remove", "--force", str(wt), cwd=clone)
+    _git("worktree", "prune", cwd=clone)
+    _must(_git("worktree", "add", "-q", "--detach", str(wt), head, cwd=clone), "worktree add")
     base = _git("rev-parse", "--verify", "--quiet", f"{first}~1", cwd=wt).stdout.strip()
-    return (wt, base) if base else None
+    if not base:
+        raise Unavailable(f"parent of first PR commit {first[:12]} not fetchable")
+    return wt, base
 
 
 def render(report: dict[str, Any]) -> str:
@@ -180,17 +199,20 @@ def render(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def judge(off: types.ModuleType, d: Instance, review_text: str) -> dict[str, Any] | None:
+def judge(off: types.ModuleType, d: Instance, review_text: str) -> dict[str, Any] | str:
+    """The parsed official judge answer, or the last failure reason after JUDGE_ATTEMPTS tries."""
     item = {
         "instance": off.fix_change_type(json.loads(json.dumps(d))),
         "pred": {"review": review_text.replace("\u2019", "'")},
     }
     issue = d["change_introduced"]
     prompt, _ = (off.create_change_pr_prompt if issue else off.create_clean_pr_prompt)(item)
+    reason = "no attempt"
     for _ in range(JUDGE_ATTEMPTS):
         try:
             value = json.dumps(agents.extract_json(harness.call("judge", prompt, cwd=HOME, timeout=600)))
-        except (harness.HarnessError, ValueError):
+        except (harness.HarnessError, ValueError) as e:
+            reason = str(e)[:200]
             continue
         res = (
             off.verify_change_pr_answer(value, item["instance"], _Quiet())
@@ -199,7 +221,8 @@ def judge(off: types.ModuleType, d: Instance, review_text: str) -> dict[str, Any
         )
         if res is not None:
             return res
-    return None
+        reason = "answer failed the official parser"
+    return reason
 
 
 def _row(iid: str, d: Instance, report: dict[str, Any], review_text: str, res: dict[str, Any]) -> dict[str, Any]:
@@ -226,7 +249,11 @@ def _row(iid: str, d: Instance, report: dict[str, Any], review_text: str, res: d
 
 def run(a: argparse.Namespace) -> dict[str, Any]:
     data, smp = _load(), json.loads(SAMPLE.read_text())
-    ids = [*smp["issue"], *smp["clean"]][: a.limit or None]
+    ids = [*smp["issue"], *smp["clean"]]
+    if a.skip_scored:  # continue an earlier run: only the PRs it did not score
+        done = {r["instance_id"] for r in json.loads(Path(a.skip_scored).read_text())["rows"] if r["status"] == "ok"}
+        ids = [i for i in ids if i not in done]
+    ids = ids[: a.limit or None]
     off = _official()
     settings = apply_models(a)
     ts = stamp()
@@ -234,14 +261,16 @@ def run(a: argparse.Namespace) -> dict[str, Any]:
 
     def one(iid: str) -> dict[str, Any]:
         d = data[iid]
-        if not (prep := _prepare(d)):
-            return {"instance_id": iid, "status": "unavailable"}
+        try:
+            prep = _prepare(d)
+        except Unavailable as e:
+            return {"instance_id": iid, "status": "unavailable", "reason": str(e)}
         r = review(*prep, a.effort, out_dir / iid)
         if r.report is None:
             return {"instance_id": iid, "status": f"arbiter exit {r.exit_code}", "stderr": r.stderr[-300:]}
         text = render(r.report)
-        if (res := judge(off, d, text)) is None:
-            return {"instance_id": iid, "status": "judge failed"}
+        if isinstance(res := judge(off, d, text), str):
+            return {"instance_id": iid, "status": "judge failed", "reason": res}
         row = _row(iid, d, r.report, text, res)
         detail = f"tp {row['tp']} fp {row['fp']} fn {row['fn']}" if row["issue"] else f"points {row['pred_points']}"
         print(f"{iid}: {row['verdict']} main {row['main']} {detail}", flush=True)

@@ -2,6 +2,7 @@
 
 import json
 import re
+import sys
 import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -199,6 +200,7 @@ def _call(role: str, prompt: str, tools: Tools | str, cwd: Path, timeout: int) -
     except harness.HarnessError as e:
         if "timeout" in str(e):
             raise
+        print(f"arbiter: {role} harness error, retrying in {RETRY_PAUSE_S}s: {str(e)[:200]}", file=sys.stderr)
         time.sleep(RETRY_PAUSE_S)  # provider hiccups and rate limits are transient; one paced retry
         return harness.call(role, prompt, tools=tools, cwd=cwd, timeout=timeout)
 

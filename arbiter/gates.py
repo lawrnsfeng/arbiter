@@ -28,7 +28,9 @@ from .model import (
 from .plan import Plan
 from .rundir import RunDir
 
-STATIC_OK = frozenset({"ruff", "eslint", "bandit", "gosec"})  # may run without the sandbox (no repo code executed)
+# may run on the host when the sandbox is unavailable: their configs are data, never repo code
+# (eslint is excluded: eslint.config.js is JavaScript from the reviewed repo)
+STATIC_OK = frozenset({"ruff", "bandit", "gosec"})
 FAILING_KINDS = frozenset({ToolKind.BUILD, ToolKind.TYPE, ToolKind.TEST})
 PYTEST_NO_TESTS = 5
 ERROR_WORD = re.compile(r"\berror\b", re.IGNORECASE)
@@ -73,12 +75,14 @@ def _host_run(s: ToolSpec, cwd: Any) -> dict[str, Any]:
             s["cmd"], cwd=cwd, capture_output=True, text=True, errors="replace", timeout=600, stdin=subprocess.DEVNULL
         )
     except (OSError, subprocess.TimeoutExpired) as e:
+        # a missing binary or permission error is a failed gate with its cause, not a timeout
+        timed_out = isinstance(e, subprocess.TimeoutExpired)
         return {
             "exit_code": -1,
             "stdout": "",
             "stdout_tail": "",
             "stderr_tail": str(e),
-            "timed_out": True,
+            "timed_out": timed_out,
             "cmd": cmd,
             "exec_id": "",
         }

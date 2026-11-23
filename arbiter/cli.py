@@ -19,6 +19,13 @@ STAGES = ("gates", "merge", "tally", "gate", "report")
 EXEC_KEYS = ("exec_id", "cmd", "exit_code", "stdout_tail", "stderr_tail", "duration_s", "timed_out")
 
 
+def _positive(text: str) -> int:
+    """argparse type: a bad --jobs or ARBITER_JOBS is a usage error (exit 2), not a crash."""
+    if not text.isdigit() or int(text) < 1:
+        raise argparse.ArgumentTypeError(f"expected a positive integer, got {text!r}")
+    return int(text)
+
+
 def _parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="arbiter")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -32,7 +39,7 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--model", help="finders, A0 and SPEC (default: Haiku)")
     r.add_argument("--verify-model", help="verifier, proof agent and eval judge (default: Sonnet)")
     r.add_argument("--out", type=Path)
-    r.add_argument("--jobs", type=int, default=int(os.environ.get("ARBITER_JOBS", "8")))
+    r.add_argument("--jobs", type=_positive, default=os.environ.get("ARBITER_JOBS", "8"), help="agent calls at once")
     r.add_argument("--max-agents", type=int, default=300)
     pl = sub.add_parser("plan", help="plan only (writes RUN/plan.json)")
     pl.add_argument("run", type=Path)

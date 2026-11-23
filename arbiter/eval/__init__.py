@@ -5,6 +5,12 @@ import argparse
 from . import martian, seeded, swr
 
 
+def _non_negative(text: str) -> int:
+    if not text.isdigit():
+        raise argparse.ArgumentTypeError(f"expected a non-negative integer, got {text!r}")
+    return int(text)
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="arbiter eval")
     sub = ap.add_subparsers(dest="suite", required=True)
@@ -21,7 +27,7 @@ def main(argv: list[str]) -> int:
     m.add_argument("action", choices=("fetch", "run"))
     m.add_argument("--repo", choices=("sentry", "grafana", "cal_dot_com"))
     m.add_argument("--limit", type=int)
-    m.add_argument("--offset", type=int, default=0, help="skip the first N PRs (continue an earlier sample)")
+    m.add_argument("--offset", type=_non_negative, default=0, help="skip the first N PRs (continue an earlier sample)")
     m.add_argument("--effort", default="standard", choices=("quick", "standard", "deep"))
     m.add_argument("--harness")
     m.add_argument("--model")
@@ -32,6 +38,7 @@ def main(argv: list[str]) -> int:
     w.add_argument("--clean", type=int, default=12, help="sample: clean PRs")
     w.add_argument("--seed", type=int, default=20261122)
     w.add_argument("--limit", type=int)
+    w.add_argument("--skip-scored", metavar="SCORE_FILE", help="run only the PRs that file did not score")
     w.add_argument("--parallel", type=int, default=2, help="PRs reviewed at once")
     w.add_argument("--effort", default="standard", choices=("quick", "standard", "deep"))
     w.add_argument("--harness")

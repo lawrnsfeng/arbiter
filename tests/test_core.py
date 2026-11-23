@@ -483,3 +483,47 @@ def test_sandbox_selftest(tmp_path):
 
     ok, rows = sandbox.selftest(tmp_path / "run")
     assert ok, rows
+
+
+# ---------------------------------------------------------------- self-review regressions
+
+
+@pytest.mark.parametrize(
+    ("pyproject", "lock", "ruff"),
+    [
+        ('[dependency-groups]\ndev = ["ruff>=0.5"]\n', "", True),
+        ('[tool.uv]\ndev-dependencies = ["ruff"]\n', "", True),
+        ("[project]\nname = 'x'\n", '[[package]]\nname = "ruff"\n', True),
+        ('[dependency-groups]\ndev = ["ruff-lsp"]\n', "", False),
+        ("not = [valid toml", "", False),
+    ],
+)
+def test_ruff_gate_detection(pyproject, lock, ruff):
+    from arbiter import tools
+
+    files = {"pyproject.toml": pyproject, "uv.lock": lock}
+    specs = tools.detect(set(files) | {"a.py"}, files.get, {"python": ["a.py"]}, [])
+    assert any(s["name"] == "ruff" and s["cmd"][:2] == ["uv", "run"] for s in specs) is ruff
+
+
+def test_host_run_missing_binary_is_not_a_timeout(tmp_path):
+    from arbiter import gates
+    from arbiter.model import ToolKind, ToolSpec
+
+    spec = ToolSpec(name="x", kind=ToolKind.LINT, cmd=["arbiter-no-such-binary"])
+    r = gates._host_run(spec, tmp_path)
+    assert r["exit_code"] == -1 and r["timed_out"] is False and "arbiter-no-such-binary" in r["stderr_tail"]
+
+
+def test_martian_judge_failure_is_not_a_false_positive(monkeypatch):
+    from arbiter.eval import martian
+
+    monkeypatch.setattr(martian, "_judge", lambda f, c: None)
+    row = martian._score_pr([{"file": "a.py", "line": 1, "claim": "c"}], [{"comment": "x", "category": "bug"}])
+    assert (row["fp"], row["unjudged"], row["tp"]) == (0, 1, 0)
+
+
+def test_bad_jobs_is_a_usage_error(capsys):
+    with pytest.raises(SystemExit) as e:
+        cli.main(["run", "--jobs", "zero"])
+    assert e.value.code == 2

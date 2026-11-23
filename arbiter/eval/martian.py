@@ -21,6 +21,7 @@ REPOS = ("sentry", "grafana", "cal_dot_com")
 CORE = frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect"})
 PR_URL = re.compile(r"https://github.com/([^/]+)/([^/]+)/pull/(\d+)")
 NON_WORD = re.compile(r"\W+")
+GIT_TIMEOUT_S = 900
 
 
 def _gh(*args: str) -> str:
@@ -52,7 +53,8 @@ def fetch() -> None:
     (GOLDEN / "SOURCE.json").write_text(json.dumps(source, indent=1))
 
 
-def _judge(finding: dict[str, Any], comment: str) -> bool:
+def _judge(finding: dict[str, Any], comment: str) -> bool | None:
+    """True or False from the judge; None when the judge failed, so the pair is not scored."""
     prompt = (
         "Do these describe the same underlying issue in a code change? Answer with only "
         '{"match": true} or {"match": false}.\n\n'
@@ -66,11 +68,14 @@ def _judge(finding: dict[str, Any], comment: str) -> bool:
             continue
         if isinstance(v, dict) and isinstance(v.get("match"), bool):
             return v["match"]
-    return False
+    return None
 
 
 def _git(repo: Path, *args: str) -> int:
-    return subprocess.run(["git", "-C", str(repo), *args]).returncode
+    try:
+        return subprocess.run(["git", "-C", str(repo), *args], timeout=GIT_TIMEOUT_S).returncode
+    except subprocess.TimeoutExpired:
+        return 124
 
 
 def _prepare_pr(url: str) -> tuple[Path, str] | None:
@@ -97,15 +102,22 @@ def _prepare_pr(url: str) -> tuple[Path, str] | None:
 
 
 def _score_pr(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> dict[str, Any]:
-    """Core profile: a match to a non-Core comment is neutral, neither a true nor a false positive."""
+    """Core profile: a match to a non-Core comment is neutral, neither a true nor a false positive.
+
+    A finding the judge could not assess against some comment, and that matched nothing, is "unjudged":
+    a judge outage is not counted as a false positive.
+    """
     core = {i for i, c in enumerate(comments) if str(c.get("category", "")).lower() in CORE}
-    matches = {(fi, ci) for fi, f in enumerate(main) for ci, c in enumerate(comments) if _judge(f, c["comment"])}
+    verdicts = {(fi, ci): _judge(f, c["comment"]) for fi, f in enumerate(main) for ci, c in enumerate(comments)}
+    matches = {pair for pair, v in verdicts.items() if v}
+    matched = {fi for fi, _ in matches}
     tp = {fi for fi, ci in matches if ci in core}
-    neutral = {fi for fi, _ in matches} - tp
+    unjudged = {fi for (fi, _), v in verdicts.items() if v is None} - matched
     return {
         "findings": len(main),
         "tp": len(tp),
-        "fp": len(main) - len(tp) - len(neutral),
+        "fp": len(main) - len(matched) - len(unjudged),
+        "unjudged": len(unjudged),
         "core": len(core),
         "core_hit": len({ci for _, ci in matches if ci in core}),
         "categories": sorted({str(c.get("category")) for c in comments}),

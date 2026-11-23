@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -92,10 +93,11 @@ def _semgrep(lang: Lang, files: list[str]) -> ToolSpec:
     )
 
 
-def _toml(text: str | None) -> dict[str, Any]:
+def _toml(text: str | None, path: str) -> dict[str, Any]:
     try:
         return tomllib.loads(text or "")
-    except tomllib.TOMLDecodeError:
+    except tomllib.TOMLDecodeError as e:
+        print(f"arbiter: {path} is not valid TOML ({e}); its tool settings are ignored", file=sys.stderr)
         return {}
 
 
@@ -106,15 +108,17 @@ def _declares(pyproject: dict[str, Any], package: str) -> bool:
         *proj.get("dependencies", []),
         *(d for ds in proj.get("optional-dependencies", {}).values() for d in ds),
         *(d for ds in pyproject.get("dependency-groups", {}).values() for d in ds if isinstance(d, str)),
+        *pyproject.get("tool", {}).get("uv", {}).get("dev-dependencies", []),
     ]
-    return any(re.match(rf"{re.escape(package)}\b", s.strip(), re.IGNORECASE) for s in specs)
+    # the whole distribution name: "ruff>=0.5" declares ruff, "ruff-lsp" does not
+    return any(re.match(rf"{re.escape(package)}(?![\w.-])", s.strip(), re.IGNORECASE) for s in specs)
 
 
 def _python(p: Project) -> list[ToolSpec]:
-    pyproject = _toml(p.read(p.path("pyproject.toml")))
+    pyproject = _toml(p.read(p.path("pyproject.toml")), p.path("pyproject.toml"))
     tool = pyproject.get("tool", {})
     out: list[ToolSpec] = []
-    if _declares(pyproject, "ruff"):
+    if _declares(pyproject, "ruff") or 'name = "ruff"' in (p.read(p.path("uv.lock")) or ""):
         out.append(_spec("ruff", ToolKind.LINT, ["uv", "run", "ruff", "check", "--output-format=concise", *p.changed]))
     elif "ruff" in tool or p.has("ruff.toml") or p.has(".ruff.toml"):
         out.append(_spec("ruff", ToolKind.LINT, ["ruff", "check", "--output-format=concise", *p.changed], needs="ruff"))
@@ -192,9 +196,11 @@ def _typescript(p: Project) -> list[ToolSpec]:
             _spec("eslint", ToolKind.LINT, ["npx", "--no-install", "eslint", "-f", "json", *p.changed], parse="eslint")
         )
     try:
-        test = json.loads(p.read(p.path("package.json")) or "{}").get("scripts", {}).get("test")
+        manifest = json.loads(p.read(p.path("package.json")) or "{}")
     except json.JSONDecodeError:
-        test = None
+        manifest = {}
+    scripts = manifest.get("scripts") if isinstance(manifest, dict) else None
+    test = scripts.get("test") if isinstance(scripts, dict) else None
     if test:
         match test:
             case str() if "vitest" in test and p.affected:
@@ -268,7 +274,7 @@ def prefetch(log: Callable[[str], None]) -> dict[str, str]:
         if dst.exists():
             continue
         if subprocess.run(
-            ["curl", "-sfL", "-o", str(dst), f"https://semgrep.dev/c/{pack}"], capture_output=True
+            ["curl", "-sfL", "--max-time", "120", "-o", str(dst), f"https://semgrep.dev/c/{pack}"], capture_output=True
         ).returncode:
             dst.unlink(missing_ok=True)
             log(f"prefetch semgrep rules {pack} failed")

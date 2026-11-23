@@ -6,6 +6,7 @@ Also renders the numbered diffs that agent prompts show.
 import random
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import NamedTuple, TypedDict
 
@@ -130,6 +131,9 @@ def _affected(repo: Path, paths: list[str]) -> list[str]:
     p = subprocess.run(
         ["codegraph", "affected", "-q", "-p", str(repo), *paths], capture_output=True, text=True, timeout=120
     )
+    if p.returncode:  # fall back to each language's whole test target, and say so
+        print(f"arbiter: codegraph affected failed ({p.stderr.strip()[:200]}); running all tests", file=sys.stderr)
+        return []
     return [ln.strip().removeprefix(f"{repo}/") for ln in p.stdout.splitlines() if ln.strip()]
 
 
