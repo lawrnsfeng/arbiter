@@ -11,10 +11,12 @@ race detector, ...) before they can block. It never asks questions and ends with
 ## Material
 
 Documentation:
+- [docs/decisions.md](docs/decisions.md): every idea and concern raised, adopted, behind a switch, proposed, deferred or dropped, with the evidence
 - [docs/methodology.md](docs/methodology.md): design, the evidence behind each decision, decision log, deviations from the plan, limitations
 - [docs/sources.md](docs/sources.md): papers, benchmarks and documents used, and what each changed
 - [docs/benchmarks.md](docs/benchmarks.md): datasets, ground truth, scoring, full results, threats to validity
 - [docs/roadmap.md](docs/roadmap.md): Python-first improvement plan, next datasets, path to an independent agent
+- [CHANGELOG.md](CHANGELOG.md): every release, with the approach tried and the evidence behind it
 
 Research (byte-identical copies from the 2026-11-21 research session; each file has its own source table with URLs):
 - [research/research-axes.md](research/research-axes.md): review-axis taxonomy, agent grouping, priority
@@ -23,6 +25,12 @@ Research (byte-identical copies from the 2026-11-21 research session; each file 
 - [research/research-ai-review-systems.md](research/research-ai-review-systems.md): how current AI review systems work, published benchmarks, precision techniques
 - [research/prior-mint-review-research.md](research/prior-mint-review-research.md): OCR, mattpocock, Google eng-practices, pstack code judo
 - [research/review-python.md](research/review-python.md), [research/review-go.md](research/review-go.md), [research/review-rust.md](research/review-rust.md), [research/review-typescript.md](research/review-typescript.md): per-language canon, tool layer, idioms, patterns, smells, severity
+
+Later research:
+- [research/research-decompose-hierarchical.md](research/research-decompose-hierarchical.md) (2026-11-23): hierarchical, syntax-aware review units, shared context, cross-unit merge, and the A/B plan behind `--decompose`
+- [research/research-accuracy-techniques.md](research/research-accuracy-techniques.md) (2026-11-23): other accuracy techniques (voting, cascades, SAST triage, co-change context…), ranked for cheap models
+- [research/research-learned-rules.md](research/research-learned-rules.md) (2026-11-23): learning review rules from past PRs/MRs, suppression, rule mining, risks, phased plan
+- [research/research-code-quality-platforms.md](research/research-code-quality-platforms.md) (2026-11-23): Codacy, SonarQube, Qlty, DeepSource, Semgrep Pro, Snyk, CodeQL: what to leverage
 
 Skills and agent prompts:
 - [skills/arbiter-review/SKILL.md](skills/arbiter-review/SKILL.md): the core launcher
@@ -60,10 +68,19 @@ Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-re
 
 ```bash
 arbiter run [--repo .] [--base REF] [--effort quick|standard|deep] \
-  [--lang python,go,rust,typescript] [--harness omp|claude] [--model M] [--verify-model M] [--out RUN] [--jobs N] [--max-agents N]
+  [--lang python,go,rust,typescript] [--harness omp|claude] [--model M] [--verify-model M] [--out RUN] [--jobs N] [--max-agents N] \
+  [--decompose ocr|hier|hier-split]
 ```
 
 The report is `RUN/report.md` (human) and `RUN/report.json` (machine).
+
+`--decompose` (or `ARBITER_DECOMPOSE`) picks how the diff is split into review units; `arbiter plan` and
+`arbiter eval seeded|martian|swr run` take it too:
+- `ocr` (default): hunk chunking with OCR's sizes.
+- `hier`: Python split by package, module, definition, method and statement (budget 150 churn, `ARBITER_UNIT_BUDGET`), plus a change manifest and context map per unit, cross-unit acceptance and root-cause dedup, and one contract pass for signature changes, removals and renames.
+- `hier-split`: the split alone (the ablation arm).
+
+These two are experimental until the A/B in [roadmap.md](docs/roadmap.md) P4 passes ([methodology §3.1](docs/methodology.md#31-decomposition-arbiterdiffpy-arbiterunitspy-arbiterdecomposepy)).
 
 | Exit | Meaning |
 |---|---|

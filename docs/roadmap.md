@@ -69,6 +69,15 @@ benchmark, open its repository and confirm three things: the licence, the Python
 script. Some benchmarks may have leaked into model training (Martian notes this risk), so held-out seeded cases
 stay the primary regression gate.
 
+### P4. Hierarchical units: the §5 A/B (`--decompose`)
+
+`research/research-decompose-hierarchical.md` §4 is built behind `--decompose hier|hier-split` (methodology §3.1);
+`ocr` stays the default until this A/B passes.
+
+| # | Change | Evidence | Acceptance | Cost |
+|---|---|---|---|---|
+| P4.1 | Run arms A (`ocr`), B (`hier`, B=150), B′ (`hier-split`) and optionally C (`hier`, `ARBITER_UNIT_BUDGET=75`) at `standard` effort with the same models and k, twice each, on the PRs whose unit sets differ between A and B: the seeded corpus (regression), 12 new seeded large/cross-unit Python cases, SWR-Bench Python PRs over 150 churn, Martian sentry, and a CRBugBench Python sample (≈195 issues in total for 80% power on +10 pp) `[DH-§5]` | Oversized units exist only on real PRs: 11 sentry units over 150 churn, none on seeded or the SWR sample `[DH-§4.0]` | Adopt `hier` as the default only if all hold: Δrecall ≥ +5 pp with the 95% CI excluding 0; precision non-inferior (Δ ≥ −2 pp at the lower CI); cross-unit recall non-inferior (Δ ≥ −5 pp); the seeded regression is exact; finder calls rise ≤ +30% on the changed PRs. One interim look at 50%: stop for futility if the upper CI of Δrecall < +3 pp, for harm if Δcross-unit recall < −10 pp with its upper CI < 0. If B passes but B′ fails on cross-unit recall, keep the manifest and widened acceptance even if the split is dropped | sentry alone: ≥ +22% finder calls at standard `[DH-§4.5]`; plus 1 contract call per PR with interface changes |
+
 ## Phase L: the other languages
 
 1. Port the P1 core fixes; they are language-neutral.
