@@ -9,7 +9,7 @@ dependencies = []
 arbiter = "arbiter.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "ruff>=0.17", "mypy>=2.4"]
 
 [build-system]
 requires = ["uv_build>=0.8,<0.13"]
@@ -20,3 +20,26 @@ module-root = ""
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "PIE", "RET", "PTH", "PERF", "FURB", "RUF", "PL"]
+ignore = [
+  "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004",  # complexity counts: judged in review, not by count
+  "PLW1510",  # subprocess.run without check: return codes are inspected explicitly everywhere
+  "PLC0415",  # local imports break import cycles (cli -> eval, pipeline -> report)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR0917"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["arbiter"]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
