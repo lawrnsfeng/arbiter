@@ -48,8 +48,10 @@ Evaluation data:
 ## Install
 
 ```bash
-make install     # symlinks skills/* into ~/.claude/skills (omp loads them via skills.enableClaudeUser)
-make test        # unit tests (no network, no LLM)
+make install          # `arbiter` on PATH (uv tool, editable) + skills linked into ~/.omp/agent/skills
+make install-claude   # optional: also link the skills into ~/.claude/skills (Claude Code)
+make check            # ruff, mypy and the unit tests (no network, no LLM)
+make uninstall        # removes the tool and only the symlinks that point into this checkout
 ```
 
 Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-review`, `ts-review`.
@@ -57,7 +59,7 @@ Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-re
 ## Run
 
 ```bash
-uv run --project ~/relic/arbiter arbiter run [--repo .] [--base REF] [--effort quick|standard|deep] \
+arbiter run [--repo .] [--base REF] [--effort quick|standard|deep] \
   [--lang python,go,rust,typescript] [--harness omp|claude] [--model M] [--verify-model M] [--out RUN] [--jobs N] [--max-agents N]
 ```
 
@@ -84,9 +86,24 @@ The report is `RUN/report.md` (human) and `RUN/report.json` (machine).
 
 ## Models
 
-`ARBITER_HARNESS` = `omp` (default) or `claude`. `ARBITER_MODEL` sets finders, A0 and SPEC; `ARBITER_VERIFY_MODEL` sets
-the verifier, proof agent and eval judge (defaults to `ARBITER_MODEL`). Both default to the harness's own default.
-The flags `--harness`, `--model` and `--verify-model` override the environment.
+arbiter works with any model its harness can call: Haiku, Sonnet, DeepSeek, GPT and other cheap models. Pick the
+harness with `--harness` or `ARBITER_HARNESS` (`omp`, the default, or `claude`). Each role resolves in this order:
+
+| Role | 1. flag or environment | 2. omp role | 3. fallback (`omp` / `claude`) |
+|---|---|---|---|
+| Finders, A0, SPEC | `--model`, `ARBITER_MODEL` | `arbiter-finder`, then `smol` | `anthropic/claude-haiku-5-5` / `haiku` |
+| Verifier, proof agent, eval judge | `--verify-model`, `ARBITER_VERIFY_MODEL` | `arbiter-verify` | `anthropic/claude-sonnet-5-5` / `sonnet` |
+
+- A flag value may name an omp role (`--model @smol`). Role values are resolved the way omp does: first candidate, `@alias` followed, `:thinking` suffix dropped.
+- omp's `default` and `slow` roles are never used: they are usually the premium model.
+- To route arbiter without flags, add the roles to `~/.omp/agent/config.yml`. For example, to use DeepSeek for finders and Sonnet to verify:
+  ```yaml
+  modelRoles:
+    arbiter-finder: deepseek/deepseek-v4.1
+    arbiter-verify: anthropic/claude-sonnet-5-5
+  ```
+- **Cost ceiling.** A resolved model whose name contains an entry of `ARBITER_BLOCKED_MODELS` (default `opus,fable`) is refused with exit 2.
+- **Preflight.** Before any review work, each model must read a file with its tool and answer in JSON. A model the harness cannot call, or one without tool use, exits 2 with the reason instead of failing every agent call.
 
 ## Accuracy
 
@@ -97,7 +114,7 @@ Precision missed its target after the 2 allowed brief revisions.
 
 | Run | Models (finder / verify) | Precision | Recall | Clean-case findings |
 |---|---|---|---|---|
-| round 0 (as built) | omp default `anthropic/claude-opus-5-5` / same | 0.40 | 0.83 | 1 |
+| round 0 (as built) | omp default `anthropic/claude-opus-5-5` (before the cost ceiling) / same | 0.40 | 0.83 | 1 |
 | round 1 (A1c A6a A6b A6c tightened) | same | 0.585 | 0.83 | 0 |
 | round 2 (final briefs) | same | 0.606 | 0.76 | 0 |
 | cheap model, final briefs | `anthropic/claude-haiku-5-5` / same | 0.69 | 0.62 | 1 |
@@ -108,16 +125,20 @@ In round 2, 13 of the 33 main findings did not match the corpus:
 - 4 are judgment findings: 2 on tests, 1 on observability and 1 on docs.
 
 Martian golden set: `withmartian/code-review-benchmark` at the commit recorded in `eval/martian/golden/SOURCE.json`.
-The sample is the first 3 PRs per repo. An LLM judge (`ARBITER_VERIFY_MODEL`) pairs findings with golden comments.
-Scoring uses the Core categories. The model is the omp default, at `standard` effort.
+An LLM judge (`ARBITER_VERIFY_MODEL`) pairs findings with golden comments, and scoring uses the Core categories.
+These runs used the omp default model (Opus) at `standard` effort.
 
-| Repo | PRs | Precision | Recall | F1 | F2 |
+| Repo | PRs scored | Precision | Recall | F1 | F2 |
 |---|---|---|---|---|---|
-| sentry (Python) | 3 | 0.50 | 0.73 | 0.59 | 0.67 |
+| sentry (Python) | 7 of 10 (3 lost to the rate limit) | 0.43 | 0.44 | 0.44 | 0.44 |
 | grafana (Go) | 3 | 0.40 | 0.18 | 0.25 | 0.20 |
 | cal.com (TS) | 3 | 0.25 | 0.30 | 0.27 | 0.29 |
 
-For reference, Martian publishes 47.7 F2 Core for Claude Code CLI over the full set. This 9-PR sample is too small to compare against it.
+For reference, Martian publishes 47.7 F2 Core for Claude Code CLI over the full set. These samples are too small to compare against it.
+
+SWR-Bench (`ZZR0/SWRench`, MIT; 1,000 real Python PRs): the 40-PR sample was cut short by the rate limit. Only 12 PRs
+were scored, all with issues, so false alarms on clean PRs are still unmeasured. On those 12: precision 0.58,
+recall 0.37, F1 0.45. Benchmarks are paused until they can be rerun on the Haiku/Sonnet defaults.
 
 Per-case and per-PR tables, the ground truth for each case, and threats to validity are in
 [docs/benchmarks.md](docs/benchmarks.md). The score files are in [eval/scores/](eval/scores/).

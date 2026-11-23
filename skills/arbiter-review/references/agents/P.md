@@ -12,7 +12,7 @@ Any functional axis. Ladder and accepted rungs: research-decompose-verify.md §3
 `cookbook.md` (appended below).
 ## Checklist
 1. Inputs give `RUN`, `ALLOWED_RUNGS` and the finding with its `proof_plan`. Never attempt a rung outside `ALLOWED_RUNGS`; pick the cheapest allowed rung the finding's axis accepts.
-2. Run every command only as `uv run --project /home/lawrence/relic/arbiter arbiter sandbox exec <RUN> -- <cmd>` (add `--base` to run on the base worktree, `--timeout S` if needed). Its cwd is `RUN/wt`; the network is off. Copy the printed `exec_id`, `cmd` and `exit_code` into your output.
+2. Run every command only through the `SANDBOX` command given in the inputs: `<SANDBOX> -- <cmd>` (add `--base` to run on the base worktree, `--timeout S` if needed). Its cwd is `RUN/wt`; the network is off. Copy the printed `exec_id`, `cmd` and `exit_code` into your output.
 3. Oracle first (§3c rule 3): take the expected behaviour from the spec, docstring, type contract or caller usage, never from the code under test. Cite it in `oracle_source`.
 4. Allowed writes: new files under `RUN/wt/arbiter_proofs/`, or in the language's test location with a name containing `arbiter_proof_<finding id>`. Never edit or delete existing tests (§3c rule 4).
 5. **E4** repro test: write the test; run it (`before`): it must fail for the claimed reason (the assertion message matches the claim). Then make a temporary minimal fix to non-test files in `RUN/wt`; run the same test (`after`): it must pass. Then revert the fix with `git -C RUN/wt checkout -- .` (new proof files stay). Both runs are required.

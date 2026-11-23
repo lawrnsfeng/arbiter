@@ -1,135 +1,179 @@
 """Resolve the base, parse base...HEAD into files and hunks, apply exclusions and size caps."""
 
-import fnmatch
 import re
 import subprocess
+from fnmatch import fnmatch
 from pathlib import Path, PurePosixPath
+from typing import TypedDict
 
 from . import ArbiterExit, lang
+from .model import DiffFile, Hunk
 
 MAX_FILES = 500
 MAX_LINES = 8000
 
-LOCKFILES = ("uv.lock", "poetry.lock", "requirements*.txt", "go.sum", "Cargo.lock",
-             "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lock*")
-VENDOR_DIRS = ("vendor", "node_modules", "dist", "build", "target")
+LOCKFILES = (
+    "uv.lock",
+    "poetry.lock",
+    "requirements*.txt",
+    "go.sum",
+    "Cargo.lock",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lock*",
+)
+VENDOR_DIRS = frozenset({"vendor", "node_modules", "dist", "build", "target"})
 GENERATED = ("*_pb2.py", "*.pb.go", "*.gen.*", "*.min.js")
 HUNK_RE = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
+type Repo = Path | str
 
-def git(repo, *args: str, check: bool = True) -> str:
-    p = subprocess.run(["git", "-C", str(repo), "-c", "core.quotePath=false", *args],
-                       capture_output=True, text=True, errors="replace")
+
+class Change(TypedDict):
+    repo: str
+    base: str
+    head: str
+    files: list[DiffFile]
+    commits: list[str]
+    notes: list[str]
+
+
+def git(repo: Repo, *args: str, check: bool = True) -> str:
+    p = subprocess.run(
+        ["git", "-C", str(repo), "-c", "core.quotePath=false", *args], capture_output=True, text=True, errors="replace"
+    )
     if check and p.returncode:
         raise ArbiterExit(5, f"arbiter: git {' '.join(args)} failed: {p.stderr.strip()}")
     return p.stdout
 
 
-def _verify(repo, ref: str) -> str | None:
-    p = subprocess.run(["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
-                       capture_output=True, text=True)
-    return p.stdout.strip() or None
+def _verify(repo: Repo, ref: str) -> str | None:
+    return git(repo, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}", check=False).strip() or None
 
 
-def resolve_base(repo, ref: str | None) -> str:
+def _merge_base(repo: Repo, a: str, b: str) -> str | None:
+    return git(repo, "merge-base", a, b, check=False).strip() or None
+
+
+def resolve_base(repo: Repo, ref: str | None) -> str:
     if ref:
-        sha = _verify(repo, ref)
-        if not sha:
+        if not (sha := _verify(repo, ref)):
             raise ArbiterExit(2, f"arbiter: unknown base ref {ref}")
-        mb = subprocess.run(["git", "-C", str(repo), "merge-base", sha, "HEAD"], capture_output=True, text=True)
-        return mb.stdout.strip() or sha
+        return _merge_base(repo, sha, "HEAD") or sha
     for cand in ("origin/HEAD", "master", "main"):
-        if _verify(repo, cand):
-            mb = subprocess.run(["git", "-C", str(repo), "merge-base", "HEAD", cand], capture_output=True, text=True)
-            if mb.returncode == 0 and mb.stdout.strip():
-                return mb.stdout.strip()
+        if _verify(repo, cand) and (mb := _merge_base(repo, "HEAD", cand)):
+            return mb
     raise ArbiterExit(2, "arbiter: no base ref found (tried origin/HEAD, master, main); pass --base")
 
 
-def exclusion(repo, head: str, path: str, binary: bool) -> str | None:
+def exclusion(repo: Repo, head: str, path: str, binary: bool) -> str | None:
     p = PurePosixPath(path)
     if binary:
         return "binary"
-    if any(fnmatch.fnmatch(p.name, g) for g in LOCKFILES):
+    if any(fnmatch(p.name, g) for g in LOCKFILES):
         return "lockfile"
-    if any(part in VENDOR_DIRS for part in p.parts[:-1]):
+    if VENDOR_DIRS.intersection(p.parts[:-1]):
         return "vendored/build output"
-    if any(fnmatch.fnmatch(p.name, g) for g in GENERATED):
+    if any(fnmatch(p.name, g) for g in GENERATED):
         return "generated"
-    head5 = subprocess.run(["git", "-C", str(repo), "show", f"{head}:{path}"], capture_output=True,
-                           text=True, errors="replace").stdout.splitlines()[:5]
-    if any("Code generated" in l and "DO NOT EDIT" in l for l in head5):
+    head5 = git(repo, "show", f"{head}:{path}", check=False).splitlines()[:5]
+    if any("Code generated" in ln and "DO NOT EDIT" in ln for ln in head5):
         return "generated"
     return None
 
 
-def _parse_hunks(patch: str) -> dict[str, list[dict]]:
+def _count(group: str | None) -> int:
+    """A missing hunk count means 1; an explicit 0 means an empty side."""
+    return 1 if group is None else int(group)
+
+
+def _parse_hunks(patch: str) -> dict[str, list[Hunk]]:
     """Parse `git diff -U0` output into {new_path: [hunk]}."""
-    out: dict[str, list[dict]] = {}
-    cur: list[dict] | None = None
-    hunk = None
-    old = new = None
+    out: dict[str, list[Hunk]] = {}
+    cur: list[Hunk] | None = None
+    hunk: Hunk | None = None
+    old: str | None = None
     for line in patch.splitlines():
         if line.startswith("diff --git "):
-            cur, hunk, old, new = None, None, None, None
+            cur, hunk, old = None, None, None
         elif line.startswith("--- ") and hunk is None:
             old = line[4:].removeprefix("a/").rstrip("\t")
         elif line.startswith("+++ ") and hunk is None:
             new = line[4:].removeprefix("b/").rstrip("\t")
-            path = old if new == "/dev/null" else new
-            cur = out.setdefault(path, [])
+            cur = out.setdefault(old if new == "/dev/null" and old else new, [])
         elif (m := HUNK_RE.match(line)) and cur is not None:
-            hunk = {"old_start": int(m[1]), "old_count": int(m[2] or 1 if m[2] != "0" else 0),
-                    "new_start": int(m[3]), "new_count": int(m[4] or 1 if m[4] != "0" else 0),
-                    "added": [], "removed": []}
+            hunk = Hunk(
+                old_start=int(m[1]),
+                old_count=_count(m[2]),
+                new_start=int(m[3]),
+                new_count=_count(m[4]),
+                added=[],
+                removed=[],
+            )
             cur.append(hunk)
-        elif hunk is not None and line[:1] == "+":
-            hunk["added"].append([hunk["new_start"] + len(hunk["added"]), line[1:]])
-        elif hunk is not None and line[:1] == "-":
+        elif hunk is not None and line.startswith("+"):
+            hunk["added"].append((hunk["new_start"] + len(hunk["added"]), line[1:]))
+        elif hunk is not None and line.startswith("-"):
             hunk["removed"].append(line[1:])
     return out
 
 
-def collect(repo, base: str) -> dict:
-    head = git(repo, "rev-parse", "HEAD").strip()
-    notes = []
-    if git(repo, "status", "--porcelain", check=False).strip():
-        notes.append("uncommitted changes excluded")
-    raw = git(repo, "diff", "--numstat", "-z", "-M", f"{base}...HEAD").split("\0")
+def _numstat(repo: Repo, base: str) -> list[tuple[str, str, str, str | None]]:
+    """(added, deleted, path, old_path) per file; renames arrive as two extra NUL-separated fields."""
+    fields = iter(git(repo, "diff", "--numstat", "-z", "-M", f"{base}...HEAD").split("\0"))
     stats = []
-    i = 0
-    while i < len(raw):
-        rec = raw[i]
+    for rec in fields:
         if not rec.strip():
-            i += 1
             continue
-        a, d, path = rec.split("\t", 2)
+        added, deleted, path = rec.split("\t", 2)
         old_path = None
-        if path == "":  # rename: old and new follow as separate fields
-            old_path, path = raw[i + 1], raw[i + 2]
-            i += 2
-        stats.append((a, d, path, old_path))
-        i += 1
+        if not path:
+            old_path, path = next(fields), next(fields)
+        stats.append((added, deleted, path, old_path))
+    return stats
+
+
+def collect(repo: Repo, base: str) -> Change:
+    head = git(repo, "rev-parse", "HEAD").strip()
+    notes = ["uncommitted changes excluded"] if git(repo, "status", "--porcelain", check=False).strip() else []
     hunks = _parse_hunks(git(repo, "diff", "-U0", "-M", f"{base}...HEAD"))
-    files = []
-    for a, d, path, old_path in stats:
+    files: list[DiffFile] = []
+    for a, d, path, old_path in _numstat(repo, base):
         binary = a == "-"
         hs = hunks.get(path) or hunks.get(old_path or "") or []
-        f = {"path": path, "old_path": old_path, "lang": lang.of(path),
-             "added": 0 if binary else int(a), "deleted": 0 if binary else int(d),
-             "binary": binary, "hunks": hs}
-        f["churn"] = f["added"] + f["deleted"]
         for h in hs:
             h["churn"] = len(h["added"]) + len(h["removed"])
-        f["excluded"] = exclusion(repo, head, path, binary)
-        files.append(f)
-    included = [f for f in files if not f["excluded"]]
+        added, deleted = (0, 0) if binary else (int(a), int(d))
+        files.append(
+            DiffFile(
+                path=path,
+                old_path=old_path,
+                lang=lang.of(path),
+                added=added,
+                deleted=deleted,
+                churn=added + deleted,
+                binary=binary,
+                hunks=hs,
+                excluded=exclusion(repo, head, path, binary),
+            )
+        )
     if not files:
         raise ArbiterExit(3, "arbiter: empty diff")
+    included = [f for f in files if not f["excluded"]]
     lines = sum(f["churn"] for f in included)
     if len(included) > MAX_FILES or lines > MAX_LINES:
-        raise ArbiterExit(4, f"arbiter: diff too large ({len(included)} files, {lines} lines); "
-                           f"split it (cap {MAX_FILES} files / {MAX_LINES} lines)")
+        raise ArbiterExit(
+            4,
+            f"arbiter: diff too large ({len(included)} files, {lines} lines); "
+            f"split it (cap {MAX_FILES} files / {MAX_LINES} lines)",
+        )
     subjects = git(repo, "log", "--format=%s%n%b%x00", f"{base}..HEAD").split("\0")
-    return {"repo": str(Path(repo).resolve()), "base": base, "head": head, "files": files,
-            "commits": [s.strip() for s in subjects if s.strip()], "notes": notes}
+    return Change(
+        repo=str(Path(repo).resolve()),
+        base=base,
+        head=head,
+        files=files,
+        commits=[s.strip() for s in subjects if s.strip()],
+        notes=notes,
+    )

@@ -13,9 +13,10 @@ blocking finding on ground truth. This skill only launches it and relays the rep
 1. Never ask the user anything. Never edit the reviewed repo.
 2. Run, from the repository root:
    ```bash
-   ARBITER_HOME=$(dirname "$(dirname "$(readlink -f ~/.claude/skills/arbiter-review)")")
-   uv run --project "$ARBITER_HOME" arbiter run --repo . $ARGUMENTS </dev/null
+   arbiter run --repo . $ARGUMENTS </dev/null
    ```
+   If the shell says `arbiter: command not found`, report "arbiter is not installed: run `make install` in the
+   arbiter checkout" and stop.
    The first stdout line is the RUN directory; the last line is `verdict PASS|BLOCK · report <path>`.
 3. Read `RUN/report.md`. Relay it verbatim, followed by one line with the verdict and the exit code.
 4. Do not add, re-rank or soften findings. The report is the review.
@@ -27,5 +28,8 @@ Exit codes: `0` no Block findings · `1` Block findings present · `2` usage/con
 Efforts: `quick` (5 finders, 1 vote, E1/E3 proofs) · `standard` (default: 8 finders + triggered specialists, 3-lens
 panel, E1–E6/E8) · `deep` (k=3 passes on correctness/security/concurrency, E1–E9, code-judo blockers).
 
-Models: `ARBITER_HARNESS=omp|claude`, `ARBITER_MODEL` (finders), `ARBITER_VERIFY_MODEL` (verifier and proof), or the
-`--harness`, `--model`, `--verify-model` flags.
+Models: any model the harness can call works (Haiku, Sonnet, DeepSeek, GPT and other cheap models). Finders use
+`--model` / `ARBITER_MODEL`, else the omp role `arbiter-finder`, else `smol`, else Haiku. The verifier and proof agent
+use `--verify-model` / `ARBITER_VERIFY_MODEL`, else the omp role `arbiter-verify`, else Sonnet. Models matching
+`ARBITER_BLOCKED_MODELS` (default `opus,fable`) are refused with exit 2. A preflight checks each model can read a file
+and answer in JSON before any review work; a model that cannot exits 2.

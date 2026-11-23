@@ -41,6 +41,22 @@ All orchestration is deterministic Python (`arbiter run`). Code does decompositi
 JSON validation, dedup, vote arithmetic, the evidence gate, the verdict and the report. LLM calls go
 through a headless harness CLI (`omp -p` by default, or `claude -p`) and each one does one job.
 
+Code layout (Python 3.13, standard library only):
+
+| Module | Role |
+|---|---|
+| `model.py` | Shared vocabulary as `StrEnum`s (axes, severities, verdicts, rungs, placements) and the `TypedDict` shapes of every record stored in `RUN/*.json` |
+| `rundir.py` | `RunDir`: load, save and coverage merging for the RUN directory |
+| `diff.py`, `units.py`, `triggers.py`, `plan.py` | Stage 1: base, diff, units, conditional agents, schedule, tools, rules → `plan.json`; numbered diffs for prompts |
+| `tools.py`, `sandbox.py`, `gates.py` | Tool detection (`tomllib` for `pyproject.toml`), the bubblewrap sandbox, gate runs |
+| `harness.py`, `agents.py` | One model call (`Settings`, cost ceiling); prompt assembly (`Brief`, `Output`), JSON extraction, retry |
+| `findings.py`, `pipeline.py`, `report.py`, `cli.py` | Validation, merge, tally and evidence gate; the agent stages and `run_all`; the report; the CLI |
+| `eval/` | Seeded, Martian and SWR-Bench suites on shared helpers (`eval/common.py`) |
+
+Enums are `StrEnum`, so stage files stay plain JSON and members compare equal to their strings after a reload.
+Code compares them with `==`, never `is`. `ruff` (UP, B, SIM, PTH, PERF, FURB, RUF, PL…) and `mypy` run clean.
+Both are configured in `pyproject.toml`.
+
 ```mermaid
 flowchart TD
   A[plan: base, diff, units, triggers, tools, repo rules] --> B[sandbox prepare: worktrees HEAD and base, dependency fetch with network, selftest]
@@ -165,7 +181,7 @@ Accepted rungs per axis (`[DV-§3b]`):
   - E4 needs a failing before-run on HEAD and a passing after-run.
   - E5, E6 and E7 need a non-zero exit, meaning the detector fired.
 
-### 3.5 Gates and analyzers (`arbiter/tools.py`, `arbiter/pipeline.py` `gates`)
+### 3.5 Gates and analyzers (`arbiter/tools.py`, `arbiter/gates.py`)
 
 - The project's own build, lint, type-check and test commands run in the sandbox.
 - Diagnostics on added lines become E1 findings.
@@ -203,6 +219,15 @@ The design follows the sandbox rules in `[DV-§4]`:
 - An agent that returns invalid JSON gets one automatic retry with the parser error appended. A harness error other than a timeout gets one paced retry after 30 s.
 - **Fail-closed rule.** If more than 25% of agent calls fail, a would-be pass becomes exit 5 with an INCOMPLETE report.
   - This was added after a real failure: during the first Martian run the account hit its API rate limit, every agent failed, and the run reported PASS on silence.
+- **Models and cost ceiling.** arbiter is model-agnostic: any model the harness can call works.
+  - Finders, A0 and SPEC use `--model` / `ARBITER_MODEL`, else the omp role `arbiter-finder`, else `smol`, else Haiku.
+  - The verifier, proof agent and eval judge use `--verify-model` / `ARBITER_VERIFY_MODEL`, else the omp role `arbiter-verify`, else Sonnet.
+  - omp's `default` and `slow` roles are never used, because they usually name the premium model.
+  - Roles are resolved from `omp config get modelRoles` (first candidate, `@alias` followed, `:thinking` dropped), and the resolved id is passed explicitly with `--model`.
+  - A resolved model matching `ARBITER_BLOCKED_MODELS` (default `opus,fable`) exits 2.
+  - A preflight makes one tiny call per model before any review work. The model must read a file with its tool and answer in JSON. Without it, an unconfigured model crashes every omp call after about 80 s, and a model without tool use cannot run the finders.
+  - Before 2026-11-22 no model was set, so every call fell through to the omp default model, Opus. The Martian and SWR-Bench runs drained the account's token budget that way.
+  - The split follows the evidence: cheap independent finders, with the stronger model where precision is decided `[AI-§4 #9]`. The seeded Haiku-only run already scored precision 0.69 and recall 0.62.
 
 ## 4. Decision log
 
@@ -223,6 +248,9 @@ The design follows the sandbox rules in `[DV-§4]`:
 | 2026-11-21 | Fail closed on more than 25% agent failures | Rate-limited run reported PASS with zero working agents |
 | 2026-11-21 | Brief revisions after seeded rounds 0 and 1 (see [benchmarks.md](benchmarks.md)) | False positives clustered in A1c (missing tests), A6a (idiom copies of bugs), A6b (small duplication) and A6c (docs restating bugs) |
 | 2026-11-21 | Project renamed curve → arbiter in a new repository | User decision |
+| 2026-11-22 | Default models Haiku (finders) and Sonnet (verifier, proof, judge); Opus refused | Opus-by-default runs drained the user's token budget; the user set Sonnet as the ceiling |
+| 2026-11-23 | Models resolved from omp roles (`arbiter-finder` or `smol`; `arbiter-verify`), Haiku/Sonnet fallbacks, `opus,fable` blocked by default, preflight per model | arbiter must run on any cheap model omp can reach (Haiku, DeepSeek, GPT…); an unknown model made every omp call crash |
+| 2026-11-23 | `make install` puts `arbiter` on PATH (`uv tool install --editable`) and links the skills into `~/.omp/agent/skills`; the proof agent gets its sandbox command from the inputs | The skills had found arbiter through a `~/.claude/skills` symlink, and the proof brief hard-coded this machine's checkout path |
 
 ## 5. Deviations from the approved plan
 

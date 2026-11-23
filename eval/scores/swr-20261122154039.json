@@ -1,0 +1,561 @@
+{
+  "benchmark": "SWR-Bench",
+  "pin": "67ae1d4395ac05f800d62b0e13678eadeb9fa5c7",
+  "effort": "standard",
+  "model": "(default)",
+  "verify_model": "(default)",
+  "items": 40,
+  "ok": 12,
+  "issue_prs": 12,
+  "clean_prs": 0,
+  "precision": 0.583,
+  "recall": 0.368,
+  "f1": 0.452,
+  "tp": 7,
+  "fp": 5,
+  "fn": 12,
+  "functional_recall": 0.5,
+  "clean_identified_good": null,
+  "clean_false_points": 0,
+  "clean_blocked": 0,
+  "issue_blocked": 4,
+  "unavailable": [
+    {
+      "instance_id": "astropy__astropy-8201",
+      "status": "judge failed"
+    },
+    {
+      "instance_id": "django__django-18803",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/django__django-18803/report.md)\n"
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-19110",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/matplotlib__matplotlib-19110/report.md)\n"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-931",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/mwaskom__seaborn-931/report.md)\n"
+    },
+    {
+      "instance_id": "pallets__flask-2019",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pallets__flask-2019/report.md)\n"
+    },
+    {
+      "instance_id": "psf__requests-5779",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/psf__requests-5779/report.md)\n"
+    },
+    {
+      "instance_id": "pydata__xarray-6939",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 14 of 14 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pydata__xarray-6939/report.md)\n"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-3959",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 18 of 18 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pylint-dev__pylint-3959/report.md)\n"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-12232",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pytest-dev__pytest-12232/report.md)\n"
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-22957",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/scikit-learn__scikit-learn-22957/report.md)\n"
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-5596",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/sphinx-doc__sphinx-5596/report.md)\n"
+    },
+    {
+      "instance_id": "sympy__sympy-15569",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/sympy__sympy-15569/report.md)\n"
+    },
+    {
+      "instance_id": "astropy__astropy-2213",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/astropy__astropy-2213/report.md)\n"
+    },
+    {
+      "instance_id": "django__django-3345",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 12 of 12 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/django__django-3345/report.md)\n"
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-3752",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/matplotlib__matplotlib-3752/report.md)\n"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-1948",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/mwaskom__seaborn-1948/report.md)\n"
+    },
+    {
+      "instance_id": "astropy__astropy-5097",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/astropy__astropy-5097/report.md)\n"
+    },
+    {
+      "instance_id": "django__django-10104",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 12 of 12 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/django__django-10104/report.md)\n"
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-8178",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/matplotlib__matplotlib-8178/report.md)\n"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-2359",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/mwaskom__seaborn-2359/report.md)\n"
+    },
+    {
+      "instance_id": "pallets__flask-2378",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pallets__flask-2378/report.md)\n"
+    },
+    {
+      "instance_id": "psf__requests-3754",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/psf__requests-3754/report.md)\n"
+    },
+    {
+      "instance_id": "pydata__xarray-5725",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pydata__xarray-5725/report.md)\n"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6208",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 12 of 12 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pylint-dev__pylint-6208/report.md)\n"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5633",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pytest-dev__pytest-5633/report.md)\n"
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-30361",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/scikit-learn__scikit-learn-30361/report.md)\n"
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-2711",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/sphinx-doc__sphinx-2711/report.md)\n"
+    },
+    {
+      "instance_id": "sympy__sympy-10037",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/sympy__sympy-10037/report.md)\n"
+    }
+  ],
+  "rows": [
+    {
+      "instance_id": "astropy__astropy-9793",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] astropy/coordinates/matrix_utilities.py:64: When unit is None, or when unit is radians, rotation_matrix no longer passes angle through Angle(). The docstring still says angle is 'convertible to Angle', so string angles such as '30d' or '1h' now go straight into np.deg2rad or np.sin, which raise TypeError. Suggested fix: Run Angle() on str and other non-numeric inputs before the fast path, or use the fast path only when angle is already a number, a numpy array or a Quantity.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "django__django-6675",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-4824",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 4,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] lib/matplotlib/colors.py:1275: When clip=True and the input is an unmasked ndarray, `np.clip(..., out=xx)` clips the caller's array in place. `xx` is `_x.filled(...)`, which returns the underlying data without copying when nothing is masked, and `atleast_1d` does not copy either. Suggested fix: Copy before clipping: `xx = np.array(_x.filled(self.vmax + 1), ndmin=1)`, or use `xx = np.clip(xx, self.vmin, self.vmax)` without `out`.\n- [nit] lib/matplotlib/colors.py:1277: The `np.clip(..., out=xx)` change makes `clip=True` take effect. Low out-of-range values now map to 0 instead of -1. The `__init__` docstring still says out-of-range values map to -1 when low, and it never documents the `clip` parameter. Suggested fix: Add a *clip* entry to the docstring. Say that with clip=True, values below vmin map to 0 and values at or above vmax still map to ncolors.\n- [should-fix] lib/matplotlib/colors.py:1285: With clip=True, values at or above vmax still map to Ncmap (out of range). The code itself marks this with the comment 'ISSUE here: clip is ignored', so the clip claim is not met. Suggested fix: When clip is set, map xx >= vmax to Ncmap-1, or skip the overflow assignment. Then update the test to expect ncolors-1.\n- [should-fix] lib/matplotlib/tests/test_colors.py:88: The clip test expects the out-of-range value 3 for vmax and admits the uncertainty in a comment, so the tests lock in the wrong clip behaviour instead of covering the fix. Suggested fix: Expect [0,0,2,2] for clip=True.",
+      "identified_as_good": "YES",
+      "pred_points": 4,
+      "tp": 1,
+      "fp": 3,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.4",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "mwaskom__seaborn-2347",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] seaborn/axisgrid.py:464: The new checks `sharex != 'row'` and `sharey != 'col'` are also true when sharex or sharey is False. As a result, axes that do not share limits now lose their x tick labels (all but the bottom row) or y tick labels (all but the left column). Suggested fix: Use `if sharex in (True, 'col'):` and `if sharey in (True, 'row'):`.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pallets__flask-2588",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "psf__requests-2976",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] docs/api.rst:190: The example is supposed to work on Python 3, but it runs both imports one after the other with no try/except or version check, so the copied snippet raises ImportError on Python 3 (no `httplib` module) and on Python 2 (no `http.client` module). Suggested fix: Wrap the imports as `try: from http.client import HTTPConnection` / `except ImportError: from httplib import HTTPConnection`.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pydata__xarray-310",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6758",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] .github/workflows/primer_comment.yaml:28: The condition in the 'Skip if PR run failed' step is inverted. It runs `exit 1` when the triggering run concluded 'success', so it aborts every successful primer run and lets failed runs go on to post comments. Suggested fix: Change the condition to `github.event.workflow_run.conclusion != 'success'`.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pytest-dev__pytest-11659",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-280",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] scikits/learn/linear_model/least_angle.py:391: fit() now ignores alpha whenever n_features is set, but the n_features docstring entries only say 'Number of selected active features'. Nothing tells users that a LassoLARS alpha value is silently overridden. Suggested fix: In the n_features docstring entries, state that a set n_features takes priority and alpha is ignored (alpha is treated as 0).",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "E.3.1",
+          "hit": "NO"
+        },
+        {
+          "type": "E.1.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-9447",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 2,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] sphinx/builders/html/__init__.py:512: The 'sphinx_version' context key is now set to the version_info tuple instead of the display string __display_version__, so templates show the tuple rather than a string like \"3.5.1\". Suggested fix: Use 'sphinx_version': __display_version__ and keep 'sphinx_version_tuple': sphinx_version.\n- [nit] doc/templating.rst:379: The new docs show the example tuple with mismatched backticks (`(3, 5, 1, 'beta', 3)``), so it renders wrongly in the documentation that is supposed to explain the new variable. Suggested fix: Use ``(3, 5, 1, 'beta', 3)``.",
+      "identified_as_good": "NO",
+      "pred_points": 2,
+      "tp": 1,
+      "fp": 1,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.3",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "sympy__sympy-10741",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] sympy/sets/tests/test_sets.py:426: The new assertion can never pass. Python reads `a in b is c` as the chained comparison `(a in b) and (b is c)`, not `(a in b) is S.false`. Suggested fix: Write `assert Interval(0, 2).contains(Interval(0, 2)) is S.false`, or `assert (Interval(0, 2) in Interval(0, 2)) is False`.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-8201",
+      "status": "judge failed"
+    },
+    {
+      "instance_id": "django__django-18803",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/django__django-18803/report.md)\n"
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-19110",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/matplotlib__matplotlib-19110/report.md)\n"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-931",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/mwaskom__seaborn-931/report.md)\n"
+    },
+    {
+      "instance_id": "pallets__flask-2019",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pallets__flask-2019/report.md)\n"
+    },
+    {
+      "instance_id": "psf__requests-5779",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/psf__requests-5779/report.md)\n"
+    },
+    {
+      "instance_id": "pydata__xarray-6939",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 14 of 14 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pydata__xarray-6939/report.md)\n"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-3959",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 18 of 18 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pylint-dev__pylint-3959/report.md)\n"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-12232",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pytest-dev__pytest-12232/report.md)\n"
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-22957",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/scikit-learn__scikit-learn-22957/report.md)\n"
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-5596",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/sphinx-doc__sphinx-5596/report.md)\n"
+    },
+    {
+      "instance_id": "sympy__sympy-15569",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/sympy__sympy-15569/report.md)\n"
+    },
+    {
+      "instance_id": "astropy__astropy-2213",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/astropy__astropy-2213/report.md)\n"
+    },
+    {
+      "instance_id": "django__django-3345",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 12 of 12 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/django__django-3345/report.md)\n"
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-3752",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/matplotlib__matplotlib-3752/report.md)\n"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-1948",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 10 of 10 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/mwaskom__seaborn-1948/report.md)\n"
+    },
+    {
+      "instance_id": "astropy__astropy-5097",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/astropy__astropy-5097/report.md)\n"
+    },
+    {
+      "instance_id": "django__django-10104",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 12 of 12 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/django__django-10104/report.md)\n"
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-8178",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/matplotlib__matplotlib-8178/report.md)\n"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-2359",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/mwaskom__seaborn-2359/report.md)\n"
+    },
+    {
+      "instance_id": "pallets__flask-2378",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pallets__flask-2378/report.md)\n"
+    },
+    {
+      "instance_id": "psf__requests-3754",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/psf__requests-3754/report.md)\n"
+    },
+    {
+      "instance_id": "pydata__xarray-5725",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pydata__xarray-5725/report.md)\n"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6208",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 12 of 12 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pylint-dev__pylint-6208/report.md)\n"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5633",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/pytest-dev__pytest-5633/report.md)\n"
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-30361",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/scikit-learn__scikit-learn-30361/report.md)\n"
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-2711",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 6 of 6 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/sphinx-doc__sphinx-2711/report.md)\n"
+    },
+    {
+      "instance_id": "sympy__sympy-10037",
+      "status": "arbiter exit 5",
+      "stderr": "arbiter: 11 of 11 agent calls failed; verdict withheld (report /home/lawrence/relic/arbiter/eval/results/swr/20261122154039/sympy__sympy-10037/report.md)\n"
+    }
+  ],
+  "runs": "/home/lawrence/relic/arbiter/eval/results/swr/20261122154039"
+}
