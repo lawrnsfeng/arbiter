@@ -1,11 +1,11 @@
 """Split the included diff files into small review units (OCR sizing defaults)."""
 
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from itertools import chain
 from pathlib import PurePosixPath
 
-from .model import DiffFile, Lang, Piece, Unit
+from .model import Decompose, DiffFile, Lang, Piece, Ranges, Unit
 
 FILE_SPLIT = 200  # a file or group above this churn is split
 CHUNK = 150  # chunk and merge ceiling
@@ -15,6 +15,7 @@ PLAN_UNIT_CHURN = 100
 PLAN_FILE_CHURN = 50
 
 type Group = list[Piece]
+type Reader = Callable[[str], str | None]  # a HEAD file's text, or None when it does not exist
 
 
 def project_root(path: str, tree: set[str], markers: Iterable[str] = MARKERS) -> str:
@@ -30,16 +31,16 @@ def _piece(f: DiffFile, hunk_idx: list[int]) -> Piece:
     return Piece(path=f["path"], lang=f["lang"], hunks=hunk_idx, churn=churn, file_churn=f["churn"])
 
 
-def _pieces(f: DiffFile) -> list[Piece]:
-    """The whole file, or chunks of consecutive hunks of at most CHUNK churn when the file exceeds FILE_SPLIT."""
+def _pieces(f: DiffFile, split: int = FILE_SPLIT, chunk: int = CHUNK) -> list[Piece]:
+    """The whole file, or chunks of consecutive hunks of at most `chunk` churn when the file exceeds `split`."""
     idx = list(range(len(f["hunks"])))
-    if f["churn"] <= FILE_SPLIT or len(idx) <= 1:
+    if f["churn"] <= split or len(idx) <= 1:
         return [_piece(f, idx)]
     chunks: list[list[int]] = [[]]
     churn = 0
     for i in idx:
         c = f["hunks"][i].get("churn", 0)
-        if chunks[-1] and churn + c > CHUNK:
+        if chunks[-1] and churn + c > chunk:
             chunks.append([])
             churn = 0
         chunks[-1].append(i)
@@ -62,10 +63,10 @@ def _unit(pieces: Group) -> Unit:
     )
 
 
-def _mergeable(a: Group, b: Group) -> bool:
+def _mergeable(a: Group, b: Group, limit: int = CHUNK) -> bool:
     return (
         {p["lang"] for p in a} == {p["lang"] for p in b}
-        and sum(p["churn"] for p in chain(a, b)) <= CHUNK
+        and sum(p["churn"] for p in chain(a, b)) <= limit
         and len({p["path"] for p in chain(a, b)}) <= MERGE_FILES
     )
 
@@ -95,9 +96,27 @@ def _groups(files: list[DiffFile], tree: set[str]) -> list[Group]:
     return merged
 
 
-def build(files: list[DiffFile], tree: set[str]) -> list[Unit]:
-    """files: included diff files (diff.collect entries); tree: every path in HEAD (for project markers)."""
-    units = [_unit(g) for g in _groups(sorted(files, key=lambda f: f["path"]), tree) if g]
+def build(
+    files: list[DiffFile],
+    tree: set[str],
+    *,
+    mode: Decompose = Decompose.OCR,
+    read: Reader | None = None,
+    budget: int = CHUNK,
+    skip: Ranges | None = None,
+) -> list[Unit]:
+    """files: included diff files (diff.collect entries); tree: every path in HEAD (for project markers).
+
+    Non-OCR modes split Python files by syntax (`read` returns a HEAD file); `skip` holds pure-rename spans.
+    """
+    ordered = sorted(files, key=lambda f: f["path"])
+    if mode == Decompose.OCR or read is None:
+        groups = _groups(ordered, tree)
+    else:
+        from . import decompose  # local import: decompose builds on this module's pieces and groups
+
+        groups = decompose.groups(ordered, tree, decompose.Code(tree, read), budget, skip or {})
+    units = [_unit(g) for g in groups if g]
     for n, u in enumerate(units, 1):
         u["id"] = f"u{n:02d}"
     return units

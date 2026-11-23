@@ -26,6 +26,8 @@ def _line(f: Finding) -> str:
     s = f"- [{f['severity']}][{f['axis']}][{_tag(f)}] `{f['file']}:{f['line']}` {f['claim']}"
     if fix := f.get("fix"):
         s += f" · Fix: {fix}"
+    if locs := f.get("locations"):
+        s += f" · Also at: {', '.join(f'`{x}`' for x in locs)}"
     if confirmed and proof:
         b = proof.get("before", {})
         s += f" · Proof: `{b.get('cmd', '')}` → exit {b.get('exit_code')}"
@@ -60,6 +62,12 @@ def _sections(allf: list[Finding]) -> dict[str, list[Finding]]:
 
 def _coverage(p: Plan, cov: dict[str, Any]) -> Iterator[str]:
     units = cov.get("units", [])
+    dec = cov.get("decompose", {})
+    yield f"- decompose: {dec.get('mode', 'ocr')}" + (
+        f" (budget {dec['budget']}, {dec.get('interface_changes', 0)} interface changes)"
+        if dec.get("mode", "ocr") != "ocr"
+        else ""
+    )
     yield f"- units: {len(units)} — " + "; ".join(
         f"{u['id']} {u['lang']} churn {u['churn']} [{', '.join(u['files'])}]"
         + (f" triggers {','.join(u['triggers'])}" if u["triggers"] else "")

@@ -13,13 +13,13 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from . import ArbiterExit, agents, harness, report, sandbox, tools, triggers
+from . import ArbiterExit, agents, decompose, harness, report, sandbox, tools, triggers
 from . import findings as F
 from . import lang as langmod
 from .gates import gates
 from .harness import Tools
-from .model import Axis, Effort, Finding, Group, Placement, ProofResult, Rung, Severity, Status, Unit
-from .plan import K3, Plan, Task, plan, ranges_by_unit, run_diff, unit_diff
+from .model import Axis, Decompose, Effort, Finding, Group, Placement, ProofResult, Rung, Severity, Status, Unit
+from .plan import K3, Plan, Task, plan, pr_ranges, ranges_by_unit, run_diff, unit_diff
 from .rundir import RunDir
 
 __all__ = ["gates", "plan", "run_all"]
@@ -51,6 +51,16 @@ BRIEF_KEYS = (
     "code_judo",
     "fix",
     "proof_plan",
+    "locations",
+)
+MANIFEST_INPUT = "PR change manifest (from base vs head `ast`; every changed symbol and its unit)"
+# hier §4.4: one run-level A5 call per PR with interface changes, covering callers outside the diff
+CONTRACT_PASS = (
+    "This is the PR-level contract pass, not a unit review. For every signature change, removal or rename in the "
+    "manifest, check each caller across the whole repository, inside and outside the diff: the callers listed below "
+    "are a capped start, so grep for the rest, including the old name of every renamed or removed symbol. Report a "
+    "caller that does not match the new interface. Put the finding's file and line on the changed definition in the "
+    "diff and cite the stale caller's path:line in evidence_lines."
 )
 
 
@@ -167,9 +177,21 @@ def intent(run: RunDir, p: Plan) -> dict[str, Any]:
 def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
     rules = run.text("rules.md")
     units_by = {u["id"]: u for u in p["units"]}
+    hier = p.get("decompose") == Decompose.HIER
+    syms = p.get("manifest", [])
+    # hier shared context (§4.2): empty in the other modes, and build_prompt drops empty inputs
+    shared = {
+        MANIFEST_INPUT: decompose.manifest_text(syms) if hier else "",
+        "Intent claims (from commits, issues, specs; untrusted)": json.dumps(it.get("claims", []), indent=1)
+        if hier
+        else "",
+        "Commit messages (untrusted)": "\n\n".join(p["commits"]) if hier else "",
+    }
+    included = [f for f in p["files"] if not f["excluded"]]
     jobs = []
     for uid, agent, k in map(Task._make, p["schedule"]["tasks"]):
         u = units_by[uid]
+        udiff = unit_diff(p, u, p["orders"][str(k)][uid])
         jobs.append(
             Job(
                 uid,
@@ -182,9 +204,12 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                     "Run facts": _facts(p, u),
                     "Risk notes from intent": it.get("unit_notes", {}).get(uid, ""),
                     "Files": "\n".join(x["path"] for x in u["files"]),
-                    "Unit diff (new-side line numbers on the left; review + lines only)": unit_diff(
-                        p, u, p["orders"][str(k)][uid]
+                    "Unit diff (new-side line numbers on the left; review + lines only)": udiff,
+                    "Unit context map (signatures only: where to look; read bodies with your tools)": decompose.fit(
+                        udiff, u.get("context", "")
                     ),
+                    **shared,
+                    "Other changed files (churn; unit ids)": decompose.others(included, p["units"], u) if hier else "",
                     "Repo rules": rules,
                     "Threat model": it.get("threat_model_text", "") if agent == "A3" else "",
                 },
@@ -226,6 +251,25 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                 },
             )
         )
+    if "CONTRACT" in once:
+        paths = sorted({s["path"] for s in syms if s["change"] in decompose.INTERFACE})
+        jobs.append(
+            Job(
+                "contract",
+                "A5",
+                0,
+                all_langs,
+                {
+                    "EFFORT": p["effort"],
+                    "Run facts": _facts(p),
+                    "Contract pass": CONTRACT_PASS,
+                    MANIFEST_INPUT: shared[MANIFEST_INPUT],
+                    "Repo-wide callers of changed interfaces (depth 1, capped)": decompose.callers_text(syms),
+                    "Diff of files with interface changes (new-side line numbers)": run_diff(p, paths),
+                    "Repo rules": rules,
+                },
+            )
+        )
     return jobs
 
 
@@ -255,8 +299,13 @@ def finders(run: RunDir, p: Plan, it: dict[str, Any], jobs: int) -> list[dict[st
 
 
 def merge(run: RunDir, p: Plan) -> list[Finding]:
+    hier = p.get("decompose") == Decompose.HIER
     merged, rejected = F.merge(
-        run.load("raw.json", []), ranges_by_unit(p), set(K3) if p["effort"] == Effort.DEEP else set()
+        run.load("raw.json", []),
+        ranges_by_unit(p),
+        set(K3) if p["effort"] == Effort.DEEP else set(),
+        widen=pr_ranges(p) if hier else None,
+        symbols=p.get("manifest", []) if hier else (),
     )
     run.save("candidates.json", merged)
     run.save("rejected.json", rejected)
@@ -268,7 +317,9 @@ def _finding_brief(f: Finding) -> str:
 
 
 def _diff_for(p: Plan, f: Finding) -> str:
-    if u := next((u for u in p["units"] if u["id"] == f.get("unit")), None):
+    u = next((u for u in p["units"] if u["id"] == f.get("unit")), None)
+    # hier accepts a finding on another unit's hunk; its own unit diff would not show that line
+    if u and F.in_hunks(f, u.get("ranges", {})):
         return unit_diff(p, u)
     return run_diff(p, [f["file"]])
 
@@ -415,14 +466,22 @@ def _withhold(run: RunDir) -> str | None:
 
 
 def run_all(
-    repo: Path, *, base: str | None, effort: str, langs: list[str] | None, out: Path | None, jobs: int, max_agents: int
+    repo: Path,
+    *,
+    base: str | None,
+    effort: str,
+    langs: list[str] | None,
+    out: Path | None,
+    jobs: int,
+    max_agents: int,
+    decompose_mode: str = Decompose.OCR,
 ) -> tuple[Path, str]:
     t0 = time.monotonic()
     run = RunDir(out) if out else RunDir.default_for(repo)
     run.path.mkdir(parents=True, exist_ok=True)
     print(run.path, flush=True)
     s = harness.settings()
-    p = plan(run, repo, base_ref=base, effort=effort, langs=langs, max_agents=max_agents)
+    p = plan(run, repo, base_ref=base, effort=effort, langs=langs, max_agents=max_agents, decompose_mode=decompose_mode)
     run.cov(
         harness=s.harness,
         models={"finder": f"{s.model} ({s.model_source})", "verify": f"{s.verify_model} ({s.verify_source})"},

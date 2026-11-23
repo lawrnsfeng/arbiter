@@ -1,6 +1,6 @@
 [project]
 name = "arbiter"
-version = "0.1.0"
+version = "0.2.0"
 description = "Autonomous, evidence-gated multi-axis code review for Python, Go, Rust and TypeScript"
 requires-python = ">=3.13"
 dependencies = []

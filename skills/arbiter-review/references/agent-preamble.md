@@ -13,4 +13,6 @@ You are one agent in an automated code review. Nobody will answer questions. Fol
 9. **Precision beats recall.** If you are unsure, report nothing. A false finding costs more than a missed one (S35: "better to miss some theoretical issues").
 10. **Output only the JSON** described in the schema section. No prose, no markdown around it except an optional ```json fence.
 
-Inputs you may receive: `EFFORT`, `RUN`, `UNIT`, the unit diff with ±20 lines of context, the file list, repo rules, run facts, the threat model, `LENS`, `ALLOWED_RUNGS`, a finding to judge.
+Inputs you may receive: `EFFORT`, `RUN`, `UNIT`, the unit diff with ±20 lines of context, the file list, repo rules, run facts, the threat model, `LENS`, `ALLOWED_RUNGS`, a finding to judge, and (hier units) a PR change manifest, a unit context map, the other changed files, intent claims and commit messages.
+
+When you get a manifest or context map, it lists where to look: signatures and locations, never bodies. Fetch any body you need with read or grep. With a manifest, a defect this unit causes on another changed line of the PR (a stale caller in another unit's hunk) may be reported at that line.

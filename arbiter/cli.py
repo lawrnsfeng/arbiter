@@ -11,10 +11,11 @@ from . import ArbiterExit, harness, report, sandbox
 from . import findings as F
 from . import pipeline as P
 from .lang import REVIEWED
-from .model import Effort
+from .model import Decompose, Effort
 from .rundir import RunDir
 
 EFFORTS = [e.value for e in Effort]
+DECOMPOSE = [d.value for d in Decompose]
 STAGES = ("gates", "merge", "tally", "gate", "report")
 EXEC_KEYS = ("exec_id", "cmd", "exit_code", "stdout_tail", "stderr_tail", "duration_s", "timed_out")
 
@@ -24,6 +25,22 @@ def _positive(text: str) -> int:
     if not text.isdigit() or int(text) < 1:
         raise argparse.ArgumentTypeError(f"expected a positive integer, got {text!r}")
     return int(text)
+
+
+def _decompose(text: str) -> str:
+    """argparse type, applied to the ARBITER_DECOMPOSE default too: a bad mode is a usage error (exit 2)."""
+    if text not in DECOMPOSE:
+        raise argparse.ArgumentTypeError(f"expected one of {', '.join(DECOMPOSE)}, got {text!r}")
+    return text
+
+
+def _decompose_arg(p: argparse.ArgumentParser) -> None:
+    p.add_argument(
+        "--decompose",
+        type=_decompose,
+        default=os.environ.get("ARBITER_DECOMPOSE", Decompose.OCR.value),
+        help=f"review units: {' | '.join(DECOMPOSE)} (default ocr, or ARBITER_DECOMPOSE)",
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -41,6 +58,7 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--out", type=Path)
     r.add_argument("--jobs", type=_positive, default=os.environ.get("ARBITER_JOBS", "8"), help="agent calls at once")
     r.add_argument("--max-agents", type=int, default=300)
+    _decompose_arg(r)
     pl = sub.add_parser("plan", help="plan only (writes RUN/plan.json)")
     pl.add_argument("run", type=Path)
     pl.add_argument("--repo", default=".")
@@ -48,6 +66,7 @@ def _parser() -> argparse.ArgumentParser:
     pl.add_argument("--effort", choices=EFFORTS, default=Effort.STANDARD.value)
     pl.add_argument("--lang")
     pl.add_argument("--max-agents", type=int, default=300)
+    _decompose_arg(pl)
     for name in STAGES:
         sub.add_parser(name).add_argument("run", type=Path)
     sb = sub.add_parser("sandbox")
@@ -115,6 +134,7 @@ def _dispatch(a: argparse.Namespace) -> int:
                 out=a.out,
                 jobs=a.jobs,
                 max_agents=a.max_agents,
+                decompose_mode=a.decompose,
             )
             return _verdict_exit(RunDir(path), v)
         case "plan":
@@ -125,11 +145,14 @@ def _dispatch(a: argparse.Namespace) -> int:
                 effort=a.effort,
                 langs=_langs(a.lang),
                 max_agents=a.max_agents,
+                decompose_mode=a.decompose,
             )
             print(
                 json.dumps(
                     {
                         "units": len(p["units"]),
+                        "decompose": p["decompose"],
+                        "churn": [u["churn"] for u in p["units"]],
                         "tasks": len(p["schedule"]["tasks"]),
                         "once": p["schedule"]["once"],
                         "tools": [t["name"] for t in p["tools"]],
