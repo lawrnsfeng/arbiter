@@ -4,12 +4,19 @@ import os
 import subprocess
 from pathlib import Path
 
-from . import HOME
+from . import HOME, ArbiterExit
 
 FINDER_TOOLS = {"omp": "read,grep,glob", "claude": "Read,Grep,Glob"}
 PROOF_TOOLS = {"omp": "read,grep,glob,bash,edit,write", "claude": "Read,Grep,Glob,Bash,Edit,Write"}
 VERIFY_ROLES = {"V", "P", "judge"}
 HIGH_THINKING = {"V", "P"}
+# cheap finders, a mid-tier verifier/prover/judge; the harness's own default (often Opus) is never used
+DEFAULT_MODELS = {
+    "omp": ("anthropic/claude-haiku-5-5", "anthropic/claude-sonnet-5-5"),
+    "claude": ("haiku", "sonnet"),
+    "fake": ("fake", "fake"),
+}
+BLOCKED_TIERS = ("opus",)  # cost ceiling: Sonnet is the most expensive model arbiter will call
 
 
 class HarnessError(Exception):
@@ -18,8 +25,15 @@ class HarnessError(Exception):
 
 def settings() -> dict:
     h = os.environ.get("ARBITER_HARNESS", "omp")
-    model = os.environ.get("ARBITER_MODEL", "")
-    return {"harness": h, "model": model, "verify_model": os.environ.get("ARBITER_VERIFY_MODEL", "") or model}
+    if h not in DEFAULT_MODELS:
+        raise ArbiterExit(2, f"arbiter: unknown harness {h}")
+    finder, verify = DEFAULT_MODELS[h]
+    model = os.environ.get("ARBITER_MODEL") or finder
+    verify_model = os.environ.get("ARBITER_VERIFY_MODEL") or verify
+    for m in (model, verify_model):
+        if any(t in m.lower() for t in BLOCKED_TIERS):
+            raise ArbiterExit(2, f"arbiter: model {m} is above the cost ceiling; use a Haiku, Sonnet or DeepSeek model")
+    return {"harness": h, "model": model, "verify_model": verify_model}
 
 
 def argv(role: str, tools: str) -> list[str]:
