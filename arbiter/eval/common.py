@@ -17,11 +17,14 @@ MODEL_FLAGS = (("harness", "ARBITER_HARNESS"), ("model", "ARBITER_MODEL"), ("ver
 
 
 def apply_models(a: argparse.Namespace) -> harness.Settings:
-    """Export --harness/--model/--verify-model for the child `arbiter run` processes and the judge."""
+    """Resolve and preflight the models once, then export them to the child `arbiter run` processes and the judge."""
     for flag, var in MODEL_FLAGS:
         if value := getattr(a, flag, None):
             os.environ[var] = value
-    return harness.settings()
+    s = harness.settings()
+    harness.preflight(s)  # sets ARBITER_PREFLIGHT_OK, so the children skip it
+    os.environ |= {"ARBITER_HARNESS": s.harness, "ARBITER_MODEL": s.model, "ARBITER_VERIFY_MODEL": s.verify_model}
+    return s
 
 
 def models(s: harness.Settings) -> dict[str, str]:

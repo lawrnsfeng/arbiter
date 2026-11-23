@@ -35,7 +35,7 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--base")
     r.add_argument("--effort", choices=EFFORTS, default=Effort.STANDARD.value)
     r.add_argument("--lang", help="comma list: python,go,rust,typescript")
-    r.add_argument("--harness", choices=tuple(harness.DEFAULT_MODELS))
+    r.add_argument("--harness", choices=harness.HARNESSES)
     r.add_argument("--model", help="finders, A0 and SPEC (default: Haiku)")
     r.add_argument("--verify-model", help="verifier, proof agent and eval judge (default: Sonnet)")
     r.add_argument("--out", type=Path)
@@ -105,7 +105,8 @@ def _dispatch(a: argparse.Namespace) -> int:
             ):
                 if value := getattr(a, flag):
                     os.environ[env] = value
-            harness.settings()  # validates the harness and the model cost ceiling before any work
+            # resolve models (cost ceiling included) and check each one answers, before any review work
+            harness.preflight(harness.settings())
             path, v = P.run_all(
                 Path(a.repo),
                 base=a.base or a.base_pos,

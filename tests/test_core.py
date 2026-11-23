@@ -409,31 +409,96 @@ def test_every_brief_parses_and_refs_resolve():
         assert prompt.startswith("TASK: ") and "TASK (repeated)" in prompt
 
 
+@pytest.fixture
+def omp_roles(monkeypatch):
+    """Model settings with a stubbed `omp config get modelRoles` and a clean environment."""
+    roles: dict[str, str] = {}
+    monkeypatch.setattr(harness, "omp_roles", lambda: roles)
+    harness._resolve.cache_clear()
+    for k in ("ARBITER_HARNESS", "ARBITER_MODEL", "ARBITER_VERIFY_MODEL", "ARBITER_BLOCKED_MODELS"):
+        monkeypatch.delenv(k, raising=False)
+    yield roles
+    harness._resolve.cache_clear()
+
+
+HAIKU, SONNET = "anthropic/claude-haiku-5-5", "anthropic/claude-sonnet-5-5"
+
+
 @pytest.mark.parametrize(
-    "env,expected",
+    ("env", "roles", "expected"),
     [
-        ({}, ("anthropic/claude-haiku-5-5", "anthropic/claude-sonnet-5-5")),
-        ({"ARBITER_HARNESS": "claude"}, ("haiku", "sonnet")),
-        ({"ARBITER_MODEL": "deepseek/deepseek-chat"}, ("deepseek/deepseek-chat", "anthropic/claude-sonnet-5-5")),
+        ({}, {}, (HAIKU, SONNET)),
+        ({"ARBITER_HARNESS": "claude"}, {}, ("haiku", "sonnet")),
+        ({"ARBITER_MODEL": "deepseek/deepseek-chat"}, {}, ("deepseek/deepseek-chat", SONNET)),
+        (
+            {},
+            {"smol": "openai/gpt-luna-mini:low", "default": "anthropic/claude-opus-5-5"},
+            ("openai/gpt-luna-mini", SONNET),
+        ),
+        (
+            {},
+            {"smol": "@cheap", "cheap": "deepseek/deepseek-v4.1,x/y", "arbiter-verify": SONNET + ":high"},
+            ("deepseek/deepseek-v4.1", SONNET),
+        ),
+        ({}, {"smol": HAIKU, "arbiter-finder": "deepseek/deepseek-v4.1"}, ("deepseek/deepseek-v4.1", SONNET)),
+        ({"ARBITER_MODEL": "@smol"}, {"smol": HAIKU}, (HAIKU, SONNET)),
     ],
 )
-def test_default_models(monkeypatch, env, expected):
-    for k in ("ARBITER_HARNESS", "ARBITER_MODEL", "ARBITER_VERIFY_MODEL"):
-        monkeypatch.delenv(k, raising=False)
+def test_model_resolution(omp_roles, monkeypatch, env, roles, expected):
+    omp_roles.update(roles)
     for k, v in env.items():
         monkeypatch.setenv(k, v)
     s = harness.settings()
     assert (s.model, s.verify_model) == expected
     assert harness.argv("A1a", "finder")[-2:] == ["--model", expected[0]]
+    assert harness.argv("V", "finder")[-2:] == ["--model", expected[1]]
 
 
-@pytest.mark.parametrize("var", ["ARBITER_MODEL", "ARBITER_VERIFY_MODEL"])
-def test_opus_refused(monkeypatch, var):
-    monkeypatch.delenv("ARBITER_HARNESS", raising=False)
-    monkeypatch.setenv(var, "anthropic/claude-opus-5-5")
+@pytest.mark.parametrize(
+    ("env", "roles"),
+    [
+        ({"ARBITER_MODEL": "anthropic/claude-opus-5-5"}, {}),
+        ({"ARBITER_VERIFY_MODEL": "anthropic/claude-fable-5"}, {}),
+        ({}, {"smol": "anthropic/claude-opus-5-5"}),
+        ({"ARBITER_MODEL": "@missing"}, {}),
+        ({"ARBITER_MODEL": "deepseek/x", "ARBITER_BLOCKED_MODELS": "deepseek"}, {}),
+    ],
+)
+def test_expensive_or_unknown_models_refused(omp_roles, monkeypatch, env, roles):
+    omp_roles.update(roles)
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
     with pytest.raises(ArbiterExit) as e:
         harness.settings()
     assert e.value.code == 2
+
+
+@pytest.mark.parametrize(
+    ("stdout", "roles"),
+    [
+        ('{"key": "modelRoles", "value": {"smol": "a/b", "x": 1}, "type": "record"}', {"smol": "a/b"}),
+        ('{"smol": "a/b"}', {"smol": "a/b"}),
+        ("not json", {}),
+    ],
+)
+def test_parse_omp_roles(stdout, roles):
+    assert harness.parse_roles(stdout) == roles
+
+
+@pytest.mark.parametrize(("reads_file", "ok"), [(True, True), (False, False)])
+def test_preflight_requires_tool_use(omp_roles, monkeypatch, tmp_path, reads_file, ok):
+    def call(role, prompt, *, tools, cwd, timeout):
+        token = (cwd / "token.txt").read_text() if reads_file else "guess"
+        return f'Sure: {{"token": "{token}"}}'
+
+    monkeypatch.setattr(harness, "call", call)
+    monkeypatch.delenv("ARBITER_PREFLIGHT_OK", raising=False)
+    if ok:
+        harness.preflight(harness.settings())
+    else:
+        with pytest.raises(ArbiterExit) as e:
+            harness.preflight(harness.settings())
+        assert e.value.code == 2
 
 
 def test_extract_json_last_value():

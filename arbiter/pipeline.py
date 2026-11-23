@@ -6,6 +6,7 @@ Every stage reads and writes JSON in the RUN directory, so any stage can be reru
 import json
 import re
 import subprocess
+import sys
 import time
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -344,6 +345,8 @@ def proofs(run: RunDir, p: Plan) -> list[Finding]:
             attempted += 1
             inputs = {
                 "RUN": str(run.path),
+                # the exact interpreter running this review, so the proof agent needs no install or path guess
+                "SANDBOX": f"{sys.executable} -P -m arbiter.cli sandbox exec {run.path}",
                 "ALLOWED_RUNGS": " ".join(sorted(allowed)),
                 "FINDING_ID": f["id"],
                 "EFFORT": effort,
@@ -420,7 +423,11 @@ def run_all(
     print(run.path, flush=True)
     s = harness.settings()
     p = plan(run, repo, base_ref=base, effort=effort, langs=langs, max_agents=max_agents)
-    run.cov(harness=s.harness, models={"finder": s.model, "verify": s.verify_model}, effort=effort)
+    run.cov(
+        harness=s.harness,
+        models={"finder": f"{s.model} ({s.model_source})", "verify": f"{s.verify_model} ({s.verify_source})"},
+        effort=effort,
+    )
     try:
         prepare(run, p)
         gates(run, p)
