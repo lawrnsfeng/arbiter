@@ -27,5 +27,6 @@ Exit codes: `0` no Block findings · `1` Block findings present · `2` usage/con
 Efforts: `quick` (5 finders, 1 vote, E1/E3 proofs) · `standard` (default: 8 finders + triggered specialists, 3-lens
 panel, E1–E6/E8) · `deep` (k=3 passes on correctness/security/concurrency, E1–E9, code-judo blockers).
 
-Models: `ARBITER_HARNESS=omp|claude`, `ARBITER_MODEL` (finders), `ARBITER_VERIFY_MODEL` (verifier and proof), or the
+Models: finders default to Haiku and the verifier and proof agent to Sonnet; Opus is refused (exit 2). Override with
+`ARBITER_HARNESS=omp|claude`, `ARBITER_MODEL` (finders), `ARBITER_VERIFY_MODEL` (verifier and proof), or the
 `--harness`, `--model`, `--verify-model` flags.

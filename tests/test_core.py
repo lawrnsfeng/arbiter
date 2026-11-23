@@ -355,6 +355,30 @@ def test_every_brief_parses_and_refs_resolve():
         assert prompt.startswith("TASK: ") and "TASK (repeated)" in prompt
 
 
+@pytest.mark.parametrize("env,expected", [
+    ({}, ("anthropic/claude-haiku-5-5", "anthropic/claude-sonnet-5-5")),
+    ({"ARBITER_HARNESS": "claude"}, ("haiku", "sonnet")),
+    ({"ARBITER_MODEL": "deepseek/deepseek-chat"}, ("deepseek/deepseek-chat", "anthropic/claude-sonnet-5-5")),
+])
+def test_default_models(monkeypatch, env, expected):
+    for k in ("ARBITER_HARNESS", "ARBITER_MODEL", "ARBITER_VERIFY_MODEL"):
+        monkeypatch.delenv(k, raising=False)
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    s = harness.settings()
+    assert (s["model"], s["verify_model"]) == expected
+    assert harness.argv("A1a", "finder")[-2:] == ["--model", expected[0]]
+
+
+@pytest.mark.parametrize("var", ["ARBITER_MODEL", "ARBITER_VERIFY_MODEL"])
+def test_opus_refused(monkeypatch, var):
+    monkeypatch.delenv("ARBITER_HARNESS", raising=False)
+    monkeypatch.setenv(var, "anthropic/claude-opus-5-5")
+    with pytest.raises(ArbiterExit) as e:
+        harness.settings()
+    assert e.value.code == 2
+
+
 def test_extract_json_last_value():
     assert agents.extract_json('thinking {"a": 1} more {"findings": []}') == {"findings": []}
 

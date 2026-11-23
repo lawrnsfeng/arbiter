@@ -203,6 +203,9 @@ The design follows the sandbox rules in `[DV-§4]`:
 - An agent that returns invalid JSON gets one automatic retry with the parser error appended. A harness error other than a timeout gets one paced retry after 30 s.
 - **Fail-closed rule.** If more than 25% of agent calls fail, a would-be pass becomes exit 5 with an INCOMPLETE report.
   - This was added after a real failure: during the first Martian run the account hit its API rate limit, every agent failed, and the run reported PASS on silence.
+- **Cost ceiling.** Finders, A0 and SPEC run on Haiku by default; the verifier, proof agent and eval judge run on Sonnet. arbiter always passes `--model` explicitly, and refuses any model whose name contains `opus` with exit 2.
+  - Before 2026-11-22 no model was set, so every call fell through to the omp default model, Opus. The Martian and SWR-Bench runs drained the account's token budget that way.
+  - The split follows the evidence: cheap independent finders, with the stronger model where precision is decided `[AI-§4 #9]`. The seeded Haiku-only run already scored precision 0.69 and recall 0.62.
 
 ## 4. Decision log
 
@@ -223,6 +226,7 @@ The design follows the sandbox rules in `[DV-§4]`:
 | 2026-11-21 | Fail closed on more than 25% agent failures | Rate-limited run reported PASS with zero working agents |
 | 2026-11-21 | Brief revisions after seeded rounds 0 and 1 (see [benchmarks.md](benchmarks.md)) | False positives clustered in A1c (missing tests), A6a (idiom copies of bugs), A6b (small duplication) and A6c (docs restating bugs) |
 | 2026-11-21 | Project renamed curve → arbiter in a new repository | User decision |
+| 2026-11-22 | Default models Haiku (finders) and Sonnet (verifier, proof, judge); Opus refused | Opus-by-default runs drained the user's token budget; the user set Sonnet as the ceiling |
 
 ## 5. Deviations from the approved plan
 
