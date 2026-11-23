@@ -41,6 +41,22 @@ All orchestration is deterministic Python (`arbiter run`). Code does decompositi
 JSON validation, dedup, vote arithmetic, the evidence gate, the verdict and the report. LLM calls go
 through a headless harness CLI (`omp -p` by default, or `claude -p`) and each one does one job.
 
+Code layout (Python 3.13, standard library only):
+
+| Module | Role |
+|---|---|
+| `model.py` | Shared vocabulary as `StrEnum`s (axes, severities, verdicts, rungs, placements) and the `TypedDict` shapes of every record stored in `RUN/*.json` |
+| `rundir.py` | `RunDir`: load, save and coverage merging for the RUN directory |
+| `diff.py`, `units.py`, `triggers.py`, `plan.py` | Stage 1: base, diff, units, conditional agents, schedule, tools, rules → `plan.json`; numbered diffs for prompts |
+| `tools.py`, `sandbox.py`, `gates.py` | Tool detection (`tomllib` for `pyproject.toml`), the bubblewrap sandbox, gate runs |
+| `harness.py`, `agents.py` | One model call (`Settings`, cost ceiling); prompt assembly (`Brief`, `Output`), JSON extraction, retry |
+| `findings.py`, `pipeline.py`, `report.py`, `cli.py` | Validation, merge, tally and evidence gate; the agent stages and `run_all`; the report; the CLI |
+| `eval/` | Seeded, Martian and SWR-Bench suites on shared helpers (`eval/common.py`) |
+
+Enums are `StrEnum`, so stage files stay plain JSON and members compare equal to their strings after a reload.
+Code compares them with `==`, never `is`. `ruff` (UP, B, SIM, PTH, PERF, FURB, RUF, PL…) and `mypy` run clean.
+Both are configured in `pyproject.toml`.
+
 ```mermaid
 flowchart TD
   A[plan: base, diff, units, triggers, tools, repo rules] --> B[sandbox prepare: worktrees HEAD and base, dependency fetch with network, selftest]
@@ -165,7 +181,7 @@ Accepted rungs per axis (`[DV-§3b]`):
   - E4 needs a failing before-run on HEAD and a passing after-run.
   - E5, E6 and E7 need a non-zero exit, meaning the detector fired.
 
-### 3.5 Gates and analyzers (`arbiter/tools.py`, `arbiter/pipeline.py` `gates`)
+### 3.5 Gates and analyzers (`arbiter/tools.py`, `arbiter/gates.py`)
 
 - The project's own build, lint, type-check and test commands run in the sandbox.
 - Diagnostics on added lines become E1 findings.
