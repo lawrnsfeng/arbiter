@@ -1,0 +1,495 @@
+{
+  "benchmark": "SWR-Bench",
+  "pin": "67ae1d4395ac05f800d62b0e13678eadeb9fa5c7",
+  "effort": "standard",
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "items": 28,
+  "ok": 28,
+  "issue_prs": 16,
+  "clean_prs": 12,
+  "tp": 6,
+  "fp": 5,
+  "fn": 21,
+  "precision": 0.545,
+  "recall": 0.222,
+  "f1": 0.316,
+  "functional_recall": 0.263,
+  "clean_identified_good": 1.0,
+  "clean_false_points": 0,
+  "clean_blocked": 0,
+  "issue_blocked": 2,
+  "unavailable": [],
+  "rows": [
+    {
+      "instance_id": "astropy__astropy-8201",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] astropy/tests/plugins/display.py:99: When 'astropy_helpers' is absent from TESTED_VERSIONS, the KeyError handler imports the version and the try/except/else's else clause is skipped, so the 'astropy_helpers: ...' line is never written to the header. Suggested fix: Set astropy_helpers_version in the KeyError branch and append the line unconditionally, e.g. try: v = TESTED_VERSIONS['astropy_helpers'] except KeyError: try: from ...version import astropy_helpers_version as v except ImportError: v = None; then emit if v is not None.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "django__django-18803",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "F.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-19110",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 4,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] lib/matplotlib/lines.py:1281: `set_labelfont` reads `self._labelfont` before it is ever assigned, because `Line2D.__init__` never initializes `_labelfont` (the new `font=None` parameter at lines.py:297 is also never stored), so the first call raises AttributeError and `get_labelfont` (lines.py:1038) fails on a fresh line. Suggested fix: Initialize `self._labelfont = font` in `Line2D.__init__` (and make `set_labelfont` compare against that initialized value).\n- [should-fix] lib/matplotlib/lines.py:1277: Line2D gains a labelfont property (getter, setter, alias, __init__ kwarg) that no Line2D code reads or draws with. The tick label font is applied on Text objects at axis.py:393, so this state lives in the wrong layer and is dead weight. Suggested fix: Drop the Line2D labelfont getter, setter, the 'lf' alias and the unused font=None __init__ parameter. Keep the label font routed only through Tick label Text objects, as labelsize and labelcolor already are at axis.py:393.\n- [block] lib/matplotlib/lines.py:1038: Line2D.get_labelfont returns self._labelfont, but _labelfont is never initialized in __init__, so a freshly created Line2D raises AttributeError on get_labelfont(). Suggested fix: Initialize self._labelfont (from the constructor argument) in __init__ and use it.\n- [should-fix] lib/matplotlib/lines.py:297: The new `font=None` constructor parameter is added to Line2D.__init__ but is never read, so passing it has no effect. Suggested fix: Remove the unused parameter or wire it to _labelfont.",
+      "identified_as_good": "NO",
+      "pred_points": 4,
+      "tp": 1,
+      "fp": 3,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.3",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "mwaskom__seaborn-931",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.5",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "pallets__flask-2019",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] tests/test_helpers.py:405: The added call to send_file with attachment_filename='filename' has no assertion, so the new octet-stream fallback Content-Type is never checked. The test only shows that no exception is raised. Suggested fix: Capture the return value and assert rv.mimetype == 'application/octet-stream' (and close the response).",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "E.1.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "psf__requests-5779",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] requests/sessions.py:472: Session.request default timeout changed from None to 1000, so every request without an explicit timeout now gets a 1000-second timeout instead of waiting indefinitely. Suggested fix: Restore `timeout=None` in the signature.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.6",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pydata__xarray-6939",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] xarray/core/variable.py:2146: The new ValueError message is a plain string, not an f-string, so the user sees the literal text '{method}' instead of the rejected method name. Suggested fix: Prefix the message with f, i.e. f\"Interpolation method '{method}' requires numpy >= 1.22 or is not supported.\"",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pylint-dev__pylint-3959",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.5",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "pytest-dev__pytest-12232",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] src/_pytest/python_api.py:167: The new `other_side = _as_numpy_array(other_side)` returns None for numpy scalars (np.isscalar path in _as_numpy_array, defined at src/_pytest/python_api.py:746), so `other_side.shape` on line 169 raises AttributeError while building the failure explanation. Before this change, a numpy scalar had `.shape == ()` and produced the 'Impossible to compare arrays with different shapes' message. Suggested fix: Only convert when the value is not already an ndarray or scalar, e.g. keep the original other_side if _as_numpy_array returns None, or use np.asarray(other_side) directly.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "E.1.2",
+          "hit": "NO"
+        },
+        {
+          "type": "E.1.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.4",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-22957",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-5596",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.1",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "sympy__sympy-15569",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 2,
+      "review": "Verdict: PASS. Issues found:\n- [nit] sympy/series/limits.py:86: New heuristics() docstring has no blank line after its summary line, and its continuation line is indented 5 spaces, not 4. PEP 257 requires a blank line between the summary and the rest of the docstring. Suggested fix: Insert a blank line after the summary on line 86 and indent the following lines by 4 spaces.\n- [should-fix] sympy/series/limits.py:263: Limit.doit() no longer falls back to limit_seq on NotImplementedError, and the public `sequence` and `trials` hints are silently ignored, so public limit() on sequence-type expressions at oo now raises NotImplementedError where it previously returned a value. Suggested fix: Keep the NotImplementedError fallback in Limit.doit() (for z0 is S.Infinity) or document and deprecate the removal of the sequence/trials hints.",
+      "identified_as_good": "NO",
+      "pred_points": 2,
+      "tp": 1,
+      "fp": 1,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "E.2",
+          "hit": "YES"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-2213",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.5",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "django__django-3345",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "E.3.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-3752",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "F.3",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "mwaskom__seaborn-1948",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-5097",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "django__django-10104",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-8178",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "mwaskom__seaborn-2359",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "pallets__flask-2378",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "psf__requests-3754",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "pydata__xarray-5725",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6208",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5633",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-30361",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-2711",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "sympy__sympy-10037",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    }
+  ],
+  "runs": "/home/lawrence/relic/arbiter/eval/results/swr/20261123031300"
+}

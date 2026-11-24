@@ -124,21 +124,21 @@ In round 2, 13 of the 33 main findings did not match the corpus:
 - 4 are real defects on an axis the corpus does not list. Examples: the missing `Cancelled` case as logic rather than idiom, and `Box<dyn Error>` as errors rather than idiom.
 - 4 are judgment findings: 2 on tests, 1 on observability and 1 on docs.
 
-Martian golden set: `withmartian/code-review-benchmark` at the commit recorded in `eval/martian/golden/SOURCE.json`.
-An LLM judge (`ARBITER_VERIFY_MODEL`) pairs findings with golden comments, and scoring uses the Core categories.
-These runs used the omp default model (Opus) at `standard` effort.
+Real PRs, current defaults (2026-11-23 matrix, Python and TypeScript; Go and Rust postponed). Each setup ran once at `standard` effort.
+- **H+S:** Haiku finders with Sonnet verifier, proof agent and judge (the default).
+- **S+S:** Sonnet in every role.
 
-| Repo | PRs scored | Precision | Recall | F1 | F2 |
-|---|---|---|---|---|---|
-| sentry (Python) | 7 of 10 (3 lost to the rate limit) | 0.43 | 0.44 | 0.44 | 0.44 |
-| grafana (Go) | 3 | 0.40 | 0.18 | 0.25 | 0.20 |
-| cal.com (TS) | 3 | 0.25 | 0.30 | 0.27 | 0.29 |
+| Dataset | H+S precision / recall / F1 | S+S precision / recall / F1 |
+|---|---|---|
+| Seeded Python+TS, 14 cases | 0.56 / 0.69 / 0.61 | 0.48 / 0.81 / 0.60 |
+| Martian sentry (Python), 10 PRs | 0.31 / 0.36 / 0.34 | 0.29 / 0.42 / 0.34 |
+| Martian cal.com (TS), 10 PRs | 0.42 / 0.43 / 0.43 | 0.36 / 0.51 / 0.42 |
+| SWR-Bench, 40 PRs (28 issue, 12 clean) | 0.67 / 0.26 / 0.38 | 0.38 / 0.24 / 0.29 |
 
-For reference, Martian publishes 47.7 F2 Core for Claude Code CLI over the full set. These samples are too small to compare against it.
-
-SWR-Bench (`ZZR0/SWRench`, MIT; 1,000 real Python PRs): the 40-PR sample was cut short by the rate limit. Only 12 PRs
-were scored, all with issues, so false alarms on clean PRs are still unmeasured. On those 12: precision 0.58,
-recall 0.37, F1 0.45. Benchmarks are paused until they can be rerun on the Haiku/Sonnet defaults.
+- Sonnet finders trade precision for recall on seeded and Martian, and lose on every metric on SWR-Bench. Haiku finders stay the default.
+- Neither setup blocked a clean SWR PR or reported anything on a clean seeded case.
+- Martian scoring: `withmartian/code-review-benchmark`, Core categories, one LLM judge. Martian publishes 47.7 F2 Core for Claude Code CLI over the full set; arbiter's F2 here is 0.35–0.47.
+- The earlier Opus runs (grafana included) were partial because of rate limits; [docs/benchmarks.md](docs/benchmarks.md) §3.4–§3.6 keeps them.
 
 Per-case and per-PR tables, the ground truth for each case, and threats to validity are in
 [docs/benchmarks.md](docs/benchmarks.md). The score files are in [eval/scores/](eval/scores/).

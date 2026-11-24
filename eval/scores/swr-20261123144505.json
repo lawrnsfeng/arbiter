@@ -1,0 +1,283 @@
+{
+  "benchmark": "SWR-Bench",
+  "pin": "67ae1d4395ac05f800d62b0e13678eadeb9fa5c7",
+  "effort": "standard",
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "items": 12,
+  "ok": 12,
+  "issue_prs": 12,
+  "clean_prs": 0,
+  "tp": 6,
+  "fp": 1,
+  "fn": 13,
+  "precision": 0.857,
+  "recall": 0.316,
+  "f1": 0.462,
+  "functional_recall": 0.429,
+  "clean_identified_good": 0.0,
+  "clean_false_points": 0,
+  "clean_blocked": 0,
+  "issue_blocked": 3,
+  "unavailable": [],
+  "rows": [
+    {
+      "instance_id": "astropy__astropy-9793",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "django__django-6675",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-4824",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] lib/matplotlib/tests/test_colors.py:87: The clip=True block asserts the buggy output: the value 2.2 (clipped to vmax) maps to Ncmap (3), and the author's own comment questions this. The test pins the behaviour the production ISSUE comment flags as wrong, so it will keep passing if clipping of the max is fixed only if the expectation is also changed. Suggested fix: Either drop the 2.2 case from the clip expectations until the max-side clip is implemented, or assert the intended clipped result (2) and mark it as a known failure, rather than pinning 3.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.4",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "mwaskom__seaborn-2347",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] seaborn/axisgrid.py:464: The new `sharex != 'row'` and `sharey != 'col'` tests are true for `False`, so with sharing disabled the tick labels and offset text on non-bottom/non-left axes are hidden even though the axes are not shared. The original truthy `if sharex:` / `if sharey:` did not do this. Suggested fix: Restore truthiness for the boolean case and exclude only the 'row'/'col' string meaning, e.g. `if sharex and sharex != 'row':` and `if sharey and sharey != 'col':`.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pallets__flask-2588",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "psf__requests-2976",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] docs/api.rst:190: The debug-logging example is not corrected for Python 3: it runs two unguarded imports, so on Python 3 the second import (`from httplib import HTTPConnection`) raises ImportError, and the snippet fails as written. Suggested fix: Show the Python 3 import only, or put the Python 2 import on a commented-out line so the example runs unmodified on Python 3.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pydata__xarray-310",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6758",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] .github/workflows/primer_comment.yaml:28: The step named 'Skip if PR run failed' has its condition inverted: it runs `exit 1` when the triggering workflow succeeded, so every successful primer run fails this job. Suggested fix: Change the condition to `github.event.workflow_run.conclusion != 'success'` so the job exits only when the triggering run failed, or drop the step if a skip is not needed.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pytest-dev__pytest-11659",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-280",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "E.3.1",
+          "hit": "NO"
+        },
+        {
+          "type": "E.1.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-9447",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 2,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] sphinx/builders/html/__init__.py:512: The `sphinx_version` template context key now holds the `version_info` tuple instead of the display string, so it no longer matches its documented string value and changes output for existing templates. Suggested fix: Keep 'sphinx_version': __display_version__ and set only 'sphinx_version_tuple': sphinx_version_tuple, dropping the sphinx_version import alias if unused elsewhere.\n- [nit] doc/templating.rst:379: The example for `sphinx_version_tuple` has mismatched inline-literal markup (opening single backtick, closing double backticks), so the documented example does not render as a literal. Suggested fix: Change to ``(3, 5, 1, 'beta', 3)``.",
+      "identified_as_good": "NO",
+      "pred_points": 2,
+      "tp": 1,
+      "fp": 1,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.3",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "sympy__sympy-10741",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] sympy/sets/tests/test_sets.py:426: The added assertion uses a chained comparison, `Interval(0, 2) in Interval(0, 2) is S.false`, which Python evaluates as `(Interval(0, 2) in Interval(0, 2)) and (Interval(0, 2) is S.false)`. The second clause is always False, so the assertion always fails and the intended membership check is never tested. Suggested fix: Parenthesise the membership test and compare its result, e.g. `assert (Interval(0, 2) in Interval(0, 2)) is S.true` if that is the intended value, or remove the line.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    }
+  ],
+  "runs": "/home/lawrence/relic/arbiter/eval/results/swr/20261123144505"
+}

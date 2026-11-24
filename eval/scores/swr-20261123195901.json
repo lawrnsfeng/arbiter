@@ -1,0 +1,751 @@
+{
+  "benchmark": "SWR-Bench",
+  "pin": "67ae1d4395ac05f800d62b0e13678eadeb9fa5c7",
+  "effort": "standard",
+  "harness": "omp",
+  "model": "anthropic/claude-sonnet-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "items": 40,
+  "ok": 40,
+  "issue_prs": 28,
+  "clean_prs": 12,
+  "tp": 11,
+  "fp": 18,
+  "fn": 35,
+  "precision": 0.379,
+  "recall": 0.239,
+  "f1": 0.293,
+  "functional_recall": 0.333,
+  "clean_identified_good": 1.0,
+  "clean_false_points": 2,
+  "clean_blocked": 0,
+  "issue_blocked": 4,
+  "unavailable": [],
+  "rows": [
+    {
+      "instance_id": "astropy__astropy-9793",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] astropy/coordinates/matrix_utilities.py:65: The new fast paths pass `angle` to numpy without Angle parsing. Angle-convertible inputs such as strings, or lists of strings or Quantities, now raise or misbehave. The docstring says `angle` is 'convertible to Angle', and the old code accepted these inputs. Suggested fix: Wrap in Angle whenever `angle` is not already a numeric array or Quantity. Alternatively, apply the fast path only when `isinstance(angle, (np.ndarray, numbers.Number))`.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "django__django-6675",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-4824",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.4",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "mwaskom__seaborn-2347",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "pallets__flask-2588",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "psf__requests-2976",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] docs/api.rst:190: The example runs both imports unconditionally. One of them always raises ImportError, so the snippet fails on every interpreter. The old `import httplib` worked on Python 2. Suggested fix: Wrap the imports in try/except ImportError, with `from http.client import HTTPConnection` first and `from httplib import HTTPConnection` as the fallback. Or tell readers to keep only the line for their Python version.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pydata__xarray-310",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6758",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] .github/workflows/primer_comment.yaml:28: The skip condition is inverted: `exit 1` runs when the triggering run succeeded, so the comment job fails on success. The step name and the next step's echo say it should only bail out when the PR run failed. Suggested fix: Use `if: ${{ github.event.workflow_run.conclusion == 'failure' }}` (or `!= 'success'`).",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pytest-dev__pytest-11659",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] src/_pytest/assertion/util.py:233: The change adds a blank line after the summary in every `==` assertion explanation. Plugins that parse that output can see this, and it changes truncation line counts. The repo keeps towncrier entries in `changelog/`, and none was added for it. The new line also has no comment saying why it is there. Suggested fix: Add changelog/11659.improvement.rst. Add a short comment on lines 233-234 explaining why the blank separator line is inserted.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-280",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] scikits/learn/linear_model/least_angle.py:391: The `n_features` docstring in both LARS and LassoLARS says only 'Number of selected active features'. The code makes it override `alpha` (alpha is forced to 0, so LassoLARS's alpha is ignored). It also acts as the default for `fit(max_features=...)`. Neither behaviour is documented, and `fit`'s docstring omits `max_features`. Suggested fix: Document in the `n_features` entry that it takes priority over `alpha` and is the default for `fit`'s `max_features`. Add `max_features` to `fit`'s Parameters section.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "E.3.1",
+          "hit": "NO"
+        },
+        {
+          "type": "E.1.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-9447",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] sphinx/builders/html/__init__.py:512: 'sphinx_version' is now set to the version_info tuple, not the version string. The docs in doc/templating.rst:374 say it is a string such as \"3.5.1\". Only 'sphinx_version_tuple' should hold the tuple. Suggested fix: Keep 'sphinx_version': __display_version__ (or the version string) and set 'sphinx_version_tuple': version_info.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.3",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "sympy__sympy-10741",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 1,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] sympy/sets/tests/test_sets.py:426: Chained comparison `a in b is S.false` evaluates as `(a in b) and (b is S.false)`. The second operand is always False, so the assertion can never pass and doesn't test containment. Suggested fix: Use `assert (Interval(0, 2) in Interval(0, 2)) is False`, or `assert Interval(0, 2).contains(Interval(0, 2)) is S.false`.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-8201",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] astropy/tests/plugins/display.py:99: The try/except KeyError/except ImportError/else structure is wrong. When 'astropy_helpers' is missing from TESTED_VERSIONS, the KeyError handler imports the version, but the `else` clause is skipped, so the 'astropy_helpers:' header line is never printed. An ImportError raised inside the KeyError handler is not caught by the sibling `except ImportError`, so it propagates out of pytest_report_header. Suggested fix: Nest the import in its own try/except ImportError inside the KeyError handler. Append to `s` in both paths, or set the version variable first and print once afterwards.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "django__django-18803",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 4,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] django/contrib/admin/widgets.py:262: RelatedFieldWidgetWrapper hardcodes use_fieldset=True instead of using the wrapped widget's value. A wrapped single-input widget (Select, TextInput) then gets a fieldset and legend, and the label no longer points at the input. Suggested fix: Make use_fieldset a property returning self.widget.use_fieldset.\n- [should-fix] django/contrib/admin/widgets.py:376: use_fieldset=True is set on single-input widgets: AdminTextareaWidget, AdminTextInputWidget, AdminEmailInputWidget, AdminURLFieldWidget, AdminIntegerFieldWidget, AdminUUIDInputWidget, ForeignKeyRawIdWidget, AutocompleteSelect, BaseAdminDateWidget and BaseAdminTimeWidget. These render one input, so the fieldset and legend replace a label that should target that input. Only multi-input widgets (SplitDateTime, RadioSelect, FilteredSelectMultiple, and possibly the file widget) should be True. Suggested fix: Remove use_fieldset=True from the single-input widgets.\n- [nit] django/contrib/admin/widgets.py:622: A redundant `pass` is left after the new `use_fieldset = True` statement in AutocompleteSelect and AutocompleteSelectMultiple. The class body is no longer empty. Suggested fix: Delete the `pass` lines. AdminRadioSelect at line 111 has the same attribute-only class body without `pass`.\n- [should-fix] django/contrib/admin/widgets.py:383: use_fieldset = True is copied onto about 19 admin widget classes, including single-input widgets (TextInput, Textarea, Email, UUID, Integer, Autocomplete). The base Widget deliberately sets it False and only the multi-input widgets (RadioSelect, CheckboxSelectMultiple, MultiWidget) set True. Single-input widgets now get a fieldset wrapper around one control. The same flag is also duplicated across classes instead of set where the widget really has multiple inputs. Suggested fix: Set use_fieldset = True only on widgets with several inputs (split datetime, radio, filtered select multiple, the date/time widgets if they render a combined control). Remove it from single-input widgets.",
+      "identified_as_good": "NO",
+      "pred_points": 4,
+      "tp": 1,
+      "fp": 3,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.1",
+          "hit": "YES"
+        },
+        {
+          "type": "F.6",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-19110",
+      "status": "ok",
+      "issue": true,
+      "verdict": "block",
+      "main": 4,
+      "review": "Verdict: BLOCK. Issues found:\n- [block] lib/matplotlib/lines.py:1281: set_labelfont reads self._labelfont before it is ever assigned. Line2D.__init__ never initialises it, and nothing else in lib/matplotlib defines it, so the first call raises AttributeError. get_labelfont (line 1038) fails the same way on a fresh Line2D. Suggested fix: Initialise self._labelfont in __init__, for example from the new font argument. That argument is currently unused. Then drop the unrelated self._invalidy = True and the recache call in get_labelfont.\n- [should-fix] lib/matplotlib/lines.py:1277: Line2D gets a `labelfont` property, a `labelfont`/`lf` alias and a `font=` constructor kwarg that nothing uses. The tick-label font is already handled by the Text layer, so this is dead code on the wrong class (Speculative Generality; remove it). The setter also sets `_invalidy = True`, which forces a path recache for a non-geometric property. Suggested fix: Drop set_labelfont, get_labelfont, the `lf` alias and the `font` kwarg from Line2D. Keep only the axis.py whitelist change, which already reaches Text through the `font` alias.\n- [block] lib/matplotlib/lines.py:1038: The `labelfont` property is only half implemented. `_labelfont` is never initialized in `Line2D.__init__`, so `get_labelfont()` raises AttributeError. `set_labelfont()` raises it too, because it reads `self._labelfont` before assigning it. Suggested fix: Initialize `self._labelfont` in `__init__`, and wire it to the new constructor argument or remove that argument.\n- [should-fix] lib/matplotlib/lines.py:297: A new `font=None` argument was added to `Line2D.__init__` that is never used. No claim covers it, and it silently shadows any `font` kwarg that was previously forwarded. Suggested fix: Remove the parameter, or use it to set labelfont.",
+      "identified_as_good": "NO",
+      "pred_points": 4,
+      "tp": 1,
+      "fp": 3,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.3",
+          "hit": "YES"
+        },
+        {
+          "type": "F.6",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "mwaskom__seaborn-931",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.5",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "pallets__flask-2019",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 2,
+      "review": "Verdict: PASS. Issues found:\n- [nit] tests/test_helpers.py:405: The rewritten test only calls send_file and asserts nothing, so it never checks that the new fallback mimetype is application/octet-stream. Suggested fix: Assign the result of send_file to a variable and assert that rv.mimetype == 'application/octet-stream'.\n- [nit] flask/helpers.py:520: The new `or 'application/octet-stream'` means `mimetype` is never None when `attachment_filename` is not None. That makes the inner `if attachment_filename is not None: raise ValueError('Unable to infer MIME-type from filename ...')` branch unreachable dead code. The change left it behind. Suggested fix: Delete the dead filename branch (lines 520-524). Keep only the no-filename ValueError, and fold it into the `else` of the `attachment_filename is not None` check so the control flow is one level flatter.",
+      "identified_as_good": "YES",
+      "pred_points": 2,
+      "tp": 0,
+      "fp": 2,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "E.1.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "psf__requests-5779",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 2,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] requests/sessions.py:472: Default timeout changed from None to 1000 in Session.request. Every call that omits timeout, and every call to get, post and the other verbs, now gets a 1000s connect and read timeout instead of none. The code can't tell an explicit timeout=None from an omitted one, so a caller who passes timeout=None to ask for no timeout now gets 1000s too. The docstring at lines 493-496 is not updated. Suggested fix: Revert the default to timeout=None. If a default timeout is wanted, use a sentinel so an explicit None still means no timeout.\n- [should-fix] requests/sessions.py:472: The default timeout changed from None to 1000 seconds. Two docs now contradict it: the `:param timeout:` docstring (lines 493-496) doesn't mention the default, and docs/user/advanced.rst:1045-1046 says 'By default, requests do not time out'. Suggested fix: State the new default in the timeout docstring and update the advanced.rst timeouts section.",
+      "identified_as_good": "NO",
+      "pred_points": 2,
+      "tp": 1,
+      "fp": 1,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.6",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pydata__xarray-6939",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] xarray/core/variable.py:2146: The error message string lacks the f prefix, so the placeholder {method} is emitted literally instead of the method name. Suggested fix: Make the string an f-string: f\"Interpolation method '{method}' requires ...\".",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "pylint-dev__pylint-3959",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.5",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "pytest-dev__pytest-12232",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 2,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] testing/python/approx.py:782: The new test asserts `vec1 != approx(vec2)`, which passes, so it never reaches `ApproxNumpy._repr_compare`, the only code the change touches. It would still pass with the `_as_numpy_array(other_side)` line reverted. Suggested fix: Check the failure message instead. Use `with pytest.raises(AssertionError) as e: assert vec1 == approx(vec2)`, or call `approx(vec2)._repr_compare(vec1)` directly, and assert on the returned or raised text.\n- [nit] src/_pytest/python_api.py:166: This change fixes a user-visible bug: `approx` failure reporting for array-likes that implement `__array__` (issue #12114). The repo keeps towncrier changelog fragments, and the change adds none (no `changelog/12114.bugfix.rst`). Suggested fix: Add changelog/12114.bugfix.rst describing the fix.",
+      "identified_as_good": "YES",
+      "pred_points": 2,
+      "tp": 0,
+      "fp": 2,
+      "fn": 3,
+      "gt": [
+        {
+          "type": "E.1.2",
+          "hit": "NO"
+        },
+        {
+          "type": "E.1.1",
+          "hit": "NO"
+        },
+        {
+          "type": "F.4",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-22957",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-5596",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.1",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "sympy__sympy-15569",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] sympy/concrete/summations.py:490: The added line `# lim = Limit(abs(sequence_term)**(1/sym), sym, S.Infinity)` is commented-out dead code. The root test below it now calls limit_seq directly. Remove it (Remove Dead Code); version control keeps the history. Suggested fix: Delete the commented line.",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "E.2",
+          "hit": "NO"
+        },
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-2213",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.5",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "django__django-3345",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 3,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] django/contrib/admin/models.py:77: The greedy regex `Changed (.+)\\.` and the split on ' ' break the token list when the message holds several sentences or a multi-word change. Tokens such as 'Added', 'for' and the quoted object name end up in the token list and in the output, and the surrounding text is lost. Suggested fix: Parse only the first sentence with a non-greedy pattern, and keep the other sentences as their own messages.\n- [should-fix] django/contrib/admin/models.py:58: get_change_message re-parses the English free-text that construct_change_message just built, using regexes. The writer and the reader of one format sit in different layers (options.py builds the string, models.py takes it apart) and are coupled only by string shape. The method also does a function-local import, uses a lambda, and calls ugettext on a runtime variable, which make\u043cessages cannot extract. Fix: have construct_change_message store structured data and render it at display time. Suggested fix: Store structured change data (for example JSON of field names) and render it in LogEntry or the template. This removes the regex parsing and the English-only storage.\n- [nit] django/contrib/admin/models.py:90: Inside the per-token loop, obj._meta.get_all_field_names() is rebuilt on every iteration, and get_field_by_name() is then called for each matching token. Each history row repeats this work for every changed field. Suggested fix: Compute the field-name set once before the loop and reuse it.",
+      "identified_as_good": "NO",
+      "pred_points": 3,
+      "tp": 1,
+      "fp": 2,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "E.3.1",
+          "hit": "YES"
+        },
+        {
+          "type": "F.6",
+          "hit": "YES"
+        }
+      ]
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-3752",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] lib/matplotlib/tests/test_rcparams.py:275: A bare `except:` around `from collections import OrderedDict` swallows every exception, including KeyboardInterrupt, and returns silently. Only ImportError is expected on Python 2.6, so use `except ImportError:`. This is not the cleanup-then-re-raise case that PEP 8 allows. Suggested fix: Replace `except:` with `except ImportError:`.",
+      "identified_as_good": "NO",
+      "pred_points": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "gt": [
+        {
+          "type": "F.3",
+          "hit": "NO"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "YES"
+        },
+        {
+          "type": "E.3.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "mwaskom__seaborn-1948",
+      "status": "ok",
+      "issue": true,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] seaborn/tests/test_matrix.py:237: The over-color pre-centering assertion checks cmap(-np.inf), the under color, instead of cmap(np.inf), so the test is partly mis-specified. Suggested fix: Change line 237 to compare cmap(np.inf) with hm.cmap(np.inf).",
+      "identified_as_good": "YES",
+      "pred_points": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 1,
+      "gt": [
+        {
+          "type": "F.2",
+          "hit": "NO"
+        }
+      ]
+    },
+    {
+      "instance_id": "astropy__astropy-5097",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "django__django-10104",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [nit] django/utils/timezone.py:55: utc is now pytz.utc, whose utcoffset/tzname/dst/fromutc are Python-level methods, instead of the C-implemented datetime.timezone.utc. Every aware-UTC operation (is_aware, astimezone, comparison, isoformat) now runs interpreted tzinfo code. Suggested fix: Keep utc = datetime.timezone.utc if the pytz-compat behaviour is not needed.",
+      "identified_as_good": "YES",
+      "pred_points": 1
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-8178",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "mwaskom__seaborn-2359",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "pallets__flask-2378",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 1,
+      "review": "Verdict: PASS. Issues found:\n- [should-fix] flask/cli.py:335: The `flask` command now imports `wsgi.py` or `app.py` from the current directory when FLASK_APP is unset. This user-visible change has no CHANGES entry and no mention in docs/cli.rst, which describes only FLASK_APP discovery. Suggested fix: Add a CHANGES entry under Version 0.13 and a short note in docs/cli.rst about the wsgi.py/app.py fallback.",
+      "identified_as_good": "YES",
+      "pred_points": 1
+    },
+    {
+      "instance_id": "psf__requests-3754",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "pydata__xarray-5725",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6208",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5633",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-30361",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-2711",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    },
+    {
+      "instance_id": "sympy__sympy-10037",
+      "status": "ok",
+      "issue": false,
+      "verdict": "pass",
+      "main": 0,
+      "review": "LGTM. No issues found; this PR looks good and is ready to merge.",
+      "identified_as_good": "YES",
+      "pred_points": 0
+    }
+  ],
+  "runs": "/home/lawrence/relic/arbiter/eval/results/swr/20261123195901"
+}

@@ -1,0 +1,164 @@
+{
+  "repo": "cal_dot_com",
+  "prs": 10,
+  "ok": 10,
+  "precision": 0.361,
+  "recall": 0.514,
+  "f1": 0.424,
+  "f2": 0.473,
+  "harness": "omp",
+  "model": "anthropic/claude-sonnet-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "source": {
+    "repo": "withmartian/code-review-benchmark",
+    "sha": "23a35d0d64f7de5a68e5679da08414e0edacea9b",
+    "license": "MIT",
+    "fetched": "2026-11-21T04:32:10Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/calcom/cal.com/pull/8087",
+      "status": "ok",
+      "findings": 3,
+      "tp": 2,
+      "fp": 1,
+      "unjudged": 0,
+      "core": 1,
+      "core_hit": 1,
+      "categories": [
+        "concurrency",
+        "speculative"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/10600",
+      "status": "ok",
+      "findings": 8,
+      "tp": 1,
+      "fp": 6,
+      "unjudged": 0,
+      "core": 4,
+      "core_hit": 1,
+      "categories": [
+        "bug",
+        "concurrency",
+        "doc_defect",
+        "perf",
+        "style"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/10967",
+      "status": "ok",
+      "findings": 16,
+      "tp": 3,
+      "fp": 13,
+      "unjudged": 0,
+      "core": 5,
+      "core_hit": 3,
+      "categories": [
+        "api",
+        "bug",
+        "style"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/22345",
+      "status": "ok",
+      "findings": 0,
+      "tp": 0,
+      "fp": 0,
+      "unjudged": 0,
+      "core": 1,
+      "core_hit": 0,
+      "categories": [
+        "bug",
+        "speculative"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/7232",
+      "status": "ok",
+      "findings": 4,
+      "tp": 2,
+      "fp": 2,
+      "unjudged": 0,
+      "core": 3,
+      "core_hit": 1,
+      "categories": [
+        "concurrency",
+        "data"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/8330",
+      "status": "ok",
+      "findings": 4,
+      "tp": 2,
+      "fp": 2,
+      "unjudged": 0,
+      "core": 2,
+      "core_hit": 2,
+      "categories": [
+        "bug"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/11059",
+      "status": "ok",
+      "findings": 10,
+      "tp": 5,
+      "fp": 5,
+      "unjudged": 0,
+      "core": 9,
+      "core_hit": 5,
+      "categories": [
+        "api",
+        "bug",
+        "data"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/14943",
+      "status": "ok",
+      "findings": 1,
+      "tp": 1,
+      "fp": 0,
+      "unjudged": 0,
+      "core": 2,
+      "core_hit": 1,
+      "categories": [
+        "bug",
+        "concurrency"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/14740",
+      "status": "ok",
+      "findings": 8,
+      "tp": 3,
+      "fp": 5,
+      "unjudged": 0,
+      "core": 6,
+      "core_hit": 2,
+      "categories": [
+        "bug",
+        "security"
+      ]
+    },
+    {
+      "url": "https://github.com/calcom/cal.com/pull/22532",
+      "status": "ok",
+      "findings": 8,
+      "tp": 3,
+      "fp": 5,
+      "unjudged": 0,
+      "core": 4,
+      "core_hit": 3,
+      "categories": [
+        "api",
+        "bug"
+      ]
+    }
+  ]
+}
