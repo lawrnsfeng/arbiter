@@ -265,6 +265,24 @@ Go and Rust (grafana, seeded go/rust) were postponed by the user. `ARBITER_JOBS=
 - **On SWR-Bench, Sonnet finders lose on every metric.** S+S raised 3× the false positives of H+S (18 against 6), with one fewer true positive and the same functional recall. SWR is the largest and most realistic sample here.
 - **Clean code stays clean in both setups.** There were no findings on clean seeded cases, and no clean SWR PR was blocked.
 - **Haiku against Opus.** The Opus-era rows above (§3.4–§3.6) were partial and rate-limited, so they are not a like-for-like baseline. On Martian sentry, H+S over 10 PRs (F2 0.35) sits below Opus over 7 (F2 0.44). On cal.com, H+S over 10 PRs (F2 0.43) beats Opus over 3 (F2 0.29).
+- **Against the Martian tools on the same 20 PRs.** Martian publishes every tool's judged reviews (`offline/results/<judge>/evaluations.json` at the pinned commit). The table re-scores 49 tools with arbiter's Core rule on the 10 sentry and 10 cal.com PRs arbiter ran: a match to a non-Core comment is neutral, and every unmatched candidate is a false positive. Martian's Sonnet 4.5 judge results are used; arbiter's own judge is Sonnet 5.5.
+
+  | Rank of 51 | Tool | Precision | Recall | F2 (Core, 20 PRs) |
+  |---|---|---|---|---|
+  | 1 | Augment | 0.53 | 0.69 | 0.65 |
+  | 2 | Qodo v2 | 0.55 | 0.63 | 0.61 |
+  | 8 | CodeRabbit | 0.34 | 0.61 | 0.53 |
+  | 14 | Bugbot | 0.57 | 0.44 | 0.46 |
+  | 15 | **arbiter S+S** | 0.33 | 0.47 | **0.43** |
+  | 16 | Claude Code | 0.40 | 0.41 | 0.41 |
+  | 18 | **arbiter H+S** | 0.38 | 0.40 | **0.40** |
+  | 28 | Claude (plain) | 0.43 | 0.33 | 0.34 |
+  | — | mean of the 49 tools | | | 0.34 (median 0.35) |
+
+  Caveats:
+  - The tools ran months earlier, on older models, and were scored by a different judge.
+  - For 22 older tool versions, between 1 and 10 of their matched golden comments use wording older than the pinned golden set. Those matches could not be categorised and are not counted, so those tools are slightly understated.
+  - Twenty PRs give each F2 an uncertainty of several points.
 - **Decision.** H+S stays the default (ledger M-02). Sonnet finders cost Sonnet prices for a recall gain seen only on the two smaller sets. They cost precision everywhere, and lose outright on SWR-Bench.
 
 Commands (from the repo root):
