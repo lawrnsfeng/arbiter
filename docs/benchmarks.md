@@ -312,7 +312,7 @@ Each run was done once, and run-to-run variance was not measured (§5). Differen
 
 ### 3.8 Wave 1 spot check (2026-11-24)
 
-Old arm: master `8f04917`, run through `--review-from ~/relic/arbiter`. New arm: `feat/wave1-maintainability-recall` `73ccfbd` (T-12, T-13 + T-18, MA-03 facts, A6d, MA-05). Both arms ran on the same day with Haiku finders, a Sonnet verifier and judge, `standard` effort and `ocr` units. One extra arm ran the new code with `--decompose hier` on the AACR item only.
+Old arm: master `8f04917`, run through `--review-from ~/relic/arbiter`. That checkout predates PRs #3 and #4. #4 is docs only, and #3 adds the `hier` mode behind a switch and claims `ocr` merging is unchanged byte for byte (methodology §4), so on `ocr` units the old arm should behave like wave 1's base; this was not measured separately. New arm: wave 1 code, identical to PR #5's `5ef1788` under `arbiter/` and `skills/` (T-12, T-13 + T-18, MA-03 facts, A6d, MA-05), before the review fixes. Both arms ran on the same day with Haiku finders, a Sonnet verifier and judge, `standard` effort and `ocr` units. One extra arm ran the new code with `--decompose hier` on the AACR item only.
 
 Single runs on 3 items: a direction check, not an accuracy claim (E-11).
 
@@ -335,7 +335,7 @@ AACR precision and recall use AACR's file-level semantic coverage (one judge cal
 - Maintainability: arbiter measured 2 facts on ComfyUI. `server.py` crossed 1,000 lines (985 → 1005, block-eligible), and `cache_control` complexity rose from 4 to 11. A6d reported the complexity fact as a nit in both new arms and matched no reference; no agent cited the file fact, so nothing blocked. The 3 maintainability references ask to exclude 304 responses from the image rule, merge branches that set identical headers, and unify duplicate `no-cache` assignments (lines 60–72). Only the `hier` arm covered one of them (1/3).
 - T-13 repaired one finding's empty `evidence_lines` in each new AACR run. No finding was relocated by `quote` (T-18). T-12 placed nothing: dependency fetch failed on sentry and cal.com, but no verified finding there was left without a proof (0 Suspected in both new runs).
 - sentry-greptile 3: 4 instead of 6 false positives; both arms still miss all 3 Core bugs.
-- cal.com 8330: both arms proved a logic finding on the same golden bug. The old arm's panel kept it at block, while the new arm's panel rated it should-fix, so the verdicts differ (block vs pass). No wave-1 change touches functional severity, so this is run-to-run variance in the panel.
+- cal.com 8330: both arms proved a logic finding on the same golden bug. The old arm's panel kept it at block, while the new arm's panel rated it should-fix, so the verdicts differ (block vs pass). Neither wave 1 nor #3 changes functional severity, so this is run-to-run variance in the panel.
 - Cost: the new arm spends 1–4 more agent calls per run (A6d), plus verifier calls on the extra findings.
 
 Wave-1 acceptance (roadmap Phase A): "no Core recall loss" holds. "Maintainability recall up on AACR" holds only with `hier` (0/3 → 1/3); with `ocr` units it stays at 0/3.
