@@ -75,12 +75,26 @@ arbiter run [--repo .] [--base REF] [--effort quick|standard|deep] \
 The report is `RUN/report.md` (human) and `RUN/report.json` (machine).
 
 `--decompose` (or `ARBITER_DECOMPOSE`) picks how the diff is split into review units; `arbiter plan` and
-`arbiter eval seeded|martian|swr run` take it too:
+`arbiter eval seeded|martian|swr|aacr run` take it too:
 - `ocr` (default): hunk chunking with OCR's sizes.
 - `hier`: Python split by package, module, definition, method and statement (budget 150 churn, `ARBITER_UNIT_BUDGET`), plus a change manifest and context map per unit, cross-unit acceptance and root-cause dedup, and one contract pass for signature changes, removals and renames.
 - `hier-split`: the split alone (the ablation arm).
 
 These two are experimental until the A/B in [roadmap.md](docs/roadmap.md) P4 passes ([methodology §3.1](docs/methodology.md#31-decomposition-arbiterdiffpy-arbiterunitspy-arbiterdecomposepy)).
+
+Evaluation commands (results in `eval/results/`, reported runs copied to `eval/scores/`):
+
+```bash
+arbiter eval seeded build|run [--lang L] [--case TEXT]
+arbiter eval martian fetch|run --repo sentry|grafana|cal_dot_com [--limit N] [--offset N] [--pr TEXT]...
+arbiter eval swr fetch|sample|run [--limit N] [--skip-scored FILE]
+arbiter eval aacr fetch|run [--lang python,ts,go,rust] [--pr TEXT]... [--limit N]
+```
+
+Every `run` takes `--effort`, `--harness`, `--model`, `--verify-model`, `--decompose` and `--review-from DIR`:
+- `--pr TEXT` (repeatable) keeps only PRs whose URL contains the text.
+- `--review-from DIR` reviews with the arbiter checkout at `DIR` (its `.venv`), so an old and a new version run the same items on the same day.
+- `aacr` reviews AACR-Bench v2 PRs from the dataset's pinned repository snapshots and scores them with its file-level semantic coverage.
 
 | Exit | Meaning |
 |---|---|
@@ -93,7 +107,7 @@ These two are experimental until the A/B in [roadmap.md](docs/roadmap.md) P4 pas
 
 | | quick | standard (default) | deep |
 |---|---|---|---|
-| Finders per unit | A1a A1b A2 A3 A6a | A1a A1b A1c A2 A3 A6a A6b A6c | same as standard |
+| Finders per unit | A1a A1b A2 A3 A6a | A1a A1b A1c A2 A3 A6a A6b A6c A6d | same as standard |
 | Once per run | A0 | A0 SPEC | A0 SPEC |
 | Conditional | none | triggered A4 A5 A5b A7 A8 A9 | same as standard |
 | k passes | 1 | 1 | 3 for A1a A1b A2 A3 A4 |
@@ -156,6 +170,8 @@ Real PRs, current defaults (2026-11-23 matrix, Python and TypeScript; Go and Rus
 - Neither setup blocked a clean SWR PR or reported anything on a clean seeded case.
 - Martian scoring: `withmartian/code-review-benchmark`, Core categories, one LLM judge. Martian publishes 47.7 F2 Core for Claude Code CLI over the full set; arbiter's F2 here is 0.35–0.47.
 - The earlier Opus runs (grafana included) were partial because of rate limits; [docs/benchmarks.md](docs/benchmarks.md) §3.4–§3.6 keeps them.
+
+**Maintainability is scored separately in every benchmark.** Each eval summary reports maintainability recall next to functional recall: SWR-Bench `E.*` changes, Martian `style` comments, AACR "Maintainability and Readability" comments, and the seeded evolvability axes. Maintainability findings need a rule plus a repo precedent, a linter id or a fact arbiter measured (complexity, nesting, length, parameters, file size; Python only for now). Their severity is capped at `should-fix`. Three exceptions may block: a finding whose `measure` names a block-eligible fact arbiter measured, a finding whose `rule` names a repo rule heading marked `[block]`, and a deep-mode code-judo finding with a confirmed E1 measured fact.
 
 Per-case and per-PR tables, the ground truth for each case, and threats to validity are in
 [docs/benchmarks.md](docs/benchmarks.md). The score files are in [eval/scores/](eval/scores/).

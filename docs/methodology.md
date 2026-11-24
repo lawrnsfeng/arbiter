@@ -103,7 +103,7 @@ The agent split follows how each axis is verified, not how many axes there are `
 | A4 | concurrency | triggered |
 | A5 | API, schema, migration and portability contracts | triggered |
 | A5b | supply chain | once, when a manifest, lockfile, `build.rs` or workflow changed |
-| A6a / A6b / A6c | idiom; design and code judo; docs | per unit (standard and deep) |
+| A6a / A6b / A6c / A6d | idiom; design and code judo; docs; readability and complexity (with arbiter's measured facts) | per unit (standard and deep) |
 | A7 / A8 / A9 | performance; ops and config; a11y and i18n | triggered |
 | SPEC | each A0 claim: done, partial, wrong or scope creep | once |
 | V | verifier, one lens per call | per candidate × lens |
@@ -182,8 +182,8 @@ Accepted rungs per axis (`[DV-§3b]`):
 | performance | E8 only | observability | E4 |
 | portability | E1 E4 | spec | E4 E9 |
 
-- **Functional findings:** a verified finding with a confirmed proof at an accepted rung goes to the main section. A verified but unproven finding goes to "Suspected" and never blocks. Performance findings without E8 are dropped, because LLMs show near-zero recall on performance bugs `[DV-S4]`.
-- **Evolvability findings** need `rule` plus a repo `precedent` (checked to exist in the worktree) or a linter id. They are capped at should-fix. The one exception is a deep-mode code-judo finding with a confirmed E1 measured fact.
+- **Functional findings:** a verified finding with a confirmed proof at an accepted rung goes to the main section. A verified but unproven finding goes to "Suspected" and never blocks, unless the proof could not run here (sandbox unavailable, or dependency fetch failed for the finding's project root): then it goes to the main section as should-fix, in its own report section, with the reason. Performance findings without E8 are dropped, because LLMs show near-zero recall on performance bugs `[DV-S4]`.
+- **Evolvability (maintainability) findings** need `rule` plus a repo `precedent` (checked to exist in the worktree), a linter id, or a `measure` naming a maintainability fact on the finding's lines. They are capped at should-fix. Three exceptions may block: a block-eligible measured fact (`arbiter/maintain.py`: complexity, nesting, length or file size crossing into the block band in this change), a `rule` naming a repo rule heading marked `[block]`, and a deep-mode code-judo finding with a confirmed E1 measured fact.
 - **Proof integrity.** The proof agent runs every command through `arbiter sandbox exec`, which writes a record to `RUN/exec/<id>.json`.
   - That directory is outside the sandbox's writable binds, so sandboxed code cannot forge a record.
   - The gate ignores the exit codes the agent reports and re-reads them from these records.
@@ -267,6 +267,10 @@ is tracked in [decisions.md](decisions.md).
 | 2026-11-23 | Budget stays 150 churn (lines), with a 40-churn floor and a 1.33·B affinity ceiling | Every review-size number in the evidence is in changed lines `[DH-D1, D2, D32]`; function-sized units lose `[DH-D5, D18]` |
 | 2026-11-23 | `hier` widens acceptance to any changed hunk of the PR and clusters by cited changed symbol; `ocr` merge unchanged byte for byte | Finer units make the own-unit rule discard cross-unit findings `[DH-§4.0]`; root-cause buckets follow Bugbot and Anthropic `[DH-D28, D34]` |
 | 2026-11-23 | Context map holds signatures, never bodies; callers via codegraph, else `git grep` | Pasted bodies are noise; fetching on demand works `[DH-D10, D5, D14]`; the Martian clones have no `.codegraph/` |
+| 2026-11-24 | A verified finding whose proof could not run for environment reasons goes to main as should-fix (ledger T-12) | Martian loss trace: both such findings were High golden bugs the leading tools report; blocking still needs a proof |
+| 2026-11-24 | Empty `evidence_lines` repaired from `file:line`; a wrong line moved to the added line the finding's `quote` names (T-13, T-18) | 3 golden bugs were lost to validation slips; OCR resolves lines by quoted snippet `[LD17]` |
+| 2026-11-24 | Maintainability is first-class: measured facts, the A6d agent, and blocking only on a measured regression or a `[block]` repo rule (MA-03, MA-04, MA-05) | User decision; evolvability is about 75% of human review fixes and arbiter found 1 of 13 SWR evolvability changes |
+| 2026-11-24 | AACR-Bench adapter and `--review-from` A/B runs; every suite reports maintainability recall separately (E-12, E-13, MA-02) | A larger multi-language benchmark with a maintainability category; same-day arms avoid regression to the mean on items picked as best or worst |
 
 ## 5. Deviations from the approved plan
 
@@ -286,6 +290,8 @@ is tracked in [decisions.md](decisions.md).
 | `[DH-§4.2]` callees via `codegraph callees`, else `ast` | Both: `ast` always, plus `codegraph callees` for at most 5 enclosing functions per unit | Each codegraph call takes seconds |
 | `[DH-§4.3]` root-cause key: "the changed symbol a finding's evidence_lines cite" | Only signature-changed and renamed symbols, cited from outside their own definition | A modified function's own findings all cite it; keying on it would merge distinct bugs |
 | `[DH-§4.4]` "pure rename: same body hash, new qualname" | Also covers a definition moved to another file unchanged | Same body, no new behaviour; the contract pass checks the old name's stragglers |
+| T-18: match the quote in the diff hunks, then the whole file, then one LLM relocation (OCR) | Hunk match only | A whole-file match is rejected by the hunk rule anyway; the LLM stage waits for misses in `rejected.json` |
+| AACR repos cloned from GitHub at `source_commit`/`target_commit` | Repos come from AACR's pinned Hugging Face snapshots, GitHub clone as fallback | The target commits are not on GitHub (`not our ref`); AACR's own `repo_utils.py` uses the snapshots |
 
 ## 6. Known limitations
 
@@ -294,3 +300,4 @@ is tracked in [decisions.md](decisions.md).
 - Dependency fetch fails on some large real repos: sentry's `uv sync` reports "Could not create temporary file", and yarn is not installed. Execution proofs there fall back to what runs without dependencies.
 - arbiter records no token counts yet. Cost is reported as model calls and wall time.
 - Briefs were tuned on the same seeded corpus they are scored on (see [benchmarks.md](benchmarks.md) §5).
+- Maintainability facts are Python only; TypeScript, Go and Rust have none yet (ledger MA-08).
