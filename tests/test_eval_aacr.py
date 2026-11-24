@@ -54,3 +54,38 @@ def test_prepare_refuses_non_sha_commits_before_any_git_call(monkeypatch):
     monkeypatch.setattr(aacr, "_snapshot", lambda *a: (_ for _ in ()).throw(AssertionError("download")))
     item = {"githubPrUrl": "https://github.com/o/r/pull/1", "source_commit": "--upload-pack=touch /tmp/x"}
     assert aacr._prepare(item | {"target_commit": "a" * 40}) is None
+
+
+def test_rescore_arms_and_union_dedup(monkeypatch, tmp_path):
+    data, results = tmp_path / "data", tmp_path / "results"
+    data.mkdir()
+    items = [
+        {"githubPrUrl": "https://github.com/o/r/pull/1", "comments": [_ref("a.py", "Code Defect")] * 2},
+        {"githubPrUrl": "https://github.com/o/r/pull/2", "comments": [_ref("b.py", "Code Defect")]},
+    ]
+    (data / "positive_samples.json").write_text(json.dumps(items))
+    monkeypatch.setattr(aacr, "DATA", data)
+    monkeypatch.setattr(aacr, "RESULTS", results)
+    monkeypatch.setattr("arbiter.eval.common.RESULTS", results)
+    runs = {
+        "old": {"o-r-pull-1": [("a.py", 10, "x")], "o-r-pull-2": [("b.py", 1, "z")]},
+        "new": {"o-r-pull-1": [("a.py", 11, "x2"), ("a.py", 50, "y")], "o-r-pull-2": []},
+    }
+    for ts, prs in runs.items():
+        for name, fs in prs.items():
+            d = results / "aacr" / ts / name
+            d.mkdir(parents=True)
+            main = [{"file": f, "line": n, "claim": c, "axis": "logic", "placement": "main"} for f, n, c in fs]
+            (d / "report.json").write_text(json.dumps({"findings": main}))
+    matches = {"x": [0], "x2": [0], "y": [1], "z": []}
+    monkeypatch.setattr(aacr, "_judge", lambda f, refs: matches[f["claim"]])
+    a = argparse.Namespace(runs=["old", "new"], label=["old", "new"], harness="fake")
+    assert aacr.rescore(a) == 0
+    out = json.loads(next((results).glob("aacr-rescore-*.json")).read_text())["arms"]
+    got = {k: (v["findings"], v["matched_new"], v["precision"], v["recall"], v["f2"]) for k, v in out.items()}
+    assert got == {
+        "old": (2, 1, 0.5, 0.333, 0.357),
+        "new": (2, 2, 1.0, 0.667, 0.714),
+        "union": (4, 2, 0.5, 0.667, 0.625),
+        "union_dedup": (3, 2, 0.667, 0.667, 0.667),
+    }
