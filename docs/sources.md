@@ -12,6 +12,10 @@ Keys used in [methodology.md](methodology.md) and [benchmarks.md](benchmarks.md)
 |---|---|---|
 | `AX-` | `research/research-axes.md` | §1 (S1–S33 papers and standards, V1–V5 vendors) |
 | `DV-` | `research/research-decompose-verify.md` | "Sources" (S1–S43) |
+| `DH-` | `research/research-decompose-hierarchical.md` (2026-11-23) | §2 (D1–D37); `[DH-§n]` cites a section |
+| `AT-` | `research/research-accuracy-techniques.md` (2026-11-23) | its source table; the top-8 ranking is the last section |
+| `LR-` | `research/research-learned-rules.md` (2026-11-23) | its source table (L1–L38); the phased plan is the last section |
+| `CQ-` | `research/research-code-quality-platforms.md` (2026-11-23) | its source table; the ranked platform table is the last section |
 | `SEC-` | `research/research-security.md` | §1 (S1–S50) |
 | `AI-` | `research/research-ai-review-systems.md` | sections §1–§4 (pipelines, systems, benchmarks, techniques) |
 | `PM-` | `research/prior-mint-review-research.md` | OCR, mattpocock, Google eng-practices, pstack code judo |

@@ -13,12 +13,19 @@ from typing import Any
 from .. import HOME, harness
 
 RESULTS = HOME / "eval" / "results"
-MODEL_FLAGS = (("harness", "ARBITER_HARNESS"), ("model", "ARBITER_MODEL"), ("verify_model", "ARBITER_VERIFY_MODEL"))
+# exported to every child `arbiter run` (and the judge)
+RUN_FLAGS = (
+    ("harness", "ARBITER_HARNESS"),
+    ("model", "ARBITER_MODEL"),
+    ("verify_model", "ARBITER_VERIFY_MODEL"),
+    ("decompose", "ARBITER_DECOMPOSE"),
+)
 
 
 def apply_models(a: argparse.Namespace) -> harness.Settings:
-    """Resolve and preflight the models once, then export them to the child `arbiter run` processes and the judge."""
-    for flag, var in MODEL_FLAGS:
+    """Resolve and preflight the models once, then export them and --decompose to the child `arbiter run`
+    processes and the judge."""
+    for flag, var in RUN_FLAGS:
         if value := getattr(a, flag, None):
             os.environ[var] = value
     s = harness.settings()
@@ -28,7 +35,13 @@ def apply_models(a: argparse.Namespace) -> harness.Settings:
 
 
 def models(s: harness.Settings) -> dict[str, str]:
-    return {"harness": s.harness, "model": s.model, "verify_model": s.verify_model}
+    """The settings an eval summary records: the models and the unit decomposition its runs used."""
+    return {
+        "harness": s.harness,
+        "model": s.model,
+        "verify_model": s.verify_model,
+        "decompose": os.environ.get("ARBITER_DECOMPOSE", "ocr"),
+    }
 
 
 def stamp() -> str:

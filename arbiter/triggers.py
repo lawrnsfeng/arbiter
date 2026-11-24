@@ -72,8 +72,10 @@ def for_unit(unit: Unit, files: dict[str, DiffFile], commits: list[str]) -> list
     perf_subject = any(A7_SUBJECT.search(c.splitlines()[0]) for c in commits if c)
     for piece in unit["files"]:
         path, lang = piece["path"], piece["lang"]
+        sub = piece.get("lines")  # a hier piece may cover part of a hunk: only its own lines fire triggers
         hunks = [files[path]["hunks"][i] for i in piece["hunks"]]
-        added = [t for h in hunks for _, t in h["added"]]
+        by_hunk = [[t for n, t in h["added"] if not sub or any(a <= n <= b for a, b in sub)] for h in hunks]
+        added = [t for ts in by_hunk for t in ts]
         removed = [t for h in hunks for t in h["removed"]]
         name = PurePosixPath(path).name
         if lang in A4 and _any(A4[lang], added):
@@ -85,9 +87,7 @@ def for_unit(unit: Unit, files: dict[str, DiffFile], commits: list[str]) -> list
             or (name in MANIFESTS and _any(A5_MANIFEST, added + removed))
         ):
             fired.add("A5")
-        loop_io = any(
-            A7_LOOP.search(text) and A7_IO.search(text) for text in ("\n".join(t for _, t in h["added"]) for h in hunks)
-        )
+        loop_io = any(A7_LOOP.search(text) and A7_IO.search(text) for text in map("\n".join, by_hunk))
         if perf_subject or loop_io:
             fired.add("A7")
         if A8_PATH.search(path) or _any(A8_LINE, added):

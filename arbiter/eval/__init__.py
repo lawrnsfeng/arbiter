@@ -2,6 +2,7 @@
 
 import argparse
 
+from ..model import Decompose
 from . import martian, seeded, swr
 
 
@@ -22,6 +23,7 @@ def main(argv: list[str]) -> int:
     s.add_argument("--harness")
     s.add_argument("--model")
     s.add_argument("--verify-model")
+    s.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     s.add_argument("--parallel", type=int, default=2, help="cases reviewed at once")
     m = sub.add_parser("martian")
     m.add_argument("action", choices=("fetch", "run"))
@@ -32,6 +34,7 @@ def main(argv: list[str]) -> int:
     m.add_argument("--harness")
     m.add_argument("--model")
     m.add_argument("--verify-model")
+    m.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     w = sub.add_parser("swr", help="SWR-Bench: fetch the pinned upstream, draw the sample, run and judge")
     w.add_argument("action", choices=("fetch", "sample", "run"))
     w.add_argument("--issue", type=int, default=28, help="sample: PRs with a functional issue")
@@ -44,5 +47,6 @@ def main(argv: list[str]) -> int:
     w.add_argument("--harness")
     w.add_argument("--model")
     w.add_argument("--verify-model")
+    w.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     a = ap.parse_args(argv)
     return {"seeded": seeded, "martian": martian, "swr": swr}[a.suite].main(a)

@@ -1,7 +1,7 @@
 """Schemas (hand-written validators), merge and dedup, the vote tally, and the evidence gate."""
 
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +19,8 @@ from .model import (
     Rung,
     Severity,
     Status,
+    Symbol,
+    SymbolChange,
     Verdict,
     VoteRecord,
     least_severe,
@@ -58,6 +60,7 @@ LOC = re.compile(r"^[^\s:]+:\d+$")
 LINT_ID = re.compile(r"^([A-Z]{1,4}\d{3,4}|clippy::\w+|(@[\w-]+/)?[\w-]+/[\w-]+|(no|prefer)-[\w-]+)$")
 NIT_CAP = 10
 NEAR = 3  # lines of slack for hunk membership and dedup
+CLUSTERED = frozenset({SymbolChange.SIGNATURE, SymbolChange.RENAMED})  # interface changes with a head-side span
 
 type ExecLookup = Callable[[str], ExecRecord | None]
 
@@ -193,8 +196,33 @@ def _overlaps(a: Finding, b: Finding) -> bool:
     )
 
 
-def merge(raw: Iterable[Any], ranges_by_unit: dict[str, Ranges], deep_k3: set[str]) -> tuple[list[Finding], list[Any]]:
-    """raw: candidates tagged with agent, pass and unit. Returns (merged, rejected)."""
+def _cited_symbol(f: Finding, symbols: Sequence[Symbol]) -> tuple[str, str] | None:
+    """The changed interface a finding cites from elsewhere: an evidence line inside the symbol's definition
+    while the finding itself sits outside it (the "stale caller of f" shape)."""
+    cited = [(p, int(n)) for p, n in (e.rsplit(":", 1) for e in f["evidence_lines"])]
+    for s in symbols:
+        if s["change"] not in CLUSTERED or "lines" not in s:
+            continue
+        lo, hi = s["lines"]
+        own = f["file"] == s["path"] and lo <= f["line"] <= hi
+        if not own and any(p == s["path"] and lo <= n <= hi for p, n in cited):
+            return s["path"], s["qualname"]
+    return None
+
+
+def merge(
+    raw: Iterable[Any],
+    ranges_by_unit: dict[str, Ranges],
+    deep_k3: set[str],
+    *,
+    widen: Ranges | None = None,
+    symbols: Sequence[Symbol] = (),
+) -> tuple[list[Finding], list[Any]]:
+    """raw: candidates tagged with agent, pass and unit. Returns (merged, rejected).
+
+    hier mode: `widen` (every changed hunk of the PR) replaces the unit's own hunks as the acceptance rule, and
+    `symbols` (the change manifest) clusters findings citing one changed interface into one finding.
+    """
     rejected: list[Any] = []
     kept: list[Finding] = []
     for c in raw:
@@ -203,7 +231,11 @@ def merge(raw: Iterable[Any], ranges_by_unit: dict[str, Ranges], deep_k3: set[st
         except Invalid as e:
             rejected.append({**c, "reject_reason": str(e)})
             continue
-        if not in_hunks(c, ranges_by_unit.get(c["unit"], {})):
+        if widen is not None:
+            if not in_hunks(c, widen):
+                rejected.append({**c, "reject_reason": f"line outside every changed hunk of the PR ±{NEAR}"})
+                continue
+        elif not in_hunks(c, ranges_by_unit.get(c["unit"], {})):
             rejected.append({**c, "reject_reason": f"line outside the unit's changed hunks ±{NEAR}"})
             continue
         kept.append(c)
@@ -224,6 +256,8 @@ def merge(raw: Iterable[Any], ranges_by_unit: dict[str, Ranges], deep_k3: set[st
         else:
             merged.append({**c, "axes": [c["axis"]], "agents": [c["agent"]]})
             passes.append({c["agent"]: {c["pass"]}})
+    if symbols:
+        merged, passes = _cluster(merged, passes, symbols)
     out: list[Finding] = []
     for m, mp in zip(merged, passes, strict=True):
         # deep mode: a finding raised only by k=3 agents needs >=2 of their passes
@@ -235,6 +269,33 @@ def merge(raw: Iterable[Any], ranges_by_unit: dict[str, Ranges], deep_k3: set[st
     for n, m in enumerate(out, 1):
         m["id"] = f"f{n:03d}"
     return out, rejected
+
+
+def _cluster(
+    merged: list[Finding], passes: list[dict[str, set[int]]], symbols: Sequence[Symbol]
+) -> tuple[list[Finding], list[dict[str, set[int]]]]:
+    """Root-cause dedup (§4.3): findings of one group citing the same changed interface become one finding,
+    the first one, with the others' sites in `locations`."""
+    first: dict[tuple[str, str, str], int] = {}
+    out: list[Finding] = []
+    out_p: list[dict[str, set[int]]] = []
+    for m, mp in zip(merged, passes, strict=True):
+        sym = _cited_symbol(m, symbols)
+        key = (m["group"], *sym) if sym else None
+        if key is None or key not in first:
+            if key:
+                first[key] = len(out)
+            out.append(m)
+            out_p.append(mp)
+            continue
+        t, tp = out[first[key]], out_p[first[key]]
+        t["locations"] = [*t.get("locations", []), f"{m['file']}:{m['line']}"]
+        t["axes"] = sorted({*t["axes"], *m["axes"]})
+        t["evidence_lines"] = sorted({*t["evidence_lines"], *m["evidence_lines"]})
+        t["agents"] = sorted({*t["agents"], *m["agents"]})
+        for a, ps in mp.items():
+            tp.setdefault(a, set()).update(ps)
+    return out, out_p
 
 
 def never_dismiss(f: Finding) -> bool:

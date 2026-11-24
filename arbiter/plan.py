@@ -3,6 +3,7 @@
 Also renders the numbered diffs that agent prompts show.
 """
 
+import functools
 import random
 import re
 import subprocess
@@ -10,8 +11,9 @@ import sys
 from pathlib import Path
 from typing import NamedTuple, TypedDict
 
-from . import diff, tools, triggers, units
-from .model import DiffFile, Effort, Hunk, Lang, Range, Ranges, ToolSpec, Unit
+from . import decompose, diff, tools, triggers, units
+from .diff import hunk_ranges
+from .model import Decompose, DiffFile, Effort, Lang, Range, Ranges, Symbol, ToolSpec, Unit
 from .rundir import RunDir
 
 ALWAYS = {
@@ -29,6 +31,7 @@ THREAT_MODELS = ("THREAT_MODEL.md", "docs/THREAT_MODEL.md")
 ORDERS = 3  # deterministic file orders, one per pass
 UNIT_CONTEXT = 20
 RUN_DIFF_CAP = 60_000
+GAP = f"{'':>6} ⋯"  # marks lines a clipped unit diff leaves out
 
 
 class Task(NamedTuple):
@@ -65,10 +68,9 @@ class Plan(TypedDict):
     notes: list[str]
     roots: list[str]
     orders: dict[str, dict[str, list[int]]]  # pass -> unit id -> file order
-
-
-def hunk_ranges(hunks: list[Hunk]) -> list[Range]:
-    return [(h["new_start"], h["new_start"] + max(h["new_count"], 1) - 1) for h in hunks]
+    decompose: Decompose
+    budget: int  # unit churn budget (hier modes)
+    manifest: list[Symbol]  # hier: the PR change manifest
 
 
 def _order(u: Unit, k: int) -> list[int]:
@@ -78,9 +80,12 @@ def _order(u: Unit, k: int) -> list[int]:
     return idx
 
 
-def schedule(us: list[Unit], effort: Effort, supply: bool, max_agents: int, notes: list[str]) -> Schedule:
+def schedule(
+    us: list[Unit], effort: Effort, supply: bool, max_agents: int, notes: list[str], *, contract: bool = False
+) -> Schedule:
     """Agent calls within the budget: conditional agents are skipped in SKIP_ORDER, then deep k drops to 1."""
     once = ["A0", *([] if effort == Effort.QUICK else ["SPEC"]), *(["A5b"] if supply else [])]
+    once += ["CONTRACT"] if contract else []
     per_unit = {
         u["id"]: [
             *(a for a in ALWAYS[effort] if u["lang"] != Lang.OTHER or a in CORRECTNESS),
@@ -138,9 +143,16 @@ def _affected(repo: Path, paths: list[str]) -> list[str]:
 
 
 def plan(
-    run: RunDir, repo: Path, *, base_ref: str | None, effort: str, langs: list[str] | None, max_agents: int
+    run: RunDir,
+    repo: Path,
+    *,
+    base_ref: str | None,
+    effort: str,
+    langs: list[str] | None,
+    max_agents: int,
+    decompose_mode: str = Decompose.OCR,
 ) -> Plan:
-    repo, eff = repo.resolve(), Effort(effort)
+    repo, eff, mode = repo.resolve(), Effort(effort), Decompose(decompose_mode)
     base = diff.resolve_base(repo, base_ref)
     d = diff.collect(repo, base)
     tree = set(diff.git(repo, "ls-tree", "-r", "--name-only", "HEAD").splitlines())
@@ -154,18 +166,29 @@ def plan(
         f"no arbiter language skill for {ext}"
         for ext in sorted({Path(f["path"]).suffix or Path(f["path"]).name for f in included if f["lang"] == Lang.OTHER})
     ]
-    us = units.build(included, tree)
-    by_path = {f["path"]: f for f in d["files"]}
-    for u in us:
-        u["triggers"] = [] if eff == Effort.QUICK else triggers.for_unit(u, by_path, d["commits"])
-        u["ranges"] = {p["path"]: hunk_ranges([by_path[p["path"]]["hunks"][i] for i in p["hunks"]]) for p in u["files"]}
-    supply = eff != Effort.QUICK and triggers.run_level(d["files"]) and (not langs or bool(included))
 
+    @functools.cache
     def read(path: str) -> str | None:
         p = subprocess.run(
             ["git", "-C", str(repo), "show", f"HEAD:{path}"], capture_output=True, text=True, errors="replace"
         )
         return p.stdout if p.returncode == 0 else None
+
+    budget = decompose.budget() if mode != Decompose.OCR else units.CHUNK
+    code = decompose.Code(tree, read)
+    syms = decompose.manifest(repo, base, included, code) if mode == Decompose.HIER else []
+    us = units.build(included, tree, mode=mode, read=read, budget=budget, skip=decompose.rename_spans(syms))
+    by_path = {f["path"]: f for f in d["files"]}
+    for u in us:
+        u["triggers"] = [] if eff == Effort.QUICK else triggers.for_unit(u, by_path, d["commits"])
+        u["ranges"] = {p["path"]: decompose.piece_ranges(p, by_path[p["path"]]) for p in u["files"]}
+    if mode == Decompose.HIER:
+        decompose.assign(syms, us)
+        decompose.add_callers(repo, syms)
+        for u in us:
+            u["context"] = decompose.context_map(repo, code, u, by_path, syms)
+    supply = eff != Effort.QUICK and triggers.run_level(d["files"]) and (not langs or bool(included))
+    contract = any(s["change"] in decompose.INTERFACE for s in syms)
 
     changed: dict[str, list[str]] = {}
     for f in included:
@@ -183,12 +206,15 @@ def plan(
         commits=d["commits"],
         units=us,
         supply=supply,
-        schedule=schedule(us, eff, supply, max_agents, notes),
+        schedule=schedule(us, eff, supply, max_agents, notes, contract=contract),
         tools=specs,
         threat_model=next((t for t in THREAT_MODELS if t in tree), None),
         notes=notes,
         roots=sorted({s.get("root", "") for s in specs} or {""}),
         orders={str(k): {u["id"]: _order(u, k) for u in us} for k in range(ORDERS)},
+        decompose=mode,
+        budget=budget,
+        manifest=syms,
     )
     run.save("plan.json", p)
     run.cov(
@@ -203,6 +229,11 @@ def plan(
             }
             for u in us
         ],
+        decompose={
+            "mode": mode,
+            "budget": budget,
+            "interface_changes": sum(s["change"] in decompose.INTERFACE for s in syms),
+        },
         notes=notes,
         excluded=[{"path": f["path"], "reason": f["excluded"]} for f in d["files"] if f["excluded"]],
     )
@@ -213,37 +244,54 @@ def plan(
 
 
 def numbered_diff(
-    repo: str, base: str, head: str, path: str, *, keep: list[Range] | None, ctx: int = UNIT_CONTEXT
+    repo: str, base: str, head: str, path: str, *, keep: list[Range] | None, ctx: int = UNIT_CONTEXT, clip: bool = False
 ) -> str:
-    """`git diff -U<ctx>` for one file with new-side line numbers; only hunks overlapping `keep` ranges."""
+    """`git diff -U<ctx>` for one file with new-side line numbers; only hunks overlapping `keep` ranges.
+
+    `clip` also drops lines more than `ctx` away from every `keep` range, for a piece covering part of a hunk.
+    """
     text = diff.git(repo, "diff", f"-U{ctx}", "-M", f"{base}..{head}", "--", path, check=False)
     out: list[str] = []
     block: list[str] = []
     keep_block, new = False, 0
+
+    def near(n: int) -> bool:
+        return not clip or keep is None or any(lo - ctx <= n <= hi + ctx for lo, hi in keep)
+
     for ln in text.splitlines():
         if m := diff.HUNK_RE.match(ln):
             if block and keep_block:
-                out.extend(block)
+                out.extend(_gaps(block) if clip else block)
             new = int(m[3])
             hi = new + max(int(m[4]) if m[4] is not None else 1, 1) - 1
             keep_block = keep is None or any(lo <= hi and new <= h for lo, h in keep)
             block = [ln]
         elif block:
             if ln.startswith("-"):
-                block.append(f"{'':>6} {ln}")
+                block.append(f"{'':>6} {ln}" if near(new) else "")
             elif ln.startswith(("+", " ")):
-                block.append(f"{new:>6} {ln}")
+                block.append(f"{new:>6} {ln}" if near(new) else "")
                 new += 1
     if block and keep_block:
-        out.extend(block)
+        out.extend(_gaps(block) if clip else block)
     return f"### {path}\n```diff\n" + "\n".join(out) + "\n```" if out else ""
+
+
+def _gaps(block: list[str]) -> list[str]:
+    """Clipped lines ("") collapse to one marker per gap."""
+    out: list[str] = []
+    for ln in block:
+        if ln or (out and out[-1] != GAP):
+            out.append(ln or GAP)
+    return out
 
 
 def unit_diff(p: Plan, u: Unit, order: list[int] | None = None) -> str:
     pieces = [u["files"][i] for i in (order or range(len(u["files"])))]
     ranges = u.get("ranges", {})
     return "\n\n".join(
-        numbered_diff(p["repo"], p["base"], p["head"], x["path"], keep=ranges.get(x["path"], [])) for x in pieces
+        numbered_diff(p["repo"], p["base"], p["head"], x["path"], keep=ranges.get(x["path"], []), clip="lines" in x)
+        for x in pieces
     )
 
 
@@ -252,8 +300,14 @@ def run_diff(p: Plan, paths: list[str], limit: int = RUN_DIFF_CAP, ctx: int = 3)
     return out if len(out) <= limit else f"{out[:limit]}\n[diff truncated]"
 
 
+def pr_ranges(p: Plan) -> Ranges:
+    """Every changed hunk of the PR (included files): the widened acceptance rule of hier mode (§4.3)."""
+    return {f["path"]: hunk_ranges(f["hunks"]) for f in p["files"] if not f["excluded"]}
+
+
 def ranges_by_unit(p: Plan) -> dict[str, Ranges]:
-    """Each unit's hunks, plus the run-level pseudo units: 'run' (every unit) and 'supply' (manifests, lockfiles)."""
+    """Each unit's hunks, plus the run-level pseudo units: 'run' (every unit) and 'supply' (manifests, lockfiles),
+    and in hier mode 'contract' (the whole PR)."""
     r = {u["id"]: u.get("ranges", {}) for u in p["units"]}
     run_ranges: Ranges = {}
     for u in p["units"]:
@@ -261,4 +315,6 @@ def ranges_by_unit(p: Plan) -> dict[str, Ranges]:
             run_ranges.setdefault(path, []).extend(rs)
     r["run"] = run_ranges
     r["supply"] = {f["path"]: hunk_ranges(f["hunks"]) for f in p["files"] if triggers.supply_chain(f["path"])}
+    if p.get("decompose") == Decompose.HIER:
+        r["contract"] = pr_ranges(p)
     return r

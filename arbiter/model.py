@@ -143,6 +143,22 @@ class Placement(StrEnum):
     NIT_OVERFLOW = "nit-overflow"
 
 
+class Decompose(StrEnum):
+    """How the diff is split into review units (research-decompose-hierarchical.md §4, §5)."""
+
+    OCR = "ocr"  # hunk chunking (default)
+    HIER = "hier"  # syntax-aware split + shared context + widened merge + contract pass
+    HIER_SPLIT = "hier-split"  # the syntax-aware split alone (the §5 ablation arm)
+
+
+class SymbolChange(StrEnum):
+    ADDED = "added"
+    REMOVED = "removed"
+    MODIFIED = "modified"
+    SIGNATURE = "signature-changed"
+    RENAMED = "renamed"
+
+
 class ToolKind(StrEnum):
     BUILD = "build"
     TYPE = "type"
@@ -180,13 +196,14 @@ class DiffFile(TypedDict):
 
 
 class Piece(TypedDict):
-    """One file's share of a unit: the whole file, or a chunk of its hunks."""
+    """One file's share of a unit: the whole file, a chunk of its hunks, or (hier) line sub-ranges of them."""
 
     path: str
     lang: Lang
     hunks: list[int]
     churn: int
     file_churn: int
+    lines: NotRequired[list[Range]]  # new-side sub-ranges of `hunks`; absent means the whole hunks
 
 
 class Unit(TypedDict):
@@ -198,6 +215,24 @@ class Unit(TypedDict):
     plan_required: bool
     triggers: NotRequired[list[str]]
     ranges: NotRequired[Ranges]
+    context: NotRequired[str]  # hier: the unit context map (signatures, never bodies)
+
+
+class Symbol(TypedDict):
+    """One changed top-level symbol or method in the PR change manifest (base vs head `ast`)."""
+
+    path: str
+    qualname: str
+    kind: str  # function | method | class
+    change: SymbolChange
+    old_sig: str
+    new_sig: str
+    unit: str
+    lines: NotRequired[Range]  # head-side span (decorators to end)
+    old_path: NotRequired[str]
+    old_qualname: NotRequired[str]
+    callers: NotRequired[list[str]]  # path:line, depth 1, capped
+    callers_more: NotRequired[int]  # callers left out by the cap
 
 
 class ToolSpec(TypedDict):
@@ -296,6 +331,7 @@ Finding = TypedDict(
         "placement": Placement,
         "placement_reason": str,
         "support": list[dict[str, object]],
+        "locations": list[str],  # hier root-cause clustering: other path:line sites of the same changed symbol
     },
     total=False,
 )

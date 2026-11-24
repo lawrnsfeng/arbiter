@@ -7,7 +7,7 @@ from pathlib import Path, PurePosixPath
 from typing import TypedDict
 
 from . import ArbiterExit, lang
-from .model import DiffFile, Hunk
+from .model import DiffFile, Hunk, Range
 
 MAX_FILES = 500
 MAX_LINES = 8000
@@ -37,6 +37,10 @@ class Change(TypedDict):
     files: list[DiffFile]
     commits: list[str]
     notes: list[str]
+
+
+def hunk_ranges(hunks: list[Hunk]) -> list[Range]:
+    return [(h["new_start"], h["new_start"] + max(h["new_count"], 1) - 1) for h in hunks]
 
 
 def git(repo: Repo, *args: str, check: bool = True) -> str:

@@ -71,14 +71,23 @@ flowchart TD
   J --> K[report.md, report.json, exit code]
 ```
 
-### 3.1 Decomposition (`arbiter/diff.py`, `arbiter/units.py`)
+### 3.1 Decomposition (`arbiter/diff.py`, `arbiter/units.py`, `arbiter/decompose.py`)
 
 - Only committed `HEAD` against the merge-base is reviewed. Uncommitted work is noted and excluded, so the result is reproducible.
 - Lockfiles, vendored and build output, generated files and binaries are left out of units but listed in the manifest. They still feed the supply-chain agent.
-- Units follow alibaba OCR's defaults `[DV-S6..S8]`:
+- `--decompose ocr` (the default; `ARBITER_DECOMPOSE` overrides it): units follow alibaba OCR's defaults `[DV-S6..S8]`:
   - A file over 200 changed lines is split into chunks of at most 150.
   - Files are grouped by project marker and directory, then adjacent groups merge up to 150 lines and 10 files.
   - A unit is flagged `plan_required` when it has at least 100 changed lines or a file with at least 50.
+  - A unit's piece is always whole hunks, so a single-hunk file (usually a new file) cannot be split: 11 sentry units exceed 150 churn, up to 421 `[DH-§4.0]`.
+- `--decompose hier` and `--decompose hier-split` implement `research/research-decompose-hierarchical.md` §4 behind a switch, for the §5 A/B. They are adopted only if the A/B passes (see [roadmap.md](roadmap.md) P4).
+  - **Split** (both modes, §4.1, stdlib `ast` on HEAD, Python only): files are grouped by import package (nearest `__init__.py`), then each file over the budget is split by top-level definition (module-level statements between definitions form their own node), then a class over budget by method, then a function over budget by top-level statement. Added lines map to the enclosing node; removed lines count at their hunk's new-side position. Adjacent nodes greedy-merge up to the budget B = 150 churn (`ARBITER_UNIT_BUDGET`, 75 for the §5 arm C). A definition and its in-diff call sites (resolved by `ast` name resolution) stay together up to 1.33·B; sibling modules that import each other merge up to B. A unit under 40 churn merges into the smallest sibling in its package that can absorb it within B. Unparseable and non-Python files keep the OCR hunk chunking.
+  - A piece may now cover part of a hunk: `Piece.lines` holds its new-side sub-ranges, `Unit.ranges` uses them, triggers read only those lines, and the unit diff clips the hunk to the sub-ranges ±20 lines, marking each gap with `⋯`.
+  - **Shared context** (`hier` only, §4.2), zero model calls: a PR change manifest from base vs head `ast` (qualname, kind, added/removed/modified/signature-changed/renamed, old → new signature, unit id; a pure rename has the same name-blind body dump), a per-unit context map (module docstring and imports, the enclosing class header, signatures of callees on changed lines resolved through the module and its `from x import y` targets, and `codegraph callees` when `.codegraph/` exists), callers of changed interfaces (depth 1, capped at 10 with a truncated note; `codegraph callers`, else `git grep` of HEAD), the other changed files with churn and unit ids, and the A0 intent claims and commit messages. Signatures only: finders fetch bodies with their tools `[DH-D10]`. The map is cut so diff plus map stay within 24k non-whitespace characters.
+  - **Merge** (`hier` only, §4.3): a candidate is accepted on any changed hunk of the PR ±3, not only its own unit's; findings of one group that cite, from outside it, the definition of the same signature-changed or renamed symbol cluster into one finding with `locations`.
+  - **Contract pass** (`hier` only, §4.4): one run-level A5 call when the manifest has a signature change, removal or rename, with the manifest and repo-wide callers. A file whose only change is a pure rename gets no finder unit.
+  - `hier-split` is the split alone, the §5 ablation arm B′: no manifest, context, widened merge, rename skip or contract pass.
+  - The mode is recorded in `plan.json` (`decompose`, `budget`, `manifest`) and in the report's Coverage section.
 - Caps: a diff over 500 files or 8000 lines exits 4 rather than being reviewed badly. This follows the size evidence in `[DV-S4]`.
 
 ### 3.2 Agents (`skills/arbiter-review/references/agents/`)
@@ -231,6 +240,9 @@ The design follows the sandbox rules in `[DV-§4]`:
 
 ## 4. Decision log
 
+This table lists the adopted design decisions. Every idea, including the ones dropped, deferred or still proposed,
+is tracked in [decisions.md](decisions.md).
+
 | Date | Decision | Why |
 |---|---|---|
 | 2026-11-21 | Orchestration in deterministic code, not an LLM coordinator | Cheap models cannot be trusted to plan; vote arithmetic and gating must be exact |
@@ -251,6 +263,10 @@ The design follows the sandbox rules in `[DV-§4]`:
 | 2026-11-22 | Default models Haiku (finders) and Sonnet (verifier, proof, judge); Opus refused | Opus-by-default runs drained the user's token budget; the user set Sonnet as the ceiling |
 | 2026-11-23 | Models resolved from omp roles (`arbiter-finder` or `smol`; `arbiter-verify`), Haiku/Sonnet fallbacks, `opus,fable` blocked by default, preflight per model | arbiter must run on any cheap model omp can reach (Haiku, DeepSeek, GPT…); an unknown model made every omp call crash |
 | 2026-11-23 | `make install` puts `arbiter` on PATH (`uv tool install --editable`) and links the skills into `~/.omp/agent/skills`; the proof agent gets its sandbox command from the inputs | The skills had found arbiter through a `~/.claude/skills` symlink, and the proof brief hard-coded this machine's checkout path |
+| 2026-11-23 | Hierarchical, syntax-aware units behind `--decompose hier\|hier-split`; `ocr` stays the default | `[DH-§1]`: smaller units should help, but no source measures splitting one PR by syntax vs by hunk for review; adopt only if the §5 A/B passes |
+| 2026-11-23 | Budget stays 150 churn (lines), with a 40-churn floor and a 1.33·B affinity ceiling | Every review-size number in the evidence is in changed lines `[DH-D1, D2, D32]`; function-sized units lose `[DH-D5, D18]` |
+| 2026-11-23 | `hier` widens acceptance to any changed hunk of the PR and clusters by cited changed symbol; `ocr` merge unchanged byte for byte | Finer units make the own-unit rule discard cross-unit findings `[DH-§4.0]`; root-cause buckets follow Bugbot and Anthropic `[DH-D28, D34]` |
+| 2026-11-23 | Context map holds signatures, never bodies; callers via codegraph, else `git grep` | Pasted bodies are noise; fetching on demand works `[DH-D10, D5, D14]`; the Martian clones have no `.codegraph/` |
 
 ## 5. Deviations from the approved plan
 
@@ -263,6 +279,13 @@ The design follows the sandbox rules in `[DV-§4]`:
 | A5b per unit | Once per run over manifests and lockfiles | Lockfile-only changes produce no units |
 | Lint hits block | Type/build errors block; lint hits are should-fix idiom; rustfmt is a nit | Lint style is evolvability, not proof of a defect |
 | Fixture repos signed | Eval fixture commits unsigned (`commit.gpgsign=false` per command) | Throwaway inputs under `eval/results/`, never user commits |
+| `[DH-§4.1]` floor: "never emit a unit under ~40 while a sibling can absorb it" | The small unit joins the smallest sibling in its package within B, anywhere in the unit list | Adjacent greedy merging already handles neighbours; absorbing above B would break the stop criterion |
+| `[DH-§4.1]` step 2 merges sibling modules that import each other | Done as part of the affinity pass (import edge within one package, up to B) | One merge pass for both affinity rules |
+| `[DH-§4.1]` 24k-character guard on the rendered unit prompt | The context map is cut to fit; the diff is never cut | A unit is already within the churn budget; splitting at prompt-render time would change the unit set after planning |
+| `[DH-§4.1]` statement level splits a function's body | One level only: a single statement over budget (a long literal, a removed block) stays one oversized unit | Below a statement there is no reviewable boundary |
+| `[DH-§4.2]` callees via `codegraph callees`, else `ast` | Both: `ast` always, plus `codegraph callees` for at most 5 enclosing functions per unit | Each codegraph call takes seconds |
+| `[DH-§4.3]` root-cause key: "the changed symbol a finding's evidence_lines cite" | Only signature-changed and renamed symbols, cited from outside their own definition | A modified function's own findings all cite it; keying on it would merge distinct bugs |
+| `[DH-§4.4]` "pure rename: same body hash, new qualname" | Also covers a definition moved to another file unchanged | Same body, no new behaviour; the contract pass checks the old name's stragglers |
 
 ## 6. Known limitations
 
