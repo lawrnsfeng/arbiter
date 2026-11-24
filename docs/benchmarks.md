@@ -283,6 +283,21 @@ Go and Rust (grafana, seeded go/rust) were postponed by the user. `ARBITER_JOBS=
   - The tools ran months earlier, on older models, and were scored by a different judge.
   - For 22 older tool versions, between 1 and 10 of their matched golden comments use wording older than the pinned golden set. Those matches could not be categorised and are not counted, so those tools are slightly understated.
   - Twenty PRs give each F2 an uncertainty of several points.
+- **Where H+S loses recall on those 20 PRs.** One Sonnet call per PR mapped each of the 70 Core golden comments to arbiter's raw finder output (`raw.json`). Each match was then traced through validation, the verifier panel and placement. 40 of the 70 comments were caught by at least 3 of the top 4 tools (Augment, Qodo v2, cubic v2, Qodo extended v2); this "consensus" set excludes contested goldens.
+
+  | Stage where the comment was lost | All 70 | Consensus 40 |
+  |---|---|---|
+  | Reported in the main section (hit) | 28 | 20 |
+  | Never raised by any finder | 32 | 12 |
+  | Raised, rejected by validation (2 had empty `evidence_lines`, 1 was outside the unit's hunks ±3) | 3 | 2 |
+  | Raised, dropped by the verifier panel as a false positive | 5 | 4 |
+  | Raised, verified TRUE_POSITIVE, but placed in Suspected for lack of an execution proof | 2 | 2 |
+
+  - **Finders account for most of the gap.** Of the 20 missed consensus comments, 12 were never raised. Several are cross-file contract breaks, such as an interface signature change whose implementations were not updated, or a wrong argument passed to a helper. The `hier` contract pass targets that kind of bug.
+  - **The rest were found and then thrown away.** The other 8 were raised by a finder and lost after it.
+    - **Suspected placement.** The 2 verified-but-unproven findings are both High golden bugs. They were the only findings placed that way in the 20 PRs, so promoting them costs no precision. Dependency fetch fails on sentry, so no proof could run.
+    - **Verifier drops.** The panel dropped 62 findings in all, 5 of them true. Its reasons argue the trigger is unreachable. Overall it is right about 90% of the time, so loosening it wholesale would cost precision.
+  - **By severity**, H+S caught 3/3 Critical, 13/28 High, 8/25 Medium and 4/14 Low. Augment caught 23/28 High and 16/25 Medium, with 4.7 comments per PR against arbiter's 3.9.
 - **Decision.** H+S stays the default (ledger M-02). Sonnet finders cost Sonnet prices for a recall gain seen only on the two smaller sets. They cost precision everywhere, and lose outright on SWR-Bench.
 
 Commands (from the repo root):
