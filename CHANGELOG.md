@@ -36,9 +36,11 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
   three unverified concerns; it cannot add or remove a block. Every omp call loads `arbiter/omp-overlay.yml` to keep
   omp's advisor off. **Approach:** omp's advisor runtime retries and falls back across models, so it cannot keep the
   user's one-Opus-call budget; arbiter makes the call itself. Measured in [benchmarks §3.9](docs/benchmarks.md).
-- Recall techniques T-27 (trigger and evidence before claim), T-19 (base checkout path for old-code reads), T-04
-  (co-change neighbours from the last 500 commits) and T-01 (uncovered analyzer hits on added lines become verifier
-  candidates). **Approach:** the next-ranked items of the accuracy research; measured together in benchmarks §3.9.
+- Recall techniques T-27 (trigger and evidence before claim, on), and behind switches T-19 (`ARBITER_BASE_READS=1`,
+  base checkout path for old-code reads), T-04 (`ARBITER_COCHANGE=1`, co-change neighbours from the last 500
+  commits) and T-01 (`ARBITER_SAST_CANDIDATES=1`, uncovered analyzer hits on added lines become verifier
+  candidates). **Approach:** the next-ranked items of the accuracy research. Together they scored F2 0.196 vs 0.198
+  for master on 5 AACR PRs, and none showed a visible effect (benchmarks §3.9), so the three code paths are off.
 - `arbiter eval aacr rescore`: judge several finished runs in one pass with one judge, plus their union.
   **Approach:** separate runs were judged on different days, so judge drift hid small differences.
 - Leader study `research/research-leader-approaches.md` (Augment, Qodo 2.0 and PR-Agent, cubic, alibaba

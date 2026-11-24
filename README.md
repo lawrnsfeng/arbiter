@@ -88,6 +88,11 @@ dismisses noise among non-blocking findings, flags must-fix findings it doubts a
 (`ARBITER_DECIDE_MODEL`, default `anthropic/claude-opus-5-5`), and only through omp. Every omp call arbiter makes
 loads `arbiter/omp-overlay.yml`, which turns omp's advisor off.
 
+Three recall techniques measured in wave 2a are off by default ([benchmarks §3.9](docs/benchmarks.md)):
+`ARBITER_BASE_READS=1` gives finders and the verifier the base checkout path, `ARBITER_COCHANGE=1` lists files
+that often changed together with each unit's files, and `ARBITER_SAST_CANDIDATES=1` turns analyzer hits on added
+lines that no agent reported into verifier candidates.
+
 `--decompose` (or `ARBITER_DECOMPOSE`) picks how the diff is split into review units; `arbiter plan` and
 `arbiter eval seeded|martian|swr|aacr run` take it too:
 - `ocr` (default): hunk chunking with OCR's sizes.

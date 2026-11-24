@@ -411,6 +411,90 @@ Of the 4 extra references the new arm covered, 3 came from langflow 6652's finde
 
 Wave-1 acceptance (roadmap Phase A): "no Core recall loss" holds on all 8 items (6 AACR, 2 Martian). "Maintainability recall up on AACR" does not hold with `ocr` units (2/9 → 2/9); only the single `hier` run on ComfyUI 9560 raised it (0/3 → 1/3).
 
+### 3.9 Wave 2a (2026-11-24)
+
+Three arms on the same day, Haiku finders, Sonnet verifier and judge, `standard` effort, `ocr` units, `ARBITER_JOBS=4`:
+- **old**: master `7a7403c`, run through `--review-from ~/relic/arbiter`.
+- **new**: this branch, with all four recall techniques on (T-27 reasoning-first schema, T-19 base checkout path,
+  T-04 co-change neighbours, T-01 SAST candidates), the requirements input and the new report.
+- **new+decide**: the same code with `--decide`: one Opus call per review, capped at $1.00, 5 calls in total.
+
+**Item choice.** Five AACR v2 Python PRs. The best is ComfyUI 7952, with the highest per-PR F2 (0.58) in the
+2026-11-25 same-judge re-scoring of the wave-1 new arm. The worst is langflow 6044, with the lowest (0.11). Three
+more are a seeded random draw, `random.Random(20261125).sample(pool, 3)` over the 14 Python AACR v2 PRs not run
+before: vllm 19756, browser-use 1482 and ragflow 5065.
+
+All three arms were judged together in one `arbiter eval aacr rescore` pass. The table uses those numbers, not
+each run's own summary.
+
+Single runs on 5 items: a direction check, not an accuracy claim (E-11).
+
+| Arm | Findings | Matched (new refs) | Precision | Recall | F1 | F2 |
+|---|---|---|---|---|---|---|
+| old | 21 | 4 | 0.190 | 0.200 | 0.195 | 0.198 |
+| new | 22 | 4 | 0.182 | 0.200 | 0.190 | 0.196 |
+| new+decide | 20 | 4 | 0.200 | 0.200 | 0.200 | 0.200 |
+| union of old and new | 43 | 5 | 0.116 | 0.250 | 0.159 | 0.203 |
+| union, merged by location | 24 | 5 | 0.208 | 0.250 | 0.227 | 0.240 |
+
+| Item | Arm | Findings | Matched | References covered | Verdict | Model calls (agents + verifier) | Wall |
+|---|---|---|---|---|---|---|---|
+| ComfyUI 7952 (best) | old | 6 | 2 | 2/5 | pass | 22 + 18 | 222 s |
+| ComfyUI 7952 | new | 6 | 2 | 2/5 | pass | 22 + 18 | 246 s |
+| ComfyUI 7952 | new+decide | 3 | 1 | 1/5 | pass | 22 + 18 + 1 Opus | 198 s |
+| langflow 6044 (worst) | old | 9 | 1 | 1/9 | block | 67 + 42 | 700 s |
+| langflow 6044 | new | 9 | 1 | 1/9 | block | 67 + 39 | 873 s |
+| langflow 6044 | new+decide | 13 | 2 | 2/9 | block | 67 + 48 + 1 Opus | 1029 s |
+| vllm 19756 | old | 0 | 0 | 0/2 | pass | 12 + 3 | 144 s |
+| vllm 19756 | new | 0 | 0 | 0/2 | pass | 12 + 0 | 70 s |
+| vllm 19756 | new+decide | 0 | 0 | 0/2 | pass | 12 + 3 + 1 Opus | 92 s |
+| browser-use 1482 | old | 3 | 1 | 1/1 | pass | 13 + 18 | 208 s |
+| browser-use 1482 | new | 4 | 1 | 1/1 | pass | 13 + 12 | 167 s |
+| browser-use 1482 | new+decide | 2 | 1 | 1/1 | pass | 13 + 12 + 1 Opus | 209 s |
+| ragflow 5065 | old | 3 | 0 | 0/3 | block | 12 + 9 | 333 s |
+| ragflow 5065 | new | 3 | 0 | 0/3 | block | 12 + 12 | 283 s |
+| ragflow 5065 | new+decide | 2 | 0 | 0/3 | block | 12 + 9 + 1 Opus | 431 s |
+| **Total** | **old** | 21 | 4 | 4/20 | | 216 | 1607 s |
+| **Total** | **new** | 22 | 4 | 4/20 | | 207 | 1639 s |
+| **Total** | **new+decide** | 20 | 4 | 4/20 | | 216 + 5 Opus | 1959 s |
+
+**Decide effects** (`coverage.json` `decide`). Every review made exactly one decide call (`called: True`, `ok:
+True`, cap $1.00), and none was retried.
+
+| Item | Dismissed | Challenged | Missed |
+|---|---|---|---|
+| ComfyUI 7952 | 3 | 0 | 0 |
+| browser-use 1482 | 1 | 0 | 0 |
+| ragflow 5065 | 1 | 0 | 0 |
+| vllm 19756 | 0 | 0 | 0 |
+| langflow 6044 | 2 | 0 | 0 |
+
+The rescore judged the 7 dismissed findings too: 2 of them matched a reference, so 2 of 7 dismissals were decide
+errors. One was ComfyUI 7952's unused copied `normalize_path` helper, dismissed as "harmless clutter". That is the
+item's only maintainability reference, which the old and new arms both covered. The other 5 dismissals were
+duplicates of another finding or nits without behavioural effect.
+
+**What the recall techniques did** (evidence in the new arms' RUN folders):
+- T-01, SAST candidates: no analyzer hit fell on an added line in any of the 5 PRs (ComfyUI 7952 had 1 hit, outside
+  the diff). It never fired.
+- T-04, co-change: only langflow 6044 got a neighbour (1 file). The AACR snapshots have short histories. No main
+  finding was in a co-change file.
+- T-19, base reads: the base checkout path reached every finder and verifier prompt. Finders may not cite base lines,
+  so the reports cannot show a finding that depended on them, and no new reference was covered.
+- T-27, reasoning-first schema: prompt order only; its effect cannot be separated from finder variance.
+
+**Decisions** (adoption rule from the wave plan: an arm that loses rescored F2 against old, or more than 0.02
+precision, goes behind a switch):
+- The new arm lost 0.002 F2 (one extra unmatched finding on browser-use 1482). That is inside judge and finder
+  noise, but the rule applies. T-19, T-04 and T-01 showed no visible benefit, so each is now off by default, behind
+  `ARBITER_BASE_READS=1`, `ARBITER_COCHANGE=1` and `ARBITER_SAST_CANDIDATES=1`. T-27 stays: it is brief text with no
+  code path to switch.
+- new+decide gained 0.002 F2 and 0.010 precision against old, so decide passes the rule. It stays opt-in
+  (`--decide`), as planned. Its 2-in-7 wrong dismissals, one of them a maintainability reference, argue against
+  making it the default.
+- The union of two runs merged by location reached F2 0.240 against 0.196–0.198 for a single run: +1 reference
+  (langflow 6044). That is the same direction as the T-03 re-judge (ledger T-03), on 5 more items.
+
 ## 4. Verdict-level view (r2)
 
 - Of the 15 functional bug cases, 10 ended with a BLOCK verdict.
@@ -471,6 +555,10 @@ unmatched findings.
 | [`martian-sentry-20261124040537.json`](../eval/scores/martian-sentry-20261124040537.json) | Wave 1 spot check, new arm, sentry-greptile 3 |
 | [`martian-cal_dot_com-20261124035405.json`](../eval/scores/martian-cal_dot_com-20261124035405.json) | Wave 1 spot check, old arm, cal.com 8330 |
 | [`martian-cal_dot_com-20261124041504.json`](../eval/scores/martian-cal_dot_com-20261124041504.json) | Wave 1 spot check, new arm, cal.com 8330 |
+| [`aacr-20261124184936.json`](../eval/scores/aacr-20261124184936.json) | Wave 2a, old arm, 5 AACR Python PRs |
+| [`aacr-20261124191715.json`](../eval/scores/aacr-20261124191715.json) | Wave 2a, new arm |
+| [`aacr-20261124194523.json`](../eval/scores/aacr-20261124194523.json) | Wave 2a, new+decide arm |
+| [`aacr-rescore-20261124202048.json`](../eval/scores/aacr-rescore-20261124202048.json) | Wave 2a, one-pass rescore of the three arms plus the union |
 
 Four earlier Martian files are not tracked: one per repo, plus a second for cal.com. The API rate limit made agents fail in all four, and the reruns above replace them.
 

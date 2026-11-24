@@ -1,0 +1,134 @@
+{
+  "benchmark": "AACR-Bench",
+  "effort": "standard",
+  "prs": 5,
+  "ok": 5,
+  "precision": 0.2,
+  "recall": 0.2,
+  "f1": 0.2,
+  "f2": 0.2,
+  "recall_by_category": {
+    "Code Defect": 0.222,
+    "Maintainability and Readability": 0.0,
+    "Performance": 0.0
+  },
+  "maintainability_recall": 0.0,
+  "functional_recall": 0.211,
+  "evolvability_findings": 2,
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "decompose": "ocr",
+  "review_from": "",
+  "decide": "1",
+  "source": {
+    "repo": "alibaba/aacr-bench",
+    "sha": "07ba1b35102110404f6a931bf05dea33e6d89389",
+    "license": "Apache-2.0",
+    "snapshots": {
+      "repo": "Alibaba-Aone/aacr-bench-repos",
+      "revision": "6f0a49005a246a3df5369731c7445968052801e2"
+    },
+    "fetched": "2026-11-24T18:49:28Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/comfyanonymous/ComfyUI/pull/7952",
+      "status": "ok",
+      "verdict": "pass",
+      "wall_s": 198,
+      "findings": 3,
+      "matched_new": 1,
+      "unjudged": 0,
+      "refs": 5,
+      "covered": 1,
+      "by_category": {
+        "Code Defect": [
+          1,
+          4
+        ],
+        "Maintainability and Readability": [
+          0,
+          1
+        ]
+      },
+      "evolvability_findings": 0
+    },
+    {
+      "url": "https://github.com/browser-use/browser-use/pull/1482",
+      "status": "ok",
+      "verdict": "pass",
+      "wall_s": 209,
+      "findings": 2,
+      "matched_new": 1,
+      "unjudged": 0,
+      "refs": 1,
+      "covered": 1,
+      "by_category": {
+        "Code Defect": [
+          1,
+          1
+        ]
+      },
+      "evolvability_findings": 0
+    },
+    {
+      "url": "https://github.com/infiniflow/ragflow/pull/5065",
+      "status": "ok",
+      "verdict": "block",
+      "wall_s": 431,
+      "findings": 2,
+      "matched_new": 0,
+      "unjudged": 0,
+      "refs": 3,
+      "covered": 0,
+      "by_category": {
+        "Code Defect": [
+          0,
+          2
+        ],
+        "Performance": [
+          0,
+          1
+        ]
+      },
+      "evolvability_findings": 0
+    },
+    {
+      "url": "https://github.com/vllm-project/vllm/pull/19756",
+      "status": "ok",
+      "verdict": "pass",
+      "wall_s": 92,
+      "findings": 0,
+      "matched_new": 0,
+      "unjudged": 0,
+      "refs": 2,
+      "covered": 0,
+      "by_category": {
+        "Code Defect": [
+          0,
+          2
+        ]
+      },
+      "evolvability_findings": 0
+    },
+    {
+      "url": "https://github.com/langflow-ai/langflow/pull/6044",
+      "status": "ok",
+      "verdict": "block",
+      "wall_s": 1029,
+      "findings": 13,
+      "matched_new": 2,
+      "unjudged": 0,
+      "refs": 9,
+      "covered": 2,
+      "by_category": {
+        "Code Defect": [
+          2,
+          9
+        ]
+      },
+      "evolvability_findings": 2
+    }
+  ]
+}
