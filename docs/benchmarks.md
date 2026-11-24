@@ -240,7 +240,75 @@ None of the clean PRs was scored, so false alarms on clean code are still unmeas
 
 - In 6 of the 12 PRs arbiter reported nothing. The judge rated those reviews "LGTM" and counted every ground-truth change as missed.
 - SWR-Bench's paper reports a best F1 of 18.73% for the strongest tool `[AX-S7]`, but over all 1,000 PRs, clean ones included. Twelve issue-only PRs are not comparable to that.
-- **Cost.** These Martian and SWR runs used the omp default model, Opus, for every role, and drained the account's token budget. From now on, finders run on Haiku and the verifier, proof agent and judge on Sonnet, and Opus is refused (methodology §3.7). Benchmarks are paused until the user resumes them.
+- **Cost.** These Martian and SWR runs used the omp default model, Opus, for every role, and drained the account's token budget. From now on, finders run on Haiku and the verifier, proof agent and judge on Sonnet, and Opus is refused (methodology §3.7). The 2026-11-23 matrix (§3.7) reran Python and TypeScript under that rule.
+
+### 3.7 Model matrix, Python and TypeScript (2026-11-23, r2 briefs, standard effort, `ocr` units)
+
+Two setups, same briefs and datasets:
+- **H+S:** Haiku 5.5 finders; Sonnet 5.5 verifier, proof agent and judge (the defaults).
+- **S+S:** Sonnet 5.5 for every role (`--model anthropic/claude-sonnet-5-5`).
+
+Go and Rust (grafana, seeded go/rust) were postponed by the user. `ARBITER_JOBS=4`, seeded and SWR at `--parallel 2`. Every PR and case was scored; none failed or was rate-limited. The H+S SWR row pools 28 PRs scored on 2026-11-23 03:13 with the 12 rerun in the matrix (`--skip-scored`); the S+S row ran all 40.
+
+| Dataset | Setup | Precision | Recall | F1 | F2 | Detail |
+|---|---|---|---|---|---|---|
+| Seeded Python+TS, 14 cases | H+S | **0.56** | 0.69 | **0.61** | 0.66 | 8 FP; 11/16 must-find; 4 bug cases blocked; 0 clean-case findings; 45 min of review wall time |
+| Seeded Python+TS, 14 cases | S+S | 0.48 | **0.81** | 0.60 | **0.71** | 12 FP; 13/16 must-find; 4 bug cases blocked; 0 clean-case findings; 69 min |
+| Martian sentry, 10 PRs | H+S | **0.31** | 0.36 | 0.34 | 0.35 | TP 10, FP 22, Core 12/33 |
+| Martian sentry, 10 PRs | S+S | 0.29 | **0.42** | 0.34 | **0.39** | TP 15, FP 37, Core 14/33 |
+| Martian cal.com, 10 PRs | H+S | **0.42** | 0.43 | **0.43** | 0.43 | TP 19, FP 26, Core 16/37 |
+| Martian cal.com, 10 PRs | S+S | 0.36 | **0.51** | 0.42 | **0.47** | TP 22, FP 39, Core 19/37 |
+| SWR-Bench, 40 PRs (28 issue, 12 clean) | H+S | **0.67** | **0.26** | **0.38** | **0.30** | TP 12, FP 6, FN 34; 5/28 issue PRs blocked; functional recall 11/33; clean judged good 12/12, 0 blocked |
+| SWR-Bench, 40 PRs (28 issue, 12 clean) | S+S | 0.38 | 0.24 | 0.29 | 0.26 | TP 11, FP 18, FN 35; 4/28 issue PRs blocked; functional recall 11/33; clean judged good 12/12, 0 blocked |
+
+- **Sonnet finders buy recall with precision.** On seeded and Martian, S+S gains 6–12 points of recall and loses 2–8 points of precision. F1 ties within 0.01, and F2 favours S+S by 4–5 points.
+- **On SWR-Bench, Sonnet finders lose on every metric.** S+S raised 3× the false positives of H+S (18 against 6), with one fewer true positive and the same functional recall. SWR is the largest and most realistic sample here.
+- **Clean code stays clean in both setups.** There were no findings on clean seeded cases, and no clean SWR PR was blocked.
+- **Haiku against Opus.** The Opus-era rows above (§3.4–§3.6) were partial and rate-limited, so they are not a like-for-like baseline. On Martian sentry, H+S over 10 PRs (F2 0.35) sits below Opus over 7 (F2 0.44). On cal.com, H+S over 10 PRs (F2 0.43) beats Opus over 3 (F2 0.29).
+- **Against the Martian tools on the same 20 PRs.** Martian publishes every tool's judged reviews (`offline/results/<judge>/evaluations.json` at the pinned commit). The table re-scores 49 tools with arbiter's Core rule on the 10 sentry and 10 cal.com PRs arbiter ran: a match to a non-Core comment is neutral, and every unmatched candidate is a false positive. Martian's Sonnet 4.5 judge results are used; arbiter's own judge is Sonnet 5.5.
+
+  | Rank of 51 | Tool | Precision | Recall | F2 (Core, 20 PRs) |
+  |---|---|---|---|---|
+  | 1 | Augment | 0.53 | 0.69 | 0.65 |
+  | 2 | Qodo v2 | 0.55 | 0.63 | 0.61 |
+  | 8 | CodeRabbit | 0.34 | 0.61 | 0.53 |
+  | 14 | Bugbot | 0.57 | 0.44 | 0.46 |
+  | 15 | **arbiter S+S** | 0.33 | 0.47 | **0.43** |
+  | 16 | Claude Code | 0.40 | 0.41 | 0.41 |
+  | 18 | **arbiter H+S** | 0.38 | 0.40 | **0.40** |
+  | 28 | Claude (plain) | 0.43 | 0.33 | 0.34 |
+  | — | mean of the 49 tools | | | 0.34 (median 0.35) |
+
+  Caveats:
+  - The tools ran months earlier, on older models, and were scored by a different judge.
+  - For 22 older tool versions, between 1 and 10 of their matched golden comments use wording older than the pinned golden set. Those matches could not be categorised and are not counted, so those tools are slightly understated.
+  - Twenty PRs give each F2 an uncertainty of several points.
+- **Where H+S loses recall on those 20 PRs.** One Sonnet call per PR mapped each of the 70 Core golden comments to arbiter's raw finder output (`raw.json`). Each match was then traced through validation, the verifier panel and placement. 40 of the 70 comments were caught by at least 3 of the top 4 tools (Augment, Qodo v2, cubic v2, Qodo extended v2); this "consensus" set excludes contested goldens.
+
+  | Stage where the comment was lost | All 70 | Consensus 40 |
+  |---|---|---|
+  | Reported in the main section (hit) | 28 | 20 |
+  | Never raised by any finder | 32 | 12 |
+  | Raised, rejected by validation (2 had empty `evidence_lines`, 1 was outside the unit's hunks ±3) | 3 | 2 |
+  | Raised, dropped by the verifier panel as a false positive | 5 | 4 |
+  | Raised, verified TRUE_POSITIVE, but placed in Suspected for lack of an execution proof | 2 | 2 |
+
+  - **Finders account for most of the gap.** Of the 20 missed consensus comments, 12 were never raised. Several are cross-file contract breaks, such as an interface signature change whose implementations were not updated, or a wrong argument passed to a helper. The `hier` contract pass targets that kind of bug.
+  - **The rest were found and then thrown away.** The other 8 were raised by a finder and lost after it.
+    - **Suspected placement.** The 2 verified-but-unproven findings are both High golden bugs. They were the only findings placed that way in the 20 PRs, so promoting them costs no precision. Dependency fetch fails on sentry, so no proof could run.
+    - **Verifier drops.** The panel dropped 62 findings in all, 5 of them true. Its reasons argue the trigger is unreachable. Overall it is right about 90% of the time, so loosening it wholesale would cost precision.
+  - **By severity**, H+S caught 3/3 Critical, 13/28 High, 8/25 Medium and 4/14 Low. Augment caught 23/28 High and 16/25 Medium, with 4.7 comments per PR against arbiter's 3.9.
+- **Decision.** H+S stays the default (ledger M-02). Sonnet finders cost Sonnet prices for a recall gain seen only on the two smaller sets. They cost precision everywhere, and lose outright on SWR-Bench.
+
+Commands (from the repo root):
+
+```sh
+arbiter eval seeded run --lang python,ts --parallel 2 [--model anthropic/claude-sonnet-5-5]
+arbiter eval martian run --repo sentry|cal_dot_com [--model anthropic/claude-sonnet-5-5]
+arbiter eval swr run --parallel 2 [--skip-scored eval/scores/swr-20261123031300.json] [--model anthropic/claude-sonnet-5-5]
+```
+
+Each run was done once, and run-to-run variance was not measured (§5). Differences of a few points between setups may be noise; the SWR precision gap (0.67 against 0.38) is the only large one.
 
 ## 4. Verdict-level view (r2)
 
@@ -282,6 +350,15 @@ unmatched findings.
 | [`martian-cal_dot_com-20261121171127.json`](../eval/scores/martian-cal_dot_com-20261121171127.json) | Martian cal.com, rerun after the rate limit reset |
 | [`martian-sentry-20261122152534.json`](../eval/scores/martian-sentry-20261122152534.json) | Martian sentry PRs 4–10 (4 scored, 3 rate-limited) |
 | [`swr-20261122154039.json`](../eval/scores/swr-20261122154039.json) | SWR-Bench, partial (12 of 40 scored) |
+| [`seeded-20261123142051.json`](../eval/scores/seeded-20261123142051.json) | Matrix H+S, seeded Python+TS |
+| [`seeded-20261123192323.json`](../eval/scores/seeded-20261123192323.json) | Matrix S+S, seeded Python+TS |
+| [`martian-sentry-20261123142140.json`](../eval/scores/martian-sentry-20261123142140.json) | Matrix H+S, Martian sentry |
+| [`martian-sentry-20261123192349.json`](../eval/scores/martian-sentry-20261123192349.json) | Matrix S+S, Martian sentry |
+| [`martian-cal_dot_com-20261123162336.json`](../eval/scores/martian-cal_dot_com-20261123162336.json) | Matrix H+S, Martian cal.com |
+| [`martian-cal_dot_com-20261123233602.json`](../eval/scores/martian-cal_dot_com-20261123233602.json) | Matrix S+S, Martian cal.com |
+| [`swr-20261123031300.json`](../eval/scores/swr-20261123031300.json) | Matrix H+S, SWR-Bench, first 28 of 40 |
+| [`swr-20261123144505.json`](../eval/scores/swr-20261123144505.json) | Matrix H+S, SWR-Bench, remaining 12 |
+| [`swr-20261123195901.json`](../eval/scores/swr-20261123195901.json) | Matrix S+S, SWR-Bench, all 40 |
 
 Four earlier Martian files are not tracked: one per repo, plus a second for cal.com. The API rate limit made agents fail in all four, and the reruns above replace them.
 

@@ -1,0 +1,228 @@
+{
+  "effort": "standard",
+  "harness": "omp",
+  "model": "anthropic/claude-sonnet-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "precision": 0.478,
+  "recall": 0.812,
+  "clean_case_findings": 0,
+  "suspected": 0,
+  "errors": [],
+  "rows": [
+    {
+      "case": "python-01-pagination-off-by-one",
+      "clean": false,
+      "verdict": "block",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "tests/test_core.py:19 [tests] The added paginate tests only cover an empty past-end page and the page<1 error. Neither exercises t"
+      ],
+      "exit_code": 1,
+      "wall_s": 352
+    },
+    {
+      "case": "python-02-mutable-default-swallow",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 2,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "notes/store.py:14 [logic] new_list() calls add() without a bucket, so it appends to add()'s shared mutable default list. It re",
+        "notes/store.py:13 [docs] The new_list docstring promises a fresh list, but add() uses the shared default bucket=[], so every "
+      ],
+      "exit_code": 0,
+      "wall_s": 370
+    },
+    {
+      "case": "python-03-sql-injection",
+      "clean": false,
+      "verdict": "pass",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "inventory/web.py:24 [observability] sqlite3.Error is caught and turned into a bare 500 with no log or traceback, so operators cannot see"
+      ],
+      "exit_code": 0,
+      "wall_s": 345
+    },
+    {
+      "case": "python-04-async-task-sleep",
+      "clean": false,
+      "verdict": "pass",
+      "main": 2,
+      "matched": 2,
+      "fp": 0,
+      "must": 2,
+      "must_hit": 2,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 361
+    },
+    {
+      "case": "python-05-singleton-generic-rangelen",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 3,
+      "must_hit": 2,
+      "suspected": 0,
+      "fp_findings": [
+        "plugins/registry.py:28 [logic] The loop is bounded by len(names) only, so mismatched list lengths either leave the singleton partia",
+        "plugins/registry.py:26 [docs] The public register_all has no docstring. It doesn't say that names and items must have equal length"
+      ],
+      "exit_code": 0,
+      "wall_s": 288
+    },
+    {
+      "case": "python-06-clean-rename",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 199
+    },
+    {
+      "case": "python-07-clean-pure-fn",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 145
+    },
+    {
+      "case": "ts-01-foreach-async",
+      "clean": false,
+      "verdict": "block",
+      "main": 5,
+      "matched": 1,
+      "fp": 4,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "test/sync.test.ts:5 [tests] The only test covers normalize(). syncItems, which reports the stored count that cli.ts prints, has ",
+        "src/sync.ts:7 [docs] Docstring says negative quantities are 'dropped', but the code clamps them to 0 with Math.max and ke",
+        "src/cli.ts:6 [spec] main() returns 'synced N of M items' with N taken from syncItems. Because of the un-awaited writes, ",
+        "src/sync.ts:7 [spec] The doc comment says it 'drops negative quantities'. The code clamps them to 0 and keeps the item, s"
+      ],
+      "exit_code": 1,
+      "wall_s": 458
+    },
+    {
+      "case": "ts-02-json-parse-cast",
+      "clean": false,
+      "verdict": "pass",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 279
+    },
+    {
+      "case": "ts-03-innerhtml-xss",
+      "clean": false,
+      "verdict": "block",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 1,
+      "wall_s": 263
+    },
+    {
+      "case": "ts-04-date-range-boundary",
+      "clean": false,
+      "verdict": "block",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "test/report.test.ts:11 [tests] The only test uses dates strictly inside the period, so it passes whether the filter is `< to` or `<",
+        "src/report.ts:13 [spec] guestsInPeriod omits guests booked on the last day of the period, because it delegates to the exclus"
+      ],
+      "exit_code": 1,
+      "wall_s": 443
+    },
+    {
+      "case": "ts-05-idiom-enum-any",
+      "clean": false,
+      "verdict": "pass",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 3,
+      "must_hit": 2,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 279
+    },
+    {
+      "case": "ts-06-clean-rename",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 193
+    },
+    {
+      "case": "ts-07-clean-pure-fn",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 185
+    }
+  ],
+  "runs": "/home/lawrence/relic/arbiter/eval/results/runs/20261123192323"
+}

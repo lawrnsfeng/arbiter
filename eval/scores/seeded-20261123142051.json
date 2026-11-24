@@ -1,0 +1,224 @@
+{
+  "effort": "standard",
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "precision": 0.556,
+  "recall": 0.688,
+  "clean_case_findings": 0,
+  "suspected": 0,
+  "errors": [],
+  "rows": [
+    {
+      "case": "python-01-pagination-off-by-one",
+      "clean": false,
+      "verdict": "block",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "tests/test_core.py:19 [tests] test_paginate_past_end_is_empty passes with the off-by-one slice (`items[start:end + 1]`, pager/core"
+      ],
+      "exit_code": 1,
+      "wall_s": 304
+    },
+    {
+      "case": "python-02-mutable-default-swallow",
+      "clean": false,
+      "verdict": "pass",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 2,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "notes/store.py:14 [logic] new_list() does not start a fresh list: it calls add() without a bucket, so it appends to the shared"
+      ],
+      "exit_code": 0,
+      "wall_s": 317
+    },
+    {
+      "case": "python-03-sql-injection",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "inventory/web.py:16 [edge] urlsplit(self.path) runs outside the try block and raises ValueError on a malformed bracketed netloc",
+        "inventory/web.py:21 [errors] db.connect() runs outside the try block, so a sqlite3.Error from connect escapes do_GET; the except "
+      ],
+      "exit_code": 0,
+      "wall_s": 324
+    },
+    {
+      "case": "python-04-async-task-sleep",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 2,
+      "fp": 1,
+      "must": 2,
+      "must_hit": 2,
+      "suspected": 0,
+      "fp_findings": [
+        "fetcher/load.py:23 [docs] load_with_retry's docstring says it retries `attempts` times, but the loop at line 24 makes `attempt"
+      ],
+      "exit_code": 0,
+      "wall_s": 213
+    },
+    {
+      "case": "python-05-singleton-generic-rangelen",
+      "clean": false,
+      "verdict": "pass",
+      "main": 3,
+      "matched": 1,
+      "fp": 2,
+      "must": 3,
+      "must_hit": 2,
+      "suspected": 0,
+      "fp_findings": [
+        "plugins/registry.py:27 [errors] register_all writes into the process-wide singleton one item at a time with no validation or rollbac",
+        "plugins/registry.py:26 [docs] Public `register_all` and class `Registry` have no docstrings, while the sibling public function `no"
+      ],
+      "exit_code": 0,
+      "wall_s": 186
+    },
+    {
+      "case": "python-06-clean-rename",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 126
+    },
+    {
+      "case": "python-07-clean-pure-fn",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 126
+    },
+    {
+      "case": "ts-01-foreach-async",
+      "clean": false,
+      "verdict": "block",
+      "main": 2,
+      "matched": 1,
+      "fp": 1,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [
+        "src/sync.ts:7 [docs] The normalize docstring says negative quantities are dropped, but the code clamps them to 0 and keep"
+      ],
+      "exit_code": 1,
+      "wall_s": 210
+    },
+    {
+      "case": "ts-02-json-parse-cast",
+      "clean": false,
+      "verdict": "pass",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 205
+    },
+    {
+      "case": "ts-03-innerhtml-xss",
+      "clean": false,
+      "verdict": "block",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 1,
+      "wall_s": 191
+    },
+    {
+      "case": "ts-04-date-range-boundary",
+      "clean": false,
+      "verdict": "block",
+      "main": 1,
+      "matched": 1,
+      "fp": 0,
+      "must": 1,
+      "must_hit": 1,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 1,
+      "wall_s": 172
+    },
+    {
+      "case": "ts-05-idiom-enum-any",
+      "clean": false,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 3,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 105
+    },
+    {
+      "case": "ts-06-clean-rename",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 116
+    },
+    {
+      "case": "ts-07-clean-pure-fn",
+      "clean": true,
+      "verdict": "pass",
+      "main": 0,
+      "matched": 0,
+      "fp": 0,
+      "must": 0,
+      "must_hit": 0,
+      "suspected": 0,
+      "fp_findings": [],
+      "exit_code": 0,
+      "wall_s": 118
+    }
+  ],
+  "runs": "/home/lawrence/relic/arbiter/eval/results/runs/20261123142051"
+}

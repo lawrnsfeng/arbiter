@@ -1,0 +1,161 @@
+{
+  "repo": "sentry",
+  "prs": 10,
+  "ok": 10,
+  "precision": 0.312,
+  "recall": 0.364,
+  "f1": 0.336,
+  "f2": 0.352,
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "source": {
+    "repo": "withmartian/code-review-benchmark",
+    "sha": "23a35d0d64f7de5a68e5679da08414e0edacea9b",
+    "license": "MIT",
+    "fetched": "2026-11-21T04:32:10Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1",
+      "status": "ok",
+      "findings": 3,
+      "tp": 1,
+      "fp": 2,
+      "unjudged": 0,
+      "core": 4,
+      "core_hit": 1,
+      "categories": [
+        "bug"
+      ]
+    },
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2",
+      "status": "ok",
+      "findings": 3,
+      "tp": 1,
+      "fp": 2,
+      "unjudged": 0,
+      "core": 4,
+      "core_hit": 2,
+      "categories": [
+        "bug"
+      ]
+    },
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3",
+      "status": "ok",
+      "findings": 5,
+      "tp": 0,
+      "fp": 5,
+      "unjudged": 0,
+      "core": 3,
+      "core_hit": 0,
+      "categories": [
+        "bug",
+        "data"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/67876",
+      "status": "ok",
+      "findings": 2,
+      "tp": 0,
+      "fp": 2,
+      "unjudged": 0,
+      "core": 3,
+      "core_hit": 0,
+      "categories": [
+        "bug",
+        "security"
+      ]
+    },
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5",
+      "status": "ok",
+      "findings": 6,
+      "tp": 2,
+      "fp": 4,
+      "unjudged": 0,
+      "core": 6,
+      "core_hit": 2,
+      "categories": [
+        "api",
+        "bug"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/93824",
+      "status": "ok",
+      "findings": 5,
+      "tp": 2,
+      "fp": 3,
+      "unjudged": 0,
+      "core": 5,
+      "core_hit": 3,
+      "categories": [
+        "bug",
+        "concurrency",
+        "test_gap"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/77754",
+      "status": "ok",
+      "findings": 1,
+      "tp": 1,
+      "fp": 0,
+      "unjudged": 0,
+      "core": 2,
+      "core_hit": 1,
+      "categories": [
+        "bug",
+        "concurrency",
+        "style"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/80528",
+      "status": "ok",
+      "findings": 2,
+      "tp": 1,
+      "fp": 1,
+      "unjudged": 0,
+      "core": 2,
+      "core_hit": 1,
+      "categories": [
+        "bug",
+        "perf"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/95633",
+      "status": "ok",
+      "findings": 2,
+      "tp": 0,
+      "fp": 2,
+      "unjudged": 0,
+      "core": 1,
+      "core_hit": 0,
+      "categories": [
+        "doc_defect",
+        "style"
+      ]
+    },
+    {
+      "url": "https://github.com/getsentry/sentry/pull/80168",
+      "status": "ok",
+      "findings": 3,
+      "tp": 2,
+      "fp": 1,
+      "unjudged": 0,
+      "core": 3,
+      "core_hit": 2,
+      "categories": [
+        "api",
+        "doc_defect",
+        "test_gap"
+      ]
+    }
+  ]
+}
