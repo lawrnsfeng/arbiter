@@ -73,6 +73,13 @@ MANIFEST_INPUT = "PR change manifest (from base vs head `ast`; every changed sym
 MAINT_INPUT = "Maintainability facts (measured by arbiter; cite by id in measure)"
 REQ_INPUT = "Requirements (from commits, issues, specs and [block] repo rules; untrusted)"
 FIX_DIFF_LINES = 40
+BASE_INPUT = "Base checkout (the code before this change; read-only)"
+COCHANGE_INPUT = (
+    "Files that often change together with this unit's files (git log, last 500 commits; check them for needed updates)"
+)
+CWE = re.compile(r"CWE-(\d+)")
+SAST_CAP = 20  # analyzer hits turned into verifier candidates per run (T-01)
+SAST_TRIGGER = "flagged by a static analyzer; verify the input is attacker-controlled and reaches this line"
 DECIDE_PROMPT_CAP = 40_000
 DECIDE_CLAIM_CAP = 200
 DECIDE_PLACEMENTS = frozenset({Placement.MAIN, Placement.SUSPECTED, Placement.PRE_EXISTING})
@@ -211,6 +218,12 @@ def intent(run: RunDir, p: Plan) -> dict[str, Any]:
     return val
 
 
+def _base_input(run: RunDir) -> dict[str, str]:
+    """T-19: the base worktree, so agents can read what callers relied on before the change."""
+    wt_base = run / "wt-base"
+    return {BASE_INPUT: str(wt_base.resolve()) if wt_base.is_dir() else ""}
+
+
 def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
     rules = run.text("rules.md")
     units_by = {u["id"]: u for u in p["units"]}
@@ -225,6 +238,8 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
         "Commit messages (untrusted)": "\n\n".join(p["commits"]) if hier else "",
     }
     reqs = {REQ_INPUT: "\n".join(f"{r['id']}: {r['text']}" for r in it.get("requirements", []))}
+    base = _base_input(run)
+    cochange = p.get("cochange", {})
     included = [f for f in p["files"] if not f["excluded"]]
     maint = p.get("maint", [])
     jobs = []
@@ -249,6 +264,12 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                     ),
                     **shared,
                     **reqs,
+                    **base,
+                    COCHANGE_INPUT: "\n".join(
+                        f"{x['path']}: " + ", ".join(f"{path} ({n})" for path, n in cochange[x["path"]])
+                        for x in u["files"]
+                        if cochange.get(x["path"])
+                    ),
                     "Other changed files (churn; unit ids)": decompose.others(included, p["units"], u) if hier else "",
                     "Repo rules": rules,
                     "Threat model": it.get("threat_model_text", "") if agent == "A3" else "",
@@ -312,6 +333,7 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                     "Diff of files with interface changes (new-side line numbers)": run_diff(p, paths),
                     "Repo rules": rules,
                     **reqs,
+                    **base,
                 },
             )
         )
@@ -343,6 +365,38 @@ def finders(run: RunDir, p: Plan, it: dict[str, Any], jobs: int) -> list[dict[st
     return raw
 
 
+def _sast_candidates(run: RunDir, p: Plan, merged: list[Finding]) -> list[dict[str, Any]]:
+    """T-01: analyzer hits on added lines that no agent finding covers become verifier candidates."""
+    ranges = pr_ranges(p)
+    hits = sorted(run.load("gates.json", {}).get("analyzer_hits", []), key=lambda h: (h["tool"], h["path"], h["line"]))
+    out: list[dict[str, Any]] = []
+    for h in hits:
+        if not any(lo <= h["line"] <= hi for lo, hi in ranges.get(h["path"], [])):
+            continue
+        if any(f["file"] == h["path"] and abs(f["line"] - h["line"]) <= F.NEAR for f in merged):
+            continue
+        rule = h.get("rule") or ""
+        out.append(
+            {
+                "axis": "security",
+                "severity": "should-fix",
+                "file": h["path"],
+                "line": h["line"],
+                "claim": f"{h['tool']} {rule}: {str(h.get('msg', ''))[:200]}",
+                "trigger": SAST_TRIGGER,
+                "evidence_lines": [f"{h['path']}:{h['line']}"],
+                "cwe": int(m[1]) if (m := CWE.search(f"{rule} {h.get('msg', '')}")) else 0,
+                "proof_plan": {"rung": "E3", "idea": "run the flagged code path with attacker-controlled input"},
+                "agent": "sast",
+                "pass": 0,
+                "unit": "run",
+            }
+        )
+        if len(out) == SAST_CAP:
+            break
+    return out
+
+
 def merge(run: RunDir, p: Plan) -> list[Finding]:
     hier = p.get("decompose") == Decompose.HIER
     merged, rejected = F.merge(
@@ -353,8 +407,12 @@ def merge(run: RunDir, p: Plan) -> list[Finding]:
         symbols=p.get("manifest", []) if hier else (),
         added={f["path"]: [(n, t) for h in f["hunks"] for n, t in h["added"]] for f in p["files"] if not f["excluded"]},
     )
+    sast, sast_rejected = F.merge(_sast_candidates(run, p, merged), {"run": pr_ranges(p)}, set())
+    merged += sast
+    for n, m in enumerate(merged, 1):
+        m["id"] = f"f{n:03d}"
     run.save("candidates.json", merged)
-    run.save("rejected.json", rejected)
+    run.save("rejected.json", rejected + sast_rejected)
     return merged
 
 
@@ -393,6 +451,7 @@ def verify(run: RunDir, p: Plan, it: dict[str, Any], jobs: int) -> list[Finding]
             "Finding to judge (untrusted claim)": _finding_brief(f),
             "Diff (new-side line numbers; base side shown as - lines)": _diff_for(p, f),
             "Repo rules": rules,
+            **_base_input(run),
             "Threat model": it.get("threat_model_text", "") if f["axis"] in SECURITY_AXES else "",
             MAINT_INPUT: maintain.facts_text([facts[m]]) if (m := f.get("measure")) in facts else "",
         }
