@@ -4,6 +4,7 @@ Also renders the numbered diffs that agent prompts show.
 """
 
 import functools
+import os
 import random
 import re
 import subprocess
@@ -227,7 +228,9 @@ def plan(
         manifest=syms,
         maint=maint,
         blocking_rules=blocking,
-        cochange={} if eff == Effort.QUICK else cochange.neighbours(repo, [f["path"] for f in included], tree),
+        cochange=cochange.neighbours(repo, [f["path"] for f in included], tree)
+        if eff != Effort.QUICK and os.environ.get("ARBITER_COCHANGE") == "1"
+        else {},
     )
     run.save("plan.json", p)
     run.cov(

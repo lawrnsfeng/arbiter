@@ -57,12 +57,19 @@ def _merge(tmp_path, raw):
     return json.loads((tmp_path / "candidates.json").read_text())
 
 
-def test_sast_hit_becomes_candidate(tmp_path):
+def test_sast_hit_becomes_candidate(tmp_path, monkeypatch):
+    monkeypatch.setenv("ARBITER_SAST_CANDIDATES", "1")
     cands = _merge(tmp_path, [])
     assert [c["agents"] for c in cands] == [["sast"]]
     assert cands[0]["axis"] == "security" and cands[0]["id"] == "f001"
 
 
-def test_sast_hit_covered_by_agent_finding_adds_none(tmp_path):
+def test_sast_candidates_off_by_default(tmp_path, monkeypatch):
+    monkeypatch.delenv("ARBITER_SAST_CANDIDATES", raising=False)
+    assert _merge(tmp_path, []) == []
+
+
+def test_sast_hit_covered_by_agent_finding_adds_none(tmp_path, monkeypatch):
+    monkeypatch.setenv("ARBITER_SAST_CANDIDATES", "1")
     cands = _merge(tmp_path, [AGENT])
     assert [c["agents"] for c in cands] == [["A1a"]]

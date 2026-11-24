@@ -219,9 +219,10 @@ def intent(run: RunDir, p: Plan) -> dict[str, Any]:
 
 
 def _base_input(run: RunDir) -> dict[str, str]:
-    """T-19: the base worktree, so agents can read what callers relied on before the change."""
+    """T-19 (switch ARBITER_BASE_READS=1): the base worktree, so agents can read what callers relied on before."""
     wt_base = run / "wt-base"
-    return {BASE_INPUT: str(wt_base.resolve()) if wt_base.is_dir() else ""}
+    on = os.environ.get("ARBITER_BASE_READS") == "1" and wt_base.is_dir()
+    return {BASE_INPUT: str(wt_base.resolve()) if on else ""}
 
 
 def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
@@ -407,7 +408,8 @@ def merge(run: RunDir, p: Plan) -> list[Finding]:
         symbols=p.get("manifest", []) if hier else (),
         added={f["path"]: [(n, t) for h in f["hunks"] for n, t in h["added"]] for f in p["files"] if not f["excluded"]},
     )
-    sast, sast_rejected = F.merge(_sast_candidates(run, p, merged), {"run": pr_ranges(p)}, set())
+    sast_raw = _sast_candidates(run, p, merged) if os.environ.get("ARBITER_SAST_CANDIDATES") == "1" else []
+    sast, sast_rejected = F.merge(sast_raw, {"run": pr_ranges(p)}, set())
     merged += sast
     for n, m in enumerate(merged, 1):
         m["id"] = f"f{n:03d}"
