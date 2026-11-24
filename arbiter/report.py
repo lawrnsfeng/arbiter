@@ -11,6 +11,7 @@ from .rundir import RunDir
 
 REPORTED = frozenset({Placement.MAIN, Placement.SUSPECTED, Placement.PRE_EXISTING, Placement.NIT_OVERFLOW})
 EXCERPT_LINES = 3
+MAINT_SECTION = "Maintainability (readability · idiom · design · docs)"
 
 
 def _tag(f: Finding) -> str:
@@ -51,10 +52,13 @@ def _line(f: Finding) -> str:
 def _sections(allf: list[Finding]) -> dict[str, list[Finding]]:
     main = [f for f in allf if f.get("placement") == Placement.MAIN]
     functional = [f for f in main if Axis(f["axis"]).group == Group.FUNCTIONAL and f["axis"] != Axis.SPEC]
+    unprovable = [f for f in functional if f.get("placement_reason", "").startswith(F.UNPROVABLE)]
+    proven = [f for f in functional if f not in unprovable]
     return {
-        "Block (proven)": [f for f in functional if f["severity"] == Severity.BLOCK],
-        "Should-fix (proven)": [f for f in functional if f["severity"] != Severity.BLOCK],
-        "Evolvability (idiom · design · docs)": [f for f in main if Axis(f["axis"]).group == Group.EVOLVABILITY],
+        "Block (proven)": [f for f in proven if f["severity"] == Severity.BLOCK],
+        "Should-fix (proven)": [f for f in proven if f["severity"] != Severity.BLOCK],
+        "Should-fix (verified; no proof possible here)": unprovable,
+        MAINT_SECTION: [f for f in main if Axis(f["axis"]).group == Group.EVOLVABILITY],
         "Suspected (unproven, non-blocking)": [f for f in allf if f.get("placement") == Placement.SUSPECTED],
         "Pre-existing": [f for f in allf if f.get("placement") == Placement.PRE_EXISTING],
     }

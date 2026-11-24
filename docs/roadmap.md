@@ -20,7 +20,7 @@ Exit criteria before Phase L starts:
 | Benchmark | Target |
 |---|---|
 | Held-out seeded Python set | precision ≥ 0.80, recall ≥ 0.70, 0 clean-case findings, over 3 runs, with the spread reported |
-| Martian sentry, all 10 PRs | F2 Core ≥ 0.60 and precision ≥ 0.60 |
+| Martian sentry, all 10 PRs | F2 Core ≥ 0.60, precision ≥ 0.60, and maintainability recall reported |
 | Verdict | every proven functional bug that breaks the documented contract on a reachable public path blocks |
 
 ### P0. Measurement first (no tuning yet)
@@ -78,6 +78,16 @@ stay the primary regression gate.
 |---|---|---|---|---|
 | P4.1 | Run arms A (`ocr`), B (`hier`, B=150), B′ (`hier-split`) and optionally C (`hier`, `ARBITER_UNIT_BUDGET=75`) at `standard` effort with the same models and k, twice each, on the PRs whose unit sets differ between A and B: the seeded corpus (regression), 12 new seeded large/cross-unit Python cases, SWR-Bench Python PRs over 150 churn, Martian sentry, and a CRBugBench Python sample (≈195 issues in total for 80% power on +10 pp) `[DH-§5]` | Oversized units exist only on real PRs: 11 sentry units over 150 churn, none on seeded or the SWR sample `[DH-§4.0]` | Adopt `hier` as the default only if all hold: Δrecall ≥ +5 pp with the 95% CI excluding 0; precision non-inferior (Δ ≥ −2 pp at the lower CI); cross-unit recall non-inferior (Δ ≥ −5 pp); the seeded regression is exact; finder calls rise ≤ +30% on the changed PRs. One interim look at 50%: stop for futility if the upper CI of Δrecall < +3 pp, for harm if Δcross-unit recall < −10 pp with its upper CI < 0. If B passes but B′ fails on cross-unit recall, keep the manifest and widened acceptance even if the split is dropped | sentry alone: ≥ +22% finder calls at standard `[DH-§4.5]`; plus 1 contract call per PR with interface changes |
 
+### Phase A. Adopt from the leader study, with maintainability first-class
+
+Source: `research/research-leader-approaches.md`, ledger §4b, §4c and §8.
+
+| Wave | Items | Acceptance |
+|---|---|---|
+| 1 (built 2026-11-24) | T-12 verified-unproven placement; T-13 + T-18 evidence repair and quote relocation; MA-02 separate maintainability scores; MA-03 measured facts; MA-04 A6d; MA-05 blocking policy; AACR adapter, `--pr`, `--review-from` | 3-item spot check, old vs new (benchmarks §3.8): no Core recall loss, and maintainability recall up on AACR |
+| 2 | T-19 base-side reads; T-27 reasoning-first output; T-26 `--effort auto`; R-00 base-branch rules; X-06 secrets scan; MA-08 non-Python facts; P4 hier A/B; AACR Python + TS (39 PRs), both arms | Martian 20 PRs and AACR Python+TS: recall +5 points with precision non-inferior; maintainability recall ≥ 0.30 |
+| 3 | Learned rules R-01..R-05 with T-21..T-25; T-30; T-28 with P0.1; M-08 cascade | Time-split eval (R-05): suppression lifts precision without Core recall loss |
+
 ## Phase L: the other languages
 
 1. Port the P1 core fixes; they are language-neutral.
@@ -108,5 +118,5 @@ agent, each building on the one before:
 ## Open questions to settle with measurements, not opinion
 
 - Is SPEC worth its cost on real PRs, given that PR text is often thin? Use the P0.2 per-agent numbers.
-- Should evolvability count in headline precision, or be scored separately, as SWR-Bench does by type?
+- Settled 2026-11-24: every benchmark reports maintainability (evolvability) recall separately and next to functional recall (ledger MA-02).
 - Does k=3 at deep effort pay for its 3× finder cost on real PRs? Use Martian with deep vs standard on D2.

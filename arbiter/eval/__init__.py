@@ -1,9 +1,12 @@
-"""Accuracy eval: seeded corpus, the Martian golden set and SWR-Bench."""
+"""Accuracy eval: seeded corpus, the Martian golden set, SWR-Bench and AACR-Bench."""
 
 import argparse
 
 from ..model import Decompose
-from . import martian, seeded, swr
+from . import aacr, martian, seeded, swr
+
+REVIEW_FROM = "review with the arbiter checkout at DIR (its .venv), for A/B runs"
+PR_HELP = "only PRs whose URL ends with this text (owner/repo/pull/N or repo/pull/N); repeatable"
 
 
 def _non_negative(text: str) -> int:
@@ -25,6 +28,7 @@ def main(argv: list[str]) -> int:
     s.add_argument("--verify-model")
     s.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     s.add_argument("--parallel", type=int, default=2, help="cases reviewed at once")
+    s.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
     m = sub.add_parser("martian")
     m.add_argument("action", choices=("fetch", "run"))
     m.add_argument("--repo", choices=("sentry", "grafana", "cal_dot_com"))
@@ -35,6 +39,8 @@ def main(argv: list[str]) -> int:
     m.add_argument("--model")
     m.add_argument("--verify-model")
     m.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
+    m.add_argument("--pr", action="append", help=PR_HELP)
+    m.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
     w = sub.add_parser("swr", help="SWR-Bench: fetch the pinned upstream, draw the sample, run and judge")
     w.add_argument("action", choices=("fetch", "sample", "run"))
     w.add_argument("--issue", type=int, default=28, help="sample: PRs with a functional issue")
@@ -48,5 +54,17 @@ def main(argv: list[str]) -> int:
     w.add_argument("--model")
     w.add_argument("--verify-model")
     w.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
+    w.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
+    r = sub.add_parser("aacr", help="AACR-Bench v2: fetch the pinned dataset, run and judge (file-level coverage)")
+    r.add_argument("action", choices=("fetch", "run"))
+    r.add_argument("--lang", help="python,ts,go,rust (or a dataset language name)")
+    r.add_argument("--pr", action="append", help=PR_HELP)
+    r.add_argument("--limit", type=int)
+    r.add_argument("--effort", default="standard", choices=("quick", "standard", "deep"))
+    r.add_argument("--harness")
+    r.add_argument("--model")
+    r.add_argument("--verify-model")
+    r.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
+    r.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
     a = ap.parse_args(argv)
-    return {"seeded": seeded, "martian": martian, "swr": swr}[a.suite].main(a)
+    return {"seeded": seeded, "martian": martian, "swr": swr, "aacr": aacr}[a.suite].main(a)

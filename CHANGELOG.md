@@ -21,6 +21,45 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
 
 ### Added
 
+- Leader study `research/research-leader-approaches.md` (Augment, Qodo 2.0 and PR-Agent, cubic, alibaba
+  OpenCodeReview and AACR-Bench), ledger §4b and §4c, and ledger §8 "Rejected approaches": every dropped idea with
+  its source tool, what it is, why that tool uses it and why arbiter dropped it. **Approach:** the user asked for the
+  leaders to be mined and every rejection to be traceable; the leaders score F2 0.58–0.65 on arbiter's 20 Martian PRs
+  against 0.40.
+- Verified-but-unproven findings whose proof could not run here (sandbox unavailable, dependency fetch failed for
+  their project root) go to the main section as should-fix, in a "Should-fix (verified; no proof possible here)"
+  section, instead of Suspected (ledger T-12). **Approach:** the Martian loss trace found 2 such findings, both High
+  golden bugs the top tools report; blocking still needs a proof.
+- Evidence repair and quote relocation (T-13, T-18): an empty or malformed `evidence_lines` is set from the
+  finding's `file:line`, and a finding outside the hunks moves to the added line its new `quote` field names before
+  the hunk rule rejects it. **Approach:** 3 golden bugs were lost to these validation slips; OCR anchors comments by
+  quoted snippet. Only the hunk stage is built.
+- Maintainability as a first-class axis (MA-03, MA-04, MA-05): `arbiter/maintain.py` measures complexity, nesting,
+  length, parameters and file size, base vs head, on Python functions the change touched (zero model calls); a new
+  A6d readability agent gets those facts; a maintainability finding blocks only with a block-eligible measured fact
+  or a repo rule heading marked `[block]`, otherwise it is capped at should-fix. The report section is now
+  "Maintainability (readability · idiom · design · docs)". **Approach:** user decision; evolvability is about 75% of
+  human review fixes and arbiter found 1 of 13 SWR-Bench evolvability changes.
+- Maintainability recall scored separately in every eval summary (MA-02): SWR `E.*`, Martian `style`, AACR
+  "Maintainability and Readability", seeded evolvability axes, plus evolvability finding counts. **Approach:**
+  folding it into one recall number hid the 1-of-13 result.
+- `--review-from DIR` on every `arbiter eval … run` (review with another checkout's `.venv`) and `--pr TEXT` on
+  `martian` and `aacr` runs (E-13). **Approach:** items picked as best or worst regress to the mean on a rerun, so an
+  old-vs-new comparison needs both arms on the same day.
+- `arbiter eval aacr fetch|run`: AACR-Bench v2 (151 PRs, 10 languages) pinned by commit, repositories from AACR's
+  pinned Hugging Face snapshots, scored with its file-level semantic coverage and recall per category (E-12).
+  **Approach:** a larger, multi-language benchmark with a maintainability category; the PR target commits are not on
+  GitHub, so the adapter follows AACR's own snapshot-first repository setup.
+- Wave 1 spot check (`docs/benchmarks.md` §3.8, 9 score files in `eval/scores/`): old (master) vs new on 3 AACR
+  Python samples (ComfyUI 9560 and 7952, ragflow 7151) and the last run's best and worst Martian PRs, plus new with
+  `hier` on ComfyUI 9560. **Approach:** same-day arms through `--review-from`, one run each. **Result:** no recall
+  lost on any item. AACR over 3 samples: recall 3/20 → 4/20, precision 0.25 → 0.24, F2 0.16 → 0.21, maintainability
+  recall 2/5 → 2/5, model calls +32%. The new blocking policy blocked ragflow 7151 on a measured complexity rise
+  (11 → 22). Sentry false positives 6 → 4. T-12 and T-18 did not fire.
+- Review fixes before merge: failed dependency fetches count only for the finding's own ecosystem and never for a
+  policy limit; moved and unparseable-base code no longer produces false block-eligible facts; quote relocation
+  stays inside the unit; AACR snapshots lose their hooks and config, and commit values must be full SHAs; `--pr`
+  matches the URL suffix. **Approach:** independent review of PR #5 (REQUEST_CHANGES, 10 findings, then APPROVE).
 - Model matrix results for Python and TypeScript (`docs/benchmarks.md` §3.7, score files in `eval/scores/`). Haiku
   finders with a Sonnet verifier against Sonnet in every role, on seeded, Martian sentry and cal.com, and the 40-PR
   SWR-Bench sample. **Approach:** the same datasets and r2 briefs per setup, one run each, Go and Rust postponed.

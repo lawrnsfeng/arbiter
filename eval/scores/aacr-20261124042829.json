@@ -1,0 +1,56 @@
+{
+  "benchmark": "AACR-Bench",
+  "effort": "standard",
+  "prs": 1,
+  "ok": 1,
+  "precision": 0.333,
+  "recall": 0.167,
+  "f1": 0.222,
+  "f2": 0.185,
+  "recall_by_category": {
+    "Code Defect": 0.0,
+    "Maintainability and Readability": 0.333
+  },
+  "maintainability_recall": 0.333,
+  "functional_recall": 0.0,
+  "evolvability_findings": 1,
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "decompose": "hier",
+  "review_from": "",
+  "source": {
+    "repo": "alibaba/aacr-bench",
+    "sha": "c99d126f17ada739d2b4d51d814b6c62a2aa4ab9",
+    "license": "Apache-2.0",
+    "snapshots": {
+      "repo": "Alibaba-Aone/aacr-bench-repos",
+      "revision": "6f0a49005a246a3df5369731c7445968052801e2"
+    },
+    "fetched": "2026-11-24T03:37:20Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/comfyanonymous/ComfyUI/pull/9560",
+      "status": "ok",
+      "verdict": "pass",
+      "wall_s": 384,
+      "findings": 3,
+      "matched_new": 1,
+      "unjudged": 0,
+      "refs": 6,
+      "covered": 1,
+      "by_category": {
+        "Code Defect": [
+          0,
+          3
+        ],
+        "Maintainability and Readability": [
+          1,
+          3
+        ]
+      },
+      "evolvability_findings": 1
+    }
+  ]
+}

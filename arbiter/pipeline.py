@@ -13,12 +13,12 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from . import ArbiterExit, agents, decompose, harness, report, sandbox, tools, triggers
+from . import ArbiterExit, agents, decompose, harness, maintain, report, sandbox, tools, triggers
 from . import findings as F
 from . import lang as langmod
 from .gates import gates
 from .harness import Tools
-from .model import Axis, Decompose, Effort, Finding, Group, Placement, ProofResult, Rung, Severity, Status, Unit
+from .model import Axis, Decompose, Effort, Finding, Group, Lang, Placement, ProofResult, Rung, Severity, Status, Unit
 from .plan import K3, Plan, Task, plan, pr_ranges, ranges_by_unit, run_diff, unit_diff
 from .rundir import RunDir
 
@@ -51,9 +51,18 @@ BRIEF_KEYS = (
     "code_judo",
     "fix",
     "proof_plan",
+    "measure",
     "locations",
 )
 MANIFEST_INPUT = "PR change manifest (from base vs head `ast`; every changed symbol and its unit)"
+MAINT_INPUT = "Maintainability facts (measured by arbiter; cite by id in measure)"
+# package manager of a failed dependency fetch -> the language whose proofs it blocks
+FETCH_LANG = {
+    "uv": Lang.PYTHON,
+    "go": Lang.GO,
+    "cargo": Lang.RUST,
+    **dict.fromkeys(("npm", "yarn", "pnpm", "bun"), Lang.TYPESCRIPT),
+}
 # hier §4.4: one run-level A5 call per PR with interface changes, covering callers outside the diff
 CONTRACT_PASS = (
     "This is the PR-level contract pass, not a unit review. For every signature change, removal or rename in the "
@@ -188,6 +197,7 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
         "Commit messages (untrusted)": "\n\n".join(p["commits"]) if hier else "",
     }
     included = [f for f in p["files"] if not f["excluded"]]
+    maint = p.get("maint", [])
     jobs = []
     for uid, agent, k in map(Task._make, p["schedule"]["tasks"]):
         u = units_by[uid]
@@ -212,6 +222,9 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                     "Other changed files (churn; unit ids)": decompose.others(included, p["units"], u) if hier else "",
                     "Repo rules": rules,
                     "Threat model": it.get("threat_model_text", "") if agent == "A3" else "",
+                    MAINT_INPUT: maintain.facts_text([m for m in maint if m["path"] in {x["path"] for x in u["files"]}])
+                    if agent == "A6d"
+                    else "",
                 },
             )
         )
@@ -306,6 +319,7 @@ def merge(run: RunDir, p: Plan) -> list[Finding]:
         set(K3) if p["effort"] == Effort.DEEP else set(),
         widen=pr_ranges(p) if hier else None,
         symbols=p.get("manifest", []) if hier else (),
+        added={f["path"]: [(n, t) for h in f["hunks"] for n, t in h["added"]] for f in p["files"] if not f["excluded"]},
     )
     run.save("candidates.json", merged)
     run.save("rejected.json", rejected)
@@ -337,6 +351,7 @@ def verify(run: RunDir, p: Plan, it: dict[str, Any], jobs: int) -> list[Finding]
     rules = run.text("rules.md")
     effort = Effort(p["effort"])
     work = [(f, lens) for f in cands for lens in _lenses(f, effort)]
+    facts = {m["id"]: m for m in p.get("maint", [])}
 
     def one(job: tuple[Finding, str]) -> tuple[str, str, Any, str | None]:
         f, lens = job
@@ -347,6 +362,7 @@ def verify(run: RunDir, p: Plan, it: dict[str, Any], jobs: int) -> list[Finding]
             "Diff (new-side line numbers; base side shown as - lines)": _diff_for(p, f),
             "Repo rules": rules,
             "Threat model": it.get("threat_model_text", "") if f["axis"] in SECURITY_AXES else "",
+            MAINT_INPUT: maintain.facts_text([facts[m]]) if (m := f.get("measure")) in facts else "",
         }
         prompt, _ = agents.build_prompt("V", [langmod.of(f["file"])], inputs)
         val, err = agents.run("V", "V", prompt, F.validate_vote, tools=Tools.FINDER, cwd=_cwd(run, p))
@@ -427,16 +443,43 @@ def proofs(run: RunDir, p: Plan) -> list[Finding]:
     return cands
 
 
+def _env_gap(run: RunDir, f: Finding) -> str | None:
+    """Why no proof could run for f in this environment, or None. A policy limit (no accepted rung at this
+    effort) is not an environment gap, and a failed fetch counts only for the finding's own ecosystem."""
+    note = f.get("proof_note", "")
+    if note.startswith("sandbox unavailable"):
+        return "sandbox unavailable"
+    if note.startswith("no accepted rung"):
+        return None
+    lang = langmod.of(f["file"])
+    for e in run.load("sandbox.json", {}).get("fetch", []):
+        root = e["root"]
+        in_root = root in ("", ".") or f["file"].startswith(root.rstrip("/") + "/")
+        tool = e.get("cmd", "").split(" ", 1)[0]
+        if e["wt"] == "wt" and e["exit_code"] and in_root and FETCH_LANG.get(tool) == lang:
+            return f"dependency fetch failed in {root or '.'} ({tool})"
+    return None
+
+
 def final_gate(run: RunDir, p: Plan) -> list[Finding]:
     cands: list[Finding] = run.load("proved.json") or run.load("tallied.json", [])
     g = run.load("gates.json", {"findings": [], "analyzer_hits": []})
+    facts = {m["id"]: m for m in p.get("maint", [])}
+    blocking = frozenset(p.get("blocking_rules", []))
     for f in cands:
         f.setdefault("source", "agent")
-        F.gate(f, p["effort"], run.worktree)
+        F.gate(
+            f,
+            p["effort"],
+            run.worktree,
+            env_gap=_env_gap(run, f) if f.get("status") == Status.VERIFIED else None,
+            facts=facts,
+            blocking_rules=blocking,
+        )
         if sup := [
             h for h in g.get("analyzer_hits", []) if h["path"] == f["file"] and abs(h["line"] - f["line"]) <= F.NEAR
         ]:
-            f["support"] = [{"rung": Rung.E2, **h} for h in sup]
+            f["support"] = [*f.get("support", []), *({"rung": Rung.E2, **h} for h in sup)]
     # an agent finding in main absorbs an overlapping non-blocking gate hit (one finding per issue)
     main = [f for f in cands if f.get("placement") == Placement.MAIN]
     gate_findings = []

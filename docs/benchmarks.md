@@ -310,6 +310,67 @@ arbiter eval swr run --parallel 2 [--skip-scored eval/scores/swr-20261123031300.
 
 Each run was done once, and run-to-run variance was not measured (§5). Differences of a few points between setups may be noise; the SWR precision gap (0.67 against 0.38) is the only large one.
 
+### 3.8 Wave 1 spot check (2026-11-24)
+
+Old arm: master `8f04917`, run through `--review-from ~/relic/arbiter`. That checkout predates PRs #3 and #4. #4 is docs only, and #3 adds the `hier` mode behind a switch and claims `ocr` merging is unchanged byte for byte (methodology §4), so on `ocr` units the old arm should behave like wave 1's base; this was not measured separately. New arm: wave 1 code, identical to PR #5's `5ef1788` under `arbiter/` and `skills/` (T-12, T-13 + T-18, MA-03 facts, A6d, MA-05), before the review fixes. Both arms ran on the same day with Haiku finders, a Sonnet verifier and judge, `standard` effort and `ocr` units. One extra arm ran the new code with `--decompose hier` on the AACR item only.
+
+Single runs on 3 items: a direction check, not an accuracy claim (E-11).
+
+| Item | Arm | Main findings | Precision | Recall | F2 | Maintainability recall | Evolvability findings | Verdict | Model calls (agents + verifier) | Wall |
+|---|---|---|---|---|---|---|---|---|---|---|
+| AACR ComfyUI 9560 (Python) | old | 0 | 0.00 | 0/6 | 0.00 | 0/3 | 0 | pass | 23 + 0 | 168 s |
+| AACR ComfyUI 9560 | new | 2 | 0.00 | 0/6 | 0.00 | 0/3 | 1 | pass | 25 + 9 | 193 s |
+| AACR ComfyUI 9560 | new + `hier` | 3 | 0.33 | 1/6 | 0.19 | 1/3 | 1 | pass | 37 + 15 | 384 s |
+| Martian sentry-greptile 3 (worst) | old | 6 | 0.00 | 0/3 Core | 0.00 | no `style` goldens | 1 | pass | 47 + 33 | 650 s |
+| Martian sentry-greptile 3 | new | 4 | 0.00 | 0/3 Core | 0.00 | no `style` goldens | 1 | pass | 51 + 36 | 509 s |
+| Martian cal.com 8330 (best) | old | 3 | 0.33 | 1/2 Core | 0.45 | no `style` goldens | 0 | block | 12 + 12 | 424 s |
+| Martian cal.com 8330 | new | 3 | 0.33 | 1/2 Core | 0.45 | no `style` goldens | 1 | pass | 13 + 15 | 775 s |
+
+AACR precision and recall use AACR's file-level semantic coverage (one judge call per finding, a reference counted once); Martian uses the Core profile. Model calls exclude the judge and proof agents.
+
+**Item choice.** The last H+S run's best PR was cal.com 8330 (F2 0.91, Core 2/2), and its worst was sentry-greptile 3 (F2 0, Core 0/3, 5 FP). The AACR item is ComfyUI 9560: Python, 319 changed lines, 3 Code Defect and 3 Maintainability and Readability references. Best and worst items regress toward the mean on any rerun, so the old arm reran both Martian PRs on the same day; today cal.com 8330 scored 1/2 in both arms. The `hier` arm ran on the AACR item only, because it is the only item large enough to split.
+
+**What changed.**
+- No Core or AACR recall was lost on any item; recall is identical across the two `ocr` arms.
+- Maintainability: arbiter measured 2 facts on ComfyUI. `server.py` crossed 1,000 lines (985 → 1005, block-eligible), and `cache_control` complexity rose from 4 to 11. A6d reported the complexity fact as a nit in both new arms and matched no reference; no agent cited the file fact, so nothing blocked. The 3 maintainability references ask to exclude 304 responses from the image rule, merge branches that set identical headers, and unify duplicate `no-cache` assignments (lines 60–72). Only the `hier` arm covered one of them (1/3).
+- T-13 repaired one finding's empty `evidence_lines` in each new AACR run. No finding was relocated by `quote` (T-18). T-12 placed nothing: dependency fetch failed on sentry and cal.com, but no verified finding there was left without a proof (0 Suspected in both new runs).
+- sentry-greptile 3: 4 instead of 6 false positives; both arms still miss all 3 Core bugs.
+- cal.com 8330: both arms proved a logic finding on the same golden bug. The old arm's panel kept it at block, while the new arm's panel rated it should-fix, so the verdicts differ (block vs pass). Neither wave 1 nor #3 changes functional severity, so this is run-to-run variance in the panel.
+- Cost: the new arm spends 1–4 more agent calls per run (A6d), plus verifier calls on the extra findings.
+
+#### Three AACR samples, old vs new (2026-11-24)
+
+Two more Python AACR items ran later the same day, same models, effort and `ocr` units: ComfyUI 7952 (323 lines; 4 Code Defect, 1 Maintainability and Readability) and ragflow 7151 (207 lines; 6 Code Defect, 2 Security Vulnerability, 1 Maintainability and Readability). Both have more than 150 changed lines and a maintainability reference. With ComfyUI 9560 from the table above, that makes 3 AACR samples. The new arm is the pre-review wave 1 code, as above.
+
+| Item | Arm | Main findings | Matched (new refs) | Defect + security covered | Maintainability covered | Verdict | Model calls | Wall |
+|---|---|---|---|---|---|---|---|---|
+| ComfyUI 9560 | old | 0 | 0 | 0/3 | 0/3 | pass | 23 + 0 | 168 s |
+| ComfyUI 9560 | new | 2 | 0 | 0/3 | 0/3 | pass | 25 + 9 | 193 s |
+| ComfyUI 7952 | old | 5 | 2 | 1/4 | 1/1 | pass | 20 + 15 | 350 s |
+| ComfyUI 7952 | new | 6 | 3 | 2/4 | 1/1 | pass | 22 + 21 | 328 s |
+| ragflow 7151 | old | 7 | 1 | 0/8 | 1/1 | pass | 12 + 12 | 279 s |
+| ragflow 7151 | new | 9 | 1 | 0/8 | 1/1 | **block** | 13 + 18 | 337 s |
+| **Total** | **old** | 12 | 3 | **1/15** | **2/5** | | 55 + 27 | 797 s |
+| **Total** | **new** | 17 | 4 | **2/15** | **2/5** | | 60 + 48 | 858 s |
+
+| Over the 3 samples (AACR metric) | Old | New |
+|---|---|---|
+| Precision (findings covering a new reference / findings) | 3/12 = 0.25 | 4/17 = 0.24 |
+| Recall (references covered) | 3/20 = 0.15 | 4/20 = 0.20 |
+| F1 / F2 | 0.19 / 0.16 | 0.22 / 0.21 |
+| Functional (defect + security) recall | 1/15 | 2/15 |
+| Maintainability recall | 2/5 | 2/5 |
+| Model calls (agents + verifier) | 82 | 108 (+32%) |
+
+- **Recall up by one reference.** On ComfyUI 7952, the new arm's A1a also found that `RegexExtract` "All Matches" returns capture-group contents instead of full matches (reference at line 275). Both arms reported the `None` optional-group bug at line 297. Per category, the new arm covered at least as many references as the old one on every item.
+- **Precision flat.** 5 more findings, 1 more match. On ragflow both arms report ruff hits and maintainability findings that no reference names.
+- **ragflow 7151 blocks under the new policy (MA-05).** arbiter measured `InfinityConnection.update` complexity rising from 11 to 22, across the block line of 20. A6a and A6d both reported it with `measure: m03`, so it blocked. This is the user's blocking rule working as designed. The AACR references do not mention it, so it counts as an unmatched finding.
+- **Maintainability recall is the same, 2/5.** Both covered references were found by checks that predate wave 1, in both arms: A6b's unused `normalize_path` (ComfyUI 7952) and the ruff gate's SIM201 on `not res.total == 0` (ragflow 7151). The facts and A6d added findings, but none of them matched a reference.
+- Cost: 32% more agent and verifier calls, and 8% more wall time.
+- Three items, one run each: this is a direction check (E-11). A difference of one reference is within run-to-run noise.
+
+Wave-1 acceptance (roadmap Phase A): "no Core recall loss" holds on all 6 items. "Maintainability recall up on AACR" does not hold with `ocr` units (2/5 → 2/5); only the single `hier` run on ComfyUI 9560 raised it (0/3 → 1/3).
+
 ## 4. Verdict-level view (r2)
 
 - Of the 15 functional bug cases, 10 ended with a BLOCK verdict.
@@ -359,6 +420,15 @@ unmatched findings.
 | [`swr-20261123031300.json`](../eval/scores/swr-20261123031300.json) | Matrix H+S, SWR-Bench, first 28 of 40 |
 | [`swr-20261123144505.json`](../eval/scores/swr-20261123144505.json) | Matrix H+S, SWR-Bench, remaining 12 |
 | [`swr-20261123195901.json`](../eval/scores/swr-20261123195901.json) | Matrix S+S, SWR-Bench, all 40 |
+| [`aacr-20261124033739.json`](../eval/scores/aacr-20261124033739.json) | Wave 1 spot check, old arm, AACR ComfyUI 9560 |
+| [`aacr-20261124040208.json`](../eval/scores/aacr-20261124040208.json) | Wave 1 spot check, new arm, AACR ComfyUI 9560 |
+| [`aacr-20261124042829.json`](../eval/scores/aacr-20261124042829.json) | Wave 1 spot check, new arm with `hier`, AACR ComfyUI 9560 |
+| [`aacr-20261124102355.json`](../eval/scores/aacr-20261124102355.json) | Wave 1, old arm, AACR ComfyUI 7952 and ragflow 7151 |
+| [`aacr-20261124103609.json`](../eval/scores/aacr-20261124103609.json) | Wave 1, new arm, AACR ComfyUI 7952 and ragflow 7151 |
+| [`martian-sentry-20261124034041.json`](../eval/scores/martian-sentry-20261124034041.json) | Wave 1 spot check, old arm, sentry-greptile 3 |
+| [`martian-sentry-20261124040537.json`](../eval/scores/martian-sentry-20261124040537.json) | Wave 1 spot check, new arm, sentry-greptile 3 |
+| [`martian-cal_dot_com-20261124035405.json`](../eval/scores/martian-cal_dot_com-20261124035405.json) | Wave 1 spot check, old arm, cal.com 8330 |
+| [`martian-cal_dot_com-20261124041504.json`](../eval/scores/martian-cal_dot_com-20261124041504.json) | Wave 1 spot check, new arm, cal.com 8330 |
 
 Four earlier Martian files are not tracked: one per repo, plus a second for cal.com. The API rate limit made agents fail in all four, and the reruns above replace them.
 

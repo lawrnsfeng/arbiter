@@ -3,7 +3,6 @@
 import argparse
 import base64
 import json
-import re
 import subprocess
 import sys
 import time
@@ -11,7 +10,22 @@ from pathlib import Path
 from typing import Any
 
 from .. import HOME, agents, harness
-from .common import RESULTS, apply_models, fbeta, models, ratio, review, stamp, write_summary
+from ..model import Axis, Group
+from .common import (
+    NON_WORD,
+    PR_URL,
+    RESULTS,
+    apply_models,
+    fbeta,
+    gh,
+    git,
+    models,
+    ratio,
+    review,
+    share,
+    stamp,
+    write_summary,
+)
 
 ROOT = HOME / "eval" / "martian"
 GOLDEN = ROOT / "golden"
@@ -19,28 +33,19 @@ CACHE = ROOT / "cache"
 UPSTREAM = "withmartian/code-review-benchmark"
 REPOS = ("sentry", "grafana", "cal_dot_com")
 CORE = frozenset({"bug", "security", "concurrency", "data", "api", "perf", "test_gap", "doc_defect"})
-PR_URL = re.compile(r"https://github.com/([^/]+)/([^/]+)/pull/(\d+)")
-NON_WORD = re.compile(r"\W+")
-GIT_TIMEOUT_S = 900
-
-
-def _gh(*args: str) -> str:
-    p = subprocess.run(["gh", "api", *args], capture_output=True, text=True)
-    if p.returncode:
-        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:200]}")
-    return p.stdout
+MAINT = frozenset({"style"})  # golden categories scored as maintainability recall (ledger MA-02)
 
 
 def fetch() -> None:
     GOLDEN.mkdir(parents=True, exist_ok=True)
-    sha = _gh(f"repos/{UPSTREAM}/commits/main", "--jq", ".sha").strip()
+    sha = gh(f"repos/{UPSTREAM}/commits/main", "--jq", ".sha").strip()
     for r in REPOS:
         path = f"repos/{UPSTREAM}/contents/offline/golden_comments/{r}.json?ref={sha}"
-        meta = json.loads(_gh(path))
+        meta = json.loads(gh(path))
         raw = (
             base64.b64decode(meta["content"])
             if meta.get("content")
-            else _gh("-H", "Accept: application/vnd.github.raw", path).encode()
+            else gh("-H", "Accept: application/vnd.github.raw", path).encode()
         )
         (GOLDEN / f"{r}.json").write_bytes(raw)
         print(f"fetched {r}: {len(json.loads(raw))} PRs")
@@ -71,20 +76,13 @@ def _judge(finding: dict[str, Any], comment: str) -> bool | None:
     return None
 
 
-def _git(repo: Path, *args: str) -> int:
-    try:
-        return subprocess.run(["git", "-C", str(repo), *args], timeout=GIT_TIMEOUT_S).returncode
-    except subprocess.TimeoutExpired:
-        return 124
-
-
 def _prepare_pr(url: str) -> tuple[Path, str] | None:
     """Check out the PR head in a cached blob-less clone; returns (repo, base ref) or None if unavailable."""
     if not (m := PR_URL.match(url)):
         return None
     owner, name, n = m.groups()
     try:
-        pr = json.loads(_gh(f"repos/{owner}/{name}/pulls/{n}"))
+        pr = json.loads(gh(f"repos/{owner}/{name}/pulls/{n}"))
     except RuntimeError:
         return None
     repo = CACHE / name
@@ -95,7 +93,7 @@ def _prepare_pr(url: str) -> tuple[Path, str] | None:
         )
     base = pr["base"]["ref"]
     for ref in (f"+refs/heads/{base}:refs/remotes/origin/{base}", f"+pull/{n}/head:refs/arbiter/pr-{n}"):
-        if _git(repo, "fetch", "-q", "origin", ref):
+        if git(repo, "fetch", "-q", "origin", ref):
             return None
     subprocess.run(["git", "-C", str(repo), "checkout", "-q", "--detach", f"refs/arbiter/pr-{n}"], check=True)
     return repo, f"origin/{base}"
@@ -108,6 +106,7 @@ def _score_pr(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> dic
     a judge outage is not counted as a false positive.
     """
     core = {i for i, c in enumerate(comments) if str(c.get("category", "")).lower() in CORE}
+    mi = {i for i, c in enumerate(comments) if str(c.get("category", "")).lower() in MAINT}
     verdicts = {(fi, ci): _judge(f, c["comment"]) for fi, f in enumerate(main) for ci, c in enumerate(comments)}
     matches = {pair for pair, v in verdicts.items() if v}
     matched = {fi for fi, _ in matches}
@@ -120,12 +119,17 @@ def _score_pr(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> dic
         "unjudged": len(unjudged),
         "core": len(core),
         "core_hit": len({ci for _, ci in matches if ci in core}),
+        "maint": len(mi),
+        "maint_hit": len({ci for _, ci in matches if ci in mi}),
+        "evolvability_findings": sum(Axis(f["axis"]).group == Group.EVOLVABILITY for f in main),
         "categories": sorted({str(c.get("category")) for c in comments}),
     }
 
 
 def run(a: argparse.Namespace) -> dict[str, Any]:
     golden = json.loads((GOLDEN / f"{a.repo}.json").read_text())[a.offset :][: a.limit or None]
+    if a.pr:
+        golden = [g for g in golden if any(g["url"].endswith(s) for s in a.pr)]
     settings = apply_models(a)
     ts = stamp()
     rows = []
@@ -154,6 +158,7 @@ def run(a: argparse.Namespace) -> dict[str, Any]:
         "ok": len(ok),
         "precision": round(precision, 3),
         "recall": round(recall, 3),
+        "maintainability_recall": share(sum(r["maint_hit"] for r in ok), sum(r["maint"] for r in ok)),
         "f1": fbeta(precision, recall, 1),
         "f2": fbeta(precision, recall, 2),
         **models(settings),
@@ -163,6 +168,7 @@ def run(a: argparse.Namespace) -> dict[str, Any]:
     write_summary(f"martian-{a.repo}-{ts}", summary)
     print(
         f"{a.repo}: precision {summary['precision']} recall {summary['recall']} F1 {summary['f1']} F2 {summary['f2']}"
+        f" · maintainability recall {summary['maintainability_recall']}"
     )
     return summary
 

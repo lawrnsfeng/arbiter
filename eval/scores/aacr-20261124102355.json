@@ -1,0 +1,83 @@
+{
+  "benchmark": "AACR-Bench",
+  "effort": "standard",
+  "prs": 2,
+  "ok": 2,
+  "precision": 0.25,
+  "recall": 0.214,
+  "f1": 0.231,
+  "f2": 0.221,
+  "recall_by_category": {
+    "Code Defect": 0.1,
+    "Maintainability and Readability": 1.0,
+    "Security Vulnerability": 0.0
+  },
+  "maintainability_recall": 1.0,
+  "functional_recall": 0.083,
+  "evolvability_findings": 8,
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "decompose": "ocr",
+  "review_from": "/home/lawrence/relic/arbiter",
+  "source": {
+    "repo": "alibaba/aacr-bench",
+    "sha": "c99d126f17ada739d2b4d51d814b6c62a2aa4ab9",
+    "license": "Apache-2.0",
+    "snapshots": {
+      "repo": "Alibaba-Aone/aacr-bench-repos",
+      "revision": "6f0a49005a246a3df5369731c7445968052801e2"
+    },
+    "fetched": "2026-11-24T03:37:20Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/comfyanonymous/ComfyUI/pull/7952",
+      "status": "ok",
+      "verdict": "pass",
+      "wall_s": 350,
+      "findings": 5,
+      "matched_new": 2,
+      "unjudged": 0,
+      "refs": 5,
+      "covered": 2,
+      "by_category": {
+        "Code Defect": [
+          1,
+          4
+        ],
+        "Maintainability and Readability": [
+          1,
+          1
+        ]
+      },
+      "evolvability_findings": 1
+    },
+    {
+      "url": "https://github.com/infiniflow/ragflow/pull/7151",
+      "status": "ok",
+      "verdict": "pass",
+      "wall_s": 279,
+      "findings": 7,
+      "matched_new": 1,
+      "unjudged": 0,
+      "refs": 9,
+      "covered": 1,
+      "by_category": {
+        "Code Defect": [
+          0,
+          6
+        ],
+        "Security Vulnerability": [
+          0,
+          2
+        ],
+        "Maintainability and Readability": [
+          1,
+          1
+        ]
+      },
+      "evolvability_findings": 7
+    }
+  ]
+}

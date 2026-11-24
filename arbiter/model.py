@@ -167,6 +167,16 @@ class ToolKind(StrEnum):
     ANALYZER = "analyzer"
 
 
+class Metric(StrEnum):
+    """A deterministic maintainability measure (arbiter/maintain.py)."""
+
+    COMPLEXITY = "complexity"
+    NESTING = "nesting"
+    LENGTH = "length"
+    PARAMS = "params"
+    FILE_LINES = "file_lines"
+
+
 # ---------------------------------------------------------------- records stored in RUN/*.json
 
 type Range = tuple[int, int]
@@ -293,6 +303,21 @@ class VoteRecord(TypedDict):
     finding_id: NotRequired[str]
 
 
+class MaintFact(TypedDict):
+    """One measured maintainability regression in code the change added (base vs head `ast`)."""
+
+    id: str  # "m01", "m02", ...
+    path: str
+    qualname: str  # "" for FILE_LINES
+    line: int  # head-side def line, or 1 for FILE_LINES
+    end_line: int
+    metric: Metric
+    base: int | None  # None: the function is new in this change
+    head: int
+    warn: int  # threshold exceeded
+    block: bool  # block-eligible regression
+
+
 # functional syntax because one stored key, "pass", is a Python keyword
 Finding = TypedDict(
     "Finding",
@@ -313,6 +338,8 @@ Finding = TypedDict(
         "code_judo": bool,
         "fix": str,
         "proof_plan": ProofPlan,
+        "quote": str,  # exact text of the first flagged line; used to fix a wrong `line`
+        "measure": str,  # id of an arbiter maintainability fact the finding reports
         # filled by arbiter: provenance, merge, tally, proof and gate
         "id": str,
         "agent": str,
@@ -332,6 +359,8 @@ Finding = TypedDict(
         "placement_reason": str,
         "support": list[dict[str, object]],
         "locations": list[str],  # hier root-cause clustering: other path:line sites of the same changed symbol
+        "relocated_from": int,
+        "repaired": str,
     },
     total=False,
 )

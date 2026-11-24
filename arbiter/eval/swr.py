@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import HOME, agents, harness
-from .common import RESULTS, apply_models, fbeta, models, ratio, review, stamp, write_summary
+from .common import RESULTS, apply_models, fbeta, models, ratio, review, share, stamp, write_summary
 
 UPSTREAM = "https://github.com/ZZR0/SWRench"
 PIN = "67ae1d4395ac05f800d62b0e13678eadeb9fa5c7"
@@ -282,6 +282,7 @@ def run(a: argparse.Namespace) -> dict[str, Any]:
     iss, cln = [r for r in ok if r["issue"]], [r for r in ok if not r["issue"]]
     tp, fp, fn = (sum(r[k] for r in iss) for k in ("tp", "fp", "fn"))
     functional = [g for r in iss for g in r["gt"] if g["type"].startswith("F.")]
+    evolvability = [g for r in iss for g in r["gt"] if g["type"].startswith("E.")]
     precision, recall = ratio(tp, tp + fp), ratio(tp, tp + fn)
     summary = {
         "benchmark": "SWR-Bench",
@@ -299,6 +300,7 @@ def run(a: argparse.Namespace) -> dict[str, Any]:
         "recall": round(recall, 3),
         "f1": fbeta(precision, recall, 1),
         "functional_recall": round(ratio(sum(g["hit"] == "YES" for g in functional), len(functional)), 3),
+        "evolvability_recall": share(sum(g["hit"] == "YES" for g in evolvability), len(evolvability)),
         "clean_identified_good": round(
             ratio(sum(r["identified_as_good"] == "YES" or not r["pred_points"] for r in cln), len(cln)), 3
         ),
@@ -312,7 +314,8 @@ def run(a: argparse.Namespace) -> dict[str, Any]:
     write_summary(f"swr-{ts}", summary)
     print(
         f"SWR-Bench: precision {summary['precision']} recall {summary['recall']} F1 {summary['f1']} · "
-        f"functional recall {summary['functional_recall']} · clean judged good {summary['clean_identified_good']} "
+        f"functional recall {summary['functional_recall']} · evolvability recall {summary['evolvability_recall']} · "
+        f"clean judged good {summary['clean_identified_good']} "
         f"({summary['clean_false_points']} points, {summary['clean_blocked']} blocked) · {len(ok)}/{len(rows)} ok"
     )
     return summary

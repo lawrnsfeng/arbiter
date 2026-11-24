@@ -28,4 +28,4 @@ Find added code that breaks the language's canon or the repo's established idiom
 ## Proof plan hints
 None needed: evolvability findings are gated on `rule` plus `precedent` or a linter id. Omit `proof_plan`.
 ## Output
-`{"findings": [...]}`; `axis` `idiom` or `maintainability`; `type` `refactor` or `nit`; `severity` at most `should-fix`; `rule` required; `precedent` required unless `rule` is a linter id.
+`{"findings": [...]}`; `axis` `idiom` or `maintainability`; `type` `refactor` or `nit`; `severity` at most `should-fix`, unless `rule` names a repo rule heading marked `[block]`; `rule` required; `precedent` required unless `rule` is a linter id.

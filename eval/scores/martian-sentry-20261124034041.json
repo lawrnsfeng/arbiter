@@ -1,0 +1,40 @@
+{
+  "repo": "sentry",
+  "prs": 1,
+  "ok": 1,
+  "precision": 0.0,
+  "recall": 0.0,
+  "maintainability_recall": 0.0,
+  "f1": 0.0,
+  "f2": 0.0,
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "decompose": "ocr",
+  "review_from": "/home/lawrence/relic/arbiter",
+  "source": {
+    "repo": "withmartian/code-review-benchmark",
+    "sha": "23a35d0d64f7de5a68e5679da08414e0edacea9b",
+    "license": "MIT",
+    "fetched": "2026-11-21T04:32:10Z"
+  },
+  "rows": [
+    {
+      "url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3",
+      "status": "ok",
+      "findings": 6,
+      "tp": 0,
+      "fp": 6,
+      "unjudged": 0,
+      "core": 3,
+      "core_hit": 0,
+      "maint": 0,
+      "maint_hit": 0,
+      "evolvability_findings": 1,
+      "categories": [
+        "bug",
+        "data"
+      ]
+    }
+  ]
+}
