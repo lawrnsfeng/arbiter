@@ -50,12 +50,14 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
   pinned Hugging Face snapshots, scored with its file-level semantic coverage and recall per category (E-12).
   **Approach:** a larger, multi-language benchmark with a maintainability category; the PR target commits are not on
   GitHub, so the adapter follows AACR's own snapshot-first repository setup.
-- Wave 1 spot check (`docs/benchmarks.md` §3.8, 9 score files in `eval/scores/`): old (master) vs new on 3 AACR
-  Python samples (ComfyUI 9560 and 7952, ragflow 7151) and the last run's best and worst Martian PRs, plus new with
-  `hier` on ComfyUI 9560. **Approach:** same-day arms through `--review-from`, one run each. **Result:** no recall
-  lost on any item. AACR over 3 samples: recall 3/20 → 4/20, precision 0.25 → 0.24, F2 0.16 → 0.21, maintainability
-  recall 2/5 → 2/5, model calls +32%. The new blocking policy blocked ragflow 7151 on a measured complexity rise
-  (11 → 22). Sentry false positives 6 → 4. T-12 and T-18 did not fire.
+- Wave 1 spot check (`docs/benchmarks.md` §3.8, 11 score files in `eval/scores/`): old (master) vs new on 6 AACR
+  Python samples (ComfyUI 9560, 7952 and 8446, ragflow 7151, langflow 6044 and 6652; 8446, 6044 and 6652 are the
+  largest Python PRs in the set) and the last run's best and worst Martian PRs, plus new with `hier` on ComfyUI 9560.
+  **Approach:** same-day arms through `--review-from`, one run each. **Result:** no recall lost on any item. AACR
+  over 6 samples: recall 9/52 → 13/52, precision 0.26 → 0.29, F2 0.19 → 0.26, maintainability recall 2/9 → 2/9,
+  model calls +26%. None of the 4 extra references came through a wave-1 mechanism: they are finder run-to-run
+  variance. The new blocking policy blocked ragflow 7151 on a measured complexity rise (11 → 22). Sentry false
+  positives 6 → 4. T-12 and T-18 did not fire.
 - Review fixes before merge: failed dependency fetches count only for the finding's own ecosystem and never for a
   policy limit; moved and unparseable-base code no longer produces false block-eligible facts; quote relocation
   stays inside the unit; AACR snapshots lose their hooks and config, and commit values must be full SHAs; `--pr`

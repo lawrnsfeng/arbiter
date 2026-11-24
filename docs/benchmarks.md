@@ -369,7 +369,47 @@ Two more Python AACR items ran later the same day, same models, effort and `ocr`
 - Cost: 32% more agent and verifier calls, and 8% more wall time.
 - Three items, one run each: this is a direction check (E-11). A difference of one reference is within run-to-run noise.
 
-Wave-1 acceptance (roadmap Phase A): "no Core recall loss" holds on all 6 items. "Maintainability recall up on AACR" does not hold with `ocr` units (2/5 → 2/5); only the single `hier` run on ComfyUI 9560 raised it (0/3 → 1/3).
+#### Three most complex Python AACR PRs, old vs new (2026-11-24)
+
+These are the largest Python AACR PRs not yet run, by changed lines: ComfyUI 8446 (971 lines; 13 Code Defect, 1 Performance, 4 Maintainability and Readability), langflow 6044 (882; 9 Code Defect) and langflow 6652 (387; 5 Code Defect). The old arm is master `8f04917`, as above. The new arm is PR #5's head `0bc9487`, which includes the review fixes. Same models, `standard` effort, `ocr` units, one run each.
+
+| Item | Arm | Main findings | Matched (new refs) | Defect + perf covered | Maintainability covered | Verdict | Model calls | Wall |
+|---|---|---|---|---|---|---|---|---|
+| ComfyUI 8446 | old | 12 | 5 | 5/14 | 0/4 | pass | 41 + 54 | 1409 s |
+| ComfyUI 8446 | new | 14 | 5 | 5/14 | 0/4 | pass | 45 + 66 | 1383 s |
+| langflow 6044 | old | 9 | 1 | 1/9 | — | block | 61 + 27 | 2263 s |
+| langflow 6044 | new | 11 | 1 | 1/9 | — | block | 67 + 48 | 1574 s |
+| langflow 6652 | old | 1 | 0 | 0/5 | — | pass | 29 + 9 | 1204 s |
+| langflow 6652 | new | 3 | 3 | 3/5 | — | pass | 32 + 15 | 425 s |
+| **Total** | **old** | 22 | 6 | **6/28** | **0/4** | | 221 | 4876 s |
+| **Total** | **new** | 28 | 9 | **9/28** | **0/4** | | 273 (+24%) | 3382 s |
+
+| Over the 3 complex PRs (AACR metric) | Old | New |
+|---|---|---|
+| Precision | 6/22 = 0.27 | 9/28 = 0.32 |
+| Recall | 6/32 = 0.19 | 9/32 = 0.28 |
+| F1 / F2 | 0.22 / 0.20 | 0.30 / 0.29 |
+
+- **The whole gain comes from langflow 6652, and it is not a wave-1 effect.** None of the 3 matched findings went through a wave-1 mechanism: no facts were measured, A6d found nothing, nothing was relocated, and T-12 placed nothing. T-13 repaired one candidate (an A6b/A6c duplicate-helper finding), but the panel dropped it. The new run's finders simply raised 7 raw candidates instead of 4. A1a and A1b proved an E4 logic bug (`_clean_args` rejects inputs before the `stringify` check), and A6c and SPEC added two more findings; all 3 matched references. These agents and briefs are unchanged by wave 1, apart from one preamble sentence asking for `quote`. Treat this as run-to-run finder variance.
+- **ComfyUI 8446 and langflow 6044: identical coverage.** The new arm added 2 findings on each, none matched.
+- **Maintainability 0/4 in both arms.** A6d reported 4 findings on ComfyUI 8446: dead `tucker_weight`, `plot_loss` length, `TrainLoraNode.train` complexity 26 and `load_and_process_images` complexity 12. The 4 references ask for a consistent residual-add style, matching tensor shapes between two helpers, no hardcoded tuple indexing, and removing commented-out debug code. A6d's `tucker_weight` finding sits on a referenced line (`base.py:133`) but raises a different concern.
+- **The blocking rule did not fire.** Block-eligible facts were measured: `TrainLoraNode.train` (new, complexity 26, nesting 7, 164 lines) and langflow `_serialize_dispatcher` (new, complexity 33). A6d reported both but rated them should-fix, so they did not block. langflow 6044 blocked in both arms on the same mypy gate errors in its tests.
+- Cost: 24% more model calls. Wall time was lower for the new arm (3382 s vs 4876 s), driven by langflow run-to-run variance.
+
+**All 6 AACR samples so far (both comparisons):**
+
+| | Old | New |
+|---|---|---|
+| Precision | 9/34 = 0.26 | 13/45 = 0.29 |
+| Recall | 9/52 = 0.17 | 13/52 = 0.25 |
+| F2 | 0.19 | 0.26 |
+| Defect + security + perf recall | 7/43 | 11/43 |
+| Maintainability recall | 2/9 | 2/9 |
+| Model calls | 303 | 381 (+26%) |
+
+Of the 4 extra references the new arm covered, 3 came from langflow 6652's finder variance and 1 from ComfyUI 7952. None came from a wave-1 mechanism. Wave 1 has not been shown to raise recall; it has been shown not to lower it, and it costs about a quarter more model calls.
+
+Wave-1 acceptance (roadmap Phase A): "no Core recall loss" holds on all 8 items (6 AACR, 2 Martian). "Maintainability recall up on AACR" does not hold with `ocr` units (2/9 → 2/9); only the single `hier` run on ComfyUI 9560 raised it (0/3 → 1/3).
 
 ## 4. Verdict-level view (r2)
 
@@ -425,6 +465,8 @@ unmatched findings.
 | [`aacr-20261124042829.json`](../eval/scores/aacr-20261124042829.json) | Wave 1 spot check, new arm with `hier`, AACR ComfyUI 9560 |
 | [`aacr-20261124102355.json`](../eval/scores/aacr-20261124102355.json) | Wave 1, old arm, AACR ComfyUI 7952 and ragflow 7151 |
 | [`aacr-20261124103609.json`](../eval/scores/aacr-20261124103609.json) | Wave 1, new arm, AACR ComfyUI 7952 and ragflow 7151 |
+| [`aacr-20261124122426.json`](../eval/scores/aacr-20261124122426.json) | Wave 1, old arm, AACR ComfyUI 8446, langflow 6044 and 6652 |
+| [`aacr-20261124134825.json`](../eval/scores/aacr-20261124134825.json) | Wave 1, new arm (with review fixes), AACR ComfyUI 8446, langflow 6044 and 6652 |
 | [`martian-sentry-20261124034041.json`](../eval/scores/martian-sentry-20261124034041.json) | Wave 1 spot check, old arm, sentry-greptile 3 |
 | [`martian-sentry-20261124040537.json`](../eval/scores/martian-sentry-20261124040537.json) | Wave 1 spot check, new arm, sentry-greptile 3 |
 | [`martian-cal_dot_com-20261124035405.json`](../eval/scores/martian-cal_dot_com-20261124035405.json) | Wave 1 spot check, old arm, cal.com 8330 |
