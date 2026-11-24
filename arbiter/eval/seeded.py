@@ -11,7 +11,7 @@ from typing import Any, NotRequired, TypedDict
 from .. import HOME
 from ..findings import NEAR
 from ..model import EVOLVABILITY
-from .common import RESULTS, apply_models, models, ratio, review, stamp, write_summary
+from .common import RESULTS, apply_models, models, ratio, review, share, stamp, write_summary
 
 CORPUS = HOME / "eval" / "seeded"
 REPOS = RESULTS / "repos"
@@ -136,7 +136,7 @@ def run(cs: list[Path], a: argparse.Namespace) -> dict[str, Any]:
         **models(settings),
         "precision": round(ratio(sum(r["matched"] for r in bug), sum(r["main"] for r in scored)), 3),
         "recall": round(ratio(sum(r["must_hit"] for r in bug), sum(r["must"] for r in bug)), 3),
-        "evolvability_recall": round(ratio(sum(r["evo_hit"] for r in bug), sum(r["evo_must"] for r in bug)), 3),
+        "evolvability_recall": share(sum(r["evo_hit"] for r in bug), sum(r["evo_must"] for r in bug)),
         "clean_case_findings": sum(r["main"] for r in clean),
         "suspected": sum(r["suspected"] for r in scored),
         "errors": [r for r in rows if "error" in r],

@@ -4,6 +4,7 @@ coverage."""
 import argparse
 import ast
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -17,7 +18,21 @@ from typing import Any
 
 from .. import HOME, agents, harness
 from ..model import Axis, Group
-from .common import NON_WORD, PR_URL, RESULTS, apply_models, fbeta, gh, git, models, ratio, review, stamp, write_summary
+from .common import (
+    NON_WORD,
+    PR_URL,
+    RESULTS,
+    apply_models,
+    fbeta,
+    gh,
+    git,
+    models,
+    ratio,
+    review,
+    share,
+    stamp,
+    write_summary,
+)
 
 ROOT = HOME / "eval" / "aacr"
 DATA = ROOT / "data"
@@ -29,6 +44,7 @@ SNAPSHOTS = "Alibaba-Aone/aacr-bench-repos"
 DOWNLOAD_TIMEOUT_S = 600
 MAINT = "Maintainability and Readability"
 LANGS = {"python": "Python", "ts": "TypeScript", "go": "Go", "rust": "Rust"}
+SHA = re.compile(r"[0-9a-f]{40}")
 
 
 def fetch() -> None:
@@ -58,6 +74,16 @@ def _has(repo: Path, rev: str) -> bool:
     return git(repo, "cat-file", "-e", f"{rev}^{{commit}}") == 0
 
 
+def _neutralize(git_dir: Path, origin: str) -> None:
+    """A snapshot's .git is third-party: its hooks and config (core.fsmonitor, core.hooksPath, filter drivers)
+    would run code on checkout, diff and status. Keep the objects and refs; replace the rest."""
+    shutil.rmtree(git_dir / "hooks", ignore_errors=True)
+    (git_dir / "config").write_text(
+        "[core]\n\trepositoryformatversion = 0\n\tbare = false\n"
+        f'[remote "origin"]\n\turl = {origin}\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n'
+    )
+
+
 def _snapshot(owner: str, name: str, dest: Path) -> bool:
     """Download and extract AACR's pinned repository snapshot (a git repo) to dest."""
     rev = json.loads((DATA / "SOURCE.json").read_text())["snapshots"]["revision"]
@@ -70,8 +96,9 @@ def _snapshot(owner: str, name: str, dest: Path) -> bool:
             shutil.copyfileobj(r, out)
         with tarfile.open(archive) as t:
             t.extractall(staging, filter="data")  # rejects absolute paths, `..` and links leaving staging
-        if not (staging / dest.name / ".git").exists():
+        if not (staging / dest.name / ".git").is_dir():
             return False
+        _neutralize(staging / dest.name / ".git", f"https://github.com/{owner}/{name}")
         (staging / dest.name).rename(dest)
         return True
     except (urllib.error.URLError, OSError, tarfile.TarError):
@@ -83,16 +110,16 @@ def _snapshot(owner: str, name: str, dest: Path) -> bool:
 def _prepare(item: dict[str, Any]) -> tuple[Path, str] | None:
     """Check out the PR's target commit from AACR's snapshot (else a blob-less GitHub clone); returns
     (repo, base sha) or None."""
-    if not (m := PR_URL.match(item["githubPrUrl"])):
-        return None
+    # the AACR converter maps source_commit to the base and target_commit to the head
+    base, head = item["source_commit"], item["target_commit"]
+    if not (m := PR_URL.match(item["githubPrUrl"])) or not (SHA.fullmatch(base) and SHA.fullmatch(head)):
+        return None  # dataset text reaches git argv and paths
     owner, name, n = m.groups()
     repo = CACHE / f"{owner}__{name}"
     if not repo.exists() and not _snapshot(owner, name, repo):
         url = f"https://github.com/{owner}/{name}"
         if subprocess.run(["git", "clone", "-q", "--filter=blob:none", url, str(repo)]).returncode:
             return None
-    # the AACR converter maps source_commit to the base and target_commit to the head
-    base, head = item["source_commit"], item["target_commit"]
     if not (_has(repo, head) and _has(repo, base)) and git(repo, "fetch", "-q", "origin", head, base):
         git(repo, "fetch", "-q", "origin", f"+pull/{n}/head:refs/arbiter/pr-{n}")
     if not (_has(repo, head) and _has(repo, base)) or git(repo, "checkout", "-q", "--detach", head):
@@ -157,9 +184,9 @@ def _score(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> dict[s
     }
 
 
-def _recall(ok: list[dict[str, Any]], keep: Any) -> float:
+def _recall(ok: list[dict[str, Any]], keep: Any) -> float | None:
     pairs = [hc for r in ok for cat, hc in r["by_category"].items() if keep(cat)]
-    return round(ratio(sum(h for h, _ in pairs), sum(t for _, t in pairs)), 3)
+    return share(sum(h for h, _ in pairs), sum(t for _, t in pairs))
 
 
 def run(a: argparse.Namespace) -> int:
@@ -171,7 +198,7 @@ def run(a: argparse.Namespace) -> int:
         langs = {LANGS.get(x, x) for x in a.lang.split(",")}
         items = [i for i in items if i["project_main_language"] in langs]
     if a.pr:
-        items = [i for i in items if any(s in i["githubPrUrl"] for s in a.pr)]
+        items = [i for i in items if any(i["githubPrUrl"].endswith(s) for s in a.pr)]
     items = items[: a.limit or None]
     settings = apply_models(a)
     ts = stamp()

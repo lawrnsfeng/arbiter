@@ -11,7 +11,21 @@ from typing import Any
 
 from .. import HOME, agents, harness
 from ..model import Axis, Group
-from .common import NON_WORD, PR_URL, RESULTS, apply_models, fbeta, gh, git, models, ratio, review, stamp, write_summary
+from .common import (
+    NON_WORD,
+    PR_URL,
+    RESULTS,
+    apply_models,
+    fbeta,
+    gh,
+    git,
+    models,
+    ratio,
+    review,
+    share,
+    stamp,
+    write_summary,
+)
 
 ROOT = HOME / "eval" / "martian"
 GOLDEN = ROOT / "golden"
@@ -115,7 +129,7 @@ def _score_pr(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> dic
 def run(a: argparse.Namespace) -> dict[str, Any]:
     golden = json.loads((GOLDEN / f"{a.repo}.json").read_text())[a.offset :][: a.limit or None]
     if a.pr:
-        golden = [g for g in golden if any(s in g["url"] for s in a.pr)]
+        golden = [g for g in golden if any(g["url"].endswith(s) for s in a.pr)]
     settings = apply_models(a)
     ts = stamp()
     rows = []
@@ -144,7 +158,7 @@ def run(a: argparse.Namespace) -> dict[str, Any]:
         "ok": len(ok),
         "precision": round(precision, 3),
         "recall": round(recall, 3),
-        "maintainability_recall": round(ratio(sum(r["maint_hit"] for r in ok), sum(r["maint"] for r in ok)), 3),
+        "maintainability_recall": share(sum(r["maint_hit"] for r in ok), sum(r["maint"] for r in ok)),
         "f1": fbeta(precision, recall, 1),
         "f2": fbeta(precision, recall, 2),
         **models(settings),

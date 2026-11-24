@@ -16,6 +16,7 @@ from .model import (
     Placement,
     Proof,
     ProofResult,
+    Range,
     Ranges,
     Rung,
     Severity,
@@ -216,12 +217,13 @@ def _norm(s: str) -> str:
     return " ".join(s.split())
 
 
-def _relocate(c: Finding, added: Mapping[str, Sequence[tuple[int, str]]]) -> bool:
-    """OCR-style anchoring: move a finding to the added line its `quote` names. True when it moved."""
+def _relocate(c: Finding, added: Mapping[str, Sequence[tuple[int, str]]], ranges: Sequence[Range]) -> bool:
+    """OCR-style anchoring: move a finding to the added line its `quote` names, among the lines it may sit on
+    (`ranges` ±NEAR). True when it moved; c is untouched otherwise."""
     want = _norm(c.get("quote") or "")
     if not want:
         return False
-    lines = added.get(c["file"], ())
+    lines = [(n, text) for n, text in added.get(c["file"], ()) if any(lo - NEAR <= n <= hi + NEAR for lo, hi in ranges)]
     hits = [n for n, text in lines if _norm(text) == want]
     if not hits and len(want) >= 12:
         hits = [n for n, text in lines if want in _norm(text)]
@@ -275,7 +277,7 @@ def merge(
             rejected.append({**c, "reject_reason": str(e)})
             continue
         ranges = widen if widen is not None else ranges_by_unit.get(c["unit"], {})
-        if not in_hunks(c, ranges) and not (added is not None and _relocate(c, added) and in_hunks(c, ranges)):
+        if not in_hunks(c, ranges) and not (added is not None and _relocate(c, added, ranges.get(c["file"], []))):
             where = "every changed hunk of the PR" if widen is not None else "the unit's changed hunks"
             rejected.append({**c, "reject_reason": f"line outside {where} ±{NEAR}"})
             continue

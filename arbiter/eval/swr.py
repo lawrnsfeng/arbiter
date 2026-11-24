@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import HOME, agents, harness
-from .common import RESULTS, apply_models, fbeta, models, ratio, review, stamp, write_summary
+from .common import RESULTS, apply_models, fbeta, models, ratio, review, share, stamp, write_summary
 
 UPSTREAM = "https://github.com/ZZR0/SWRench"
 PIN = "67ae1d4395ac05f800d62b0e13678eadeb9fa5c7"
@@ -300,7 +300,7 @@ def run(a: argparse.Namespace) -> dict[str, Any]:
         "recall": round(recall, 3),
         "f1": fbeta(precision, recall, 1),
         "functional_recall": round(ratio(sum(g["hit"] == "YES" for g in functional), len(functional)), 3),
-        "evolvability_recall": round(ratio(sum(g["hit"] == "YES" for g in evolvability), len(evolvability)), 3),
+        "evolvability_recall": share(sum(g["hit"] == "YES" for g in evolvability), len(evolvability)),
         "clean_identified_good": round(
             ratio(sum(r["identified_as_good"] == "YES" or not r["pred_points"] for r in cln), len(cln)), 3
         ),

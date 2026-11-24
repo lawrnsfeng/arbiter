@@ -134,29 +134,36 @@ def _fact(metric: Metric, base: int | None, head: int, *, path: str, q: str, lo:
 
 def facts(repo: Path, base: str, files: list[DiffFile], read: Callable[[str], str | None]) -> list[MaintFact]:
     out: list[MaintFact] = []
+    sides: list[tuple[DiffFile, str, ast.Module, str, ast.Module]] = []
+    moved: dict[str, tuple[Def, bool] | None] = {}  # bare name -> its one base definition in any changed file
     for f in files:
         if f["lang"] != Lang.PYTHON or f["excluded"]:
             continue
-        src = read(f["path"])
-        head = _parse(src)
-        if src is None or head is None:
-            continue
         old_src = diff.git(repo, "show", f"{base}:{f['old_path'] or f['path']}", check=False)
         old = _parse(old_src)
+        if old is None:  # an unparseable base would make every function look new
+            continue
+        for q, d in _defs(old).items():
+            name = q.rsplit(".", 1)[-1]
+            moved[name] = None if name in moved else d  # ambiguous names (`__init__`, `get`) match nothing
+        src = read(f["path"])
+        if src is not None and (head := _parse(src)) is not None:
+            sides.append((f, src, head, old_src, old))
+    for f, src, head, old_src, old in sides:
         added = {n for h in f["hunks"] for n, _ in h["added"]}
         if not added:
             continue
-        base_defs = _defs(old) if old else {}
+        base_defs = _defs(old)
         for q, (fn, method) in _defs(head).items():
             lo, hi = fn.lineno, fn.end_lineno or fn.lineno
             if not any(lo <= n <= hi for n in added):
                 continue
-            was = _measure(base_defs[q][0], method=base_defs[q][1]) if q in base_defs else None
+            prev = base_defs.get(q) or moved.get(q.rsplit(".", 1)[-1])  # same qualname, else moved code
+            was = _measure(prev[0], method=prev[1]) if prev else None
             for metric, value in _measure(fn, method=method).items():
                 if m := _fact(metric, was[metric] if was else None, value, path=f["path"], q=q, lo=lo, hi=hi):
                     out.append(m)
-        n_head = len(src.splitlines())
-        n_base = len(old_src.splitlines()) if old is not None else 0
+        n_head, n_base = len(src.splitlines()), len(old_src.splitlines())
         warn = LIMITS[Metric.FILE_LINES][0]
         if n_head > warn >= n_base and (
             m := _fact(Metric.FILE_LINES, n_base, n_head, path=f["path"], q="", lo=1, hi=n_head)

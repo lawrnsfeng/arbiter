@@ -126,6 +126,11 @@ def ratio(num: int, den: int) -> float:
     return num / den if den else 0.0
 
 
+def share(num: int, den: int) -> float | None:
+    """A recall over a subset that may be empty: None (no references of that kind), not 0.0 (all missed)."""
+    return round(num / den, 3) if den else None
+
+
 def fbeta(precision: float, recall: float, beta: float) -> float:
     b2 = beta * beta
     den = b2 * precision + recall

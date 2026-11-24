@@ -92,7 +92,7 @@ arbiter eval aacr fetch|run [--lang python,ts,go,rust] [--pr TEXT]... [--limit N
 ```
 
 Every `run` takes `--effort`, `--harness`, `--model`, `--verify-model`, `--decompose` and `--review-from DIR`:
-- `--pr TEXT` (repeatable) keeps only PRs whose URL contains the text.
+- `--pr TEXT` (repeatable, `martian` and `aacr`) keeps only PRs whose URL ends with the text, such as `sentry-greptile/pull/3`.
 - `--review-from DIR` reviews with the arbiter checkout at `DIR` (its `.venv`), so an old and a new version run the same items on the same day.
 - `aacr` reviews AACR-Bench v2 PRs from the dataset's pinned repository snapshots and scores them with its file-level semantic coverage.
 

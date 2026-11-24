@@ -345,16 +345,19 @@ def test_gate_env_gap_places_verified_unproven_in_main_as_should_fix():
     assert F.gate(_verified(), "standard", None)["placement"] == "suspected"
 
 
-def test_env_gap_only_for_failed_fetch_covering_the_file(tmp_path):
+def test_env_gap_only_for_failed_fetch_of_the_findings_ecosystem_and_root(tmp_path):
     from arbiter.pipeline import _env_gap
     from arbiter.rundir import RunDir
 
     run = RunDir(tmp_path)
-    run.save("sandbox.json", {"fetch": [{"wt": "wt", "root": "", "exit_code": 1}]})
-    assert _env_gap(run, {"file": "api/x.py"}) == "dependency fetch failed in ."
-    run.save("sandbox.json", {"fetch": [{"wt": "wt", "root": "web", "exit_code": 1}]})
-    assert _env_gap(run, {"file": "api/x.py"}) is None
-    assert _env_gap(run, {"file": "web/x.ts"}) == "dependency fetch failed in web"
+    run.save("sandbox.json", {"fetch": [{"wt": "wt", "root": "", "cmd": "uv sync --frozen", "exit_code": 1}]})
+    assert _env_gap(run, {"file": "api/x.py"}) == "dependency fetch failed in . (uv)"
+    assert _env_gap(run, {"file": "web/x.ts"}) is None  # a failed uv sync does not block TypeScript proofs
+    policy = {"file": "api/x.py", "proof_note": "no accepted rung for concurrency at quick effort"}
+    assert _env_gap(run, policy) is None  # a policy limit is not an environment gap
+    run.save("sandbox.json", {"fetch": [{"wt": "wt", "root": "web", "cmd": "npm ci", "exit_code": 1}]})
+    assert _env_gap(run, {"file": "api/x.ts"}) is None
+    assert _env_gap(run, {"file": "web/x.ts"}) == "dependency fetch failed in web (npm)"
 
 
 def test_merge_repairs_empty_evidence_lines():
@@ -363,11 +366,23 @@ def test_merge_repairs_empty_evidence_lines():
 
 
 def test_merge_relocates_by_quote():
-    added = {"a.py": [(11, "x = 1"), (12, "    return total + 1")]}
-    merged, _ = F.merge([cand(line=90, quote="return  total + 1")], RANGES, set(), added=added)
-    assert merged[0]["line"] == 12 and merged[0]["relocated_from"] == 90
+    added = {"a.py": [(11, "x = 1"), (12, "    return total + 1"), (40, "    return total + 1")]}
+    c = cand(line=90, end_line=93, quote="return  total + 1")
+    merged, _ = F.merge([c], RANGES, set(), added=added)
+    # the unit's own hunk (8-12) wins over the same text at line 40, and the span moves with the line
+    assert (merged[0]["line"], merged[0]["end_line"], merged[0]["relocated_from"]) == (12, 15, 90)
     merged, rejected = F.merge([cand(line=90)], RANGES, set(), added=added)
     assert not merged and rejected[0]["reject_reason"] == "line outside the unit's changed hunks ±3"
+    merged, rejected = F.merge([cand(line=90, quote="x = 2")], RANGES, set(), added=added)
+    assert rejected[0]["line"] == 90 and "relocated_from" not in rejected[0]  # a miss leaves the record as sent
+
+
+def test_rules_collect_block_marked_headings():
+    from arbiter.plan import _rules
+
+    files = {"AGENTS.md": "# Style\n\n## No god functions [block]\nKeep them short.\n## Naming\n"}
+    text, blocking = _rules(files.get, set(files), [])
+    assert blocking == ["AGENTS.md#no god functions"] and "Keep them short." in text
 
 
 def _fact(block: bool) -> dict:

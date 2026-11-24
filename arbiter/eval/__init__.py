@@ -6,6 +6,7 @@ from ..model import Decompose
 from . import aacr, martian, seeded, swr
 
 REVIEW_FROM = "review with the arbiter checkout at DIR (its .venv), for A/B runs"
+PR_HELP = "only PRs whose URL ends with this text (owner/repo/pull/N or repo/pull/N); repeatable"
 
 
 def _non_negative(text: str) -> int:
@@ -38,7 +39,7 @@ def main(argv: list[str]) -> int:
     m.add_argument("--model")
     m.add_argument("--verify-model")
     m.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
-    m.add_argument("--pr", action="append", help="only PRs whose URL contains this text; repeatable")
+    m.add_argument("--pr", action="append", help=PR_HELP)
     m.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
     w = sub.add_parser("swr", help="SWR-Bench: fetch the pinned upstream, draw the sample, run and judge")
     w.add_argument("action", choices=("fetch", "sample", "run"))
@@ -57,7 +58,7 @@ def main(argv: list[str]) -> int:
     r = sub.add_parser("aacr", help="AACR-Bench v2: fetch the pinned dataset, run and judge (file-level coverage)")
     r.add_argument("action", choices=("fetch", "run"))
     r.add_argument("--lang", help="python,ts,go,rust (or a dataset language name)")
-    r.add_argument("--pr", action="append", help="only PRs whose URL contains this text; repeatable")
+    r.add_argument("--pr", action="append", help=PR_HELP)
     r.add_argument("--limit", type=int)
     r.add_argument("--effort", default="standard", choices=("quick", "standard", "deep"))
     r.add_argument("--harness")

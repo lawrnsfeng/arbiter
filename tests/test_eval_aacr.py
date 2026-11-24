@@ -46,4 +46,11 @@ def test_martian_pr_filter(monkeypatch, tmp_path):
     monkeypatch.setattr(martian, "write_summary", lambda *a: None)
     a = argparse.Namespace(repo="sentry", offset=0, limit=None, pr=["r/pull/3"], effort="standard")
     martian.run(a)
-    assert seen == ["https://github.com/o/r/pull/3", "https://github.com/o/r/pull/30"]
+    assert seen == ["https://github.com/o/r/pull/3"]  # not pull/30
+
+
+def test_prepare_refuses_non_sha_commits_before_any_git_call(monkeypatch):
+    monkeypatch.setattr(aacr, "git", lambda *a: (_ for _ in ()).throw(AssertionError("git called")))
+    monkeypatch.setattr(aacr, "_snapshot", lambda *a: (_ for _ in ()).throw(AssertionError("download")))
+    item = {"githubPrUrl": "https://github.com/o/r/pull/1", "source_commit": "--upload-pack=touch /tmp/x"}
+    assert aacr._prepare(item | {"target_commit": "a" * 40}) is None

@@ -18,7 +18,7 @@ from . import findings as F
 from . import lang as langmod
 from .gates import gates
 from .harness import Tools
-from .model import Axis, Decompose, Effort, Finding, Group, Placement, ProofResult, Rung, Severity, Status, Unit
+from .model import Axis, Decompose, Effort, Finding, Group, Lang, Placement, ProofResult, Rung, Severity, Status, Unit
 from .plan import K3, Plan, Task, plan, pr_ranges, ranges_by_unit, run_diff, unit_diff
 from .rundir import RunDir
 
@@ -56,6 +56,13 @@ BRIEF_KEYS = (
 )
 MANIFEST_INPUT = "PR change manifest (from base vs head `ast`; every changed symbol and its unit)"
 MAINT_INPUT = "Maintainability facts (measured by arbiter; cite by id in measure)"
+# package manager of a failed dependency fetch -> the language whose proofs it blocks
+FETCH_LANG = {
+    "uv": Lang.PYTHON,
+    "go": Lang.GO,
+    "cargo": Lang.RUST,
+    **dict.fromkeys(("npm", "yarn", "pnpm", "bun"), Lang.TYPESCRIPT),
+}
 # hier §4.4: one run-level A5 call per PR with interface changes, covering callers outside the diff
 CONTRACT_PASS = (
     "This is the PR-level contract pass, not a unit review. For every signature change, removal or rename in the "
@@ -438,13 +445,19 @@ def proofs(run: RunDir, p: Plan) -> list[Finding]:
 
 def _env_gap(run: RunDir, f: Finding) -> str | None:
     """Why no proof could run for f in this environment, or None. A policy limit (no accepted rung at this
-    effort) is not an environment gap."""
-    if f.get("proof_note", "").startswith("sandbox unavailable"):
+    effort) is not an environment gap, and a failed fetch counts only for the finding's own ecosystem."""
+    note = f.get("proof_note", "")
+    if note.startswith("sandbox unavailable"):
         return "sandbox unavailable"
+    if note.startswith("no accepted rung"):
+        return None
+    lang = langmod.of(f["file"])
     for e in run.load("sandbox.json", {}).get("fetch", []):
         root = e["root"]
-        if e["wt"] == "wt" and e["exit_code"] and (root in ("", ".") or f["file"].startswith(root.rstrip("/") + "/")):
-            return f"dependency fetch failed in {root or '.'}"
+        in_root = root in ("", ".") or f["file"].startswith(root.rstrip("/") + "/")
+        tool = e.get("cmd", "").split(" ", 1)[0]
+        if e["wt"] == "wt" and e["exit_code"] and in_root and FETCH_LANG.get(tool) == lang:
+            return f"dependency fetch failed in {root or '.'} ({tool})"
     return None
 
 
