@@ -3,7 +3,7 @@
 
 This ledger records every technical idea and concern raised for arbiter, whatever happened to it: adopted, adopted behind a switch, proposed, deferred or dropped. Each row names where the idea came from, the evidence, and where the result lives. The reasoning behind the adopted design is in [methodology.md](methodology.md) §2–§5. Rejected approaches live in §8 with four fields: the tool or framework the idea came from, what it is, why that tool uses it, and why arbiter dropped it.
 
-**Rule:** any new idea, concern, experiment or rejection gets a row here in the same change that raises it. When an idea's status changes, edit its row and add the date; do not delete rows. [CHANGELOG.md](../CHANGELOG.md) says what shipped, and this file says what was decided.
+**Rule:** any new idea, concern, experiment or rejection gets a row in `decisions.jsonl` in the same change that raises it; `arbiter ledger render` regenerates this file and `arbiter ledger check` fails when it is stale. When an idea's status changes, edit its row and add the date; do not delete rows. [CHANGELOG.md](../CHANGELOG.md) says what shipped, and this file says what was decided.
 
 Status values:
 - `adopted`: in the code.

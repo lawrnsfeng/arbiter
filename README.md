@@ -69,10 +69,24 @@ Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-re
 ```bash
 arbiter run [--repo .] [--base REF] [--effort quick|standard|deep] \
   [--lang python,go,rust,typescript] [--harness omp|claude] [--model M] [--verify-model M] [--out RUN] [--jobs N] [--max-agents N] \
-  [--decompose ocr|hier|hier-split]
+  [--decompose ocr|hier|hier-split] [--decide]
 ```
 
-The report is `RUN/report.md` (human) and `RUN/report.json` (machine).
+The report is `RUN/report.md` (human) and `RUN/report.json` (machine). `report.md` opens with the verdict, the
+tier counts and the next action, then lists the requirements (claims from commits, issues and specs, `R1…`, plus
+`[block]` repo rules, `B1…`) with the findings that put each at risk. Findings follow by action tier: must fix
+(proven blockers), should fix (fix or reply `decision: <why>`), verify (unproven; a human decides), then one line
+of optional items and the pre-existing ones. Each finding folds its evidence and fix: the proof run, the minimal
+fix the proof agent applied in the sandbox, and up to two GitHub suggestion patches. Two folds close the report:
+every review axis with its counts per tier and whether an agent checked it, and the coverage. `report.json` adds
+`tier` and `sarif_level` to each finding, plus `requirements` and `decision`.
+
+`--decide` (or `ARBITER_DECIDE=1`) adds one Opus call at the end of the run that links findings to requirements,
+dismisses noise among non-blocking findings, flags must-fix findings it doubts and names up to three missed concerns
+(unverified, never blocking). It is strict: once per run (a claim file in `RUN`), no retry, no tools, and omp's
+`--max-cost` cap `ARBITER_DECIDE_MAX_USD` (default `1.00`, at most 5). Only an Opus model is accepted
+(`ARBITER_DECIDE_MODEL`, default `anthropic/claude-opus-5-5`), and only through omp. Every omp call arbiter makes
+loads `arbiter/omp-overlay.yml`, which turns omp's advisor off.
 
 `--decompose` (or `ARBITER_DECOMPOSE`) picks how the diff is split into review units; `arbiter plan` and
 `arbiter eval seeded|martian|swr|aacr run` take it too:
@@ -89,12 +103,17 @@ arbiter eval seeded build|run [--lang L] [--case TEXT]
 arbiter eval martian fetch|run --repo sentry|grafana|cal_dot_com [--limit N] [--offset N] [--pr TEXT]...
 arbiter eval swr fetch|sample|run [--limit N] [--skip-scored FILE]
 arbiter eval aacr fetch|run [--lang python,ts,go,rust] [--pr TEXT]... [--limit N]
+arbiter eval aacr rescore --runs TS TS... --label NAME --label NAME...
 ```
 
-Every `run` takes `--effort`, `--harness`, `--model`, `--verify-model`, `--decompose` and `--review-from DIR`:
+Every `run` takes `--effort`, `--harness`, `--model`, `--verify-model`, `--decompose`, `--review-from DIR` and `--decide`:
 - `--pr TEXT` (repeatable, `martian` and `aacr`) keeps only PRs whose URL ends with the text, such as `sentry-greptile/pull/3`.
 - `--review-from DIR` reviews with the arbiter checkout at `DIR` (its `.venv`), so an old and a new version run the same items on the same day.
 - `aacr` reviews AACR-Bench v2 PRs from the dataset's pinned repository snapshots and scores them with its file-level semantic coverage.
+- `aacr rescore` judges the main findings of several finished runs (folders under `eval/results/aacr/`) in one pass with one judge, and adds the union of the first two runs, raw and merged by location.
+
+The decision ledger is `docs/decisions.jsonl`; `docs/decisions.md` is rendered from it. `arbiter ledger list
+[--status S] [--area A] [--since DATE]`, `show ID`, `render` and `check` (rows valid and render current).
 
 | Exit | Meaning |
 |---|---|
@@ -133,7 +152,7 @@ harness with `--harness` or `ARBITER_HARNESS` (`omp`, the default, or `claude`).
     arbiter-finder: deepseek/deepseek-v4.1
     arbiter-verify: anthropic/claude-sonnet-5-5
   ```
-- **Cost ceiling.** A resolved model whose name contains an entry of `ARBITER_BLOCKED_MODELS` (default `opus,fable`) is refused with exit 2.
+- **Cost ceiling.** A resolved model whose name contains an entry of `ARBITER_BLOCKED_MODELS` (default `opus,fable`) is refused with exit 2. The one exception is the `--decide` call above, capped per call.
 - **Preflight.** Before any review work, each model must read a file with its tool and answer in JSON. A model the harness cannot call, or one without tool use, exits 2 with the reason instead of failing every agent call.
 
 ## Accuracy

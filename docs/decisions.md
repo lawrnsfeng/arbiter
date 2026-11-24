@@ -3,7 +3,7 @@
 
 This ledger records every technical idea and concern raised for arbiter, whatever happened to it: adopted, adopted behind a switch, proposed, deferred or dropped. Each row names where the idea came from, the evidence, and where the result lives. The reasoning behind the adopted design is in [methodology.md](methodology.md) §2–§5. Rejected approaches live in §8 with four fields: the tool or framework the idea came from, what it is, why that tool uses it, and why arbiter dropped it.
 
-**Rule:** any new idea, concern, experiment or rejection gets a row here in the same change that raises it. When an idea's status changes, edit its row and add the date; do not delete rows. [CHANGELOG.md](../CHANGELOG.md) says what shipped, and this file says what was decided.
+**Rule:** any new idea, concern, experiment or rejection gets a row in `decisions.jsonl` in the same change that raises it; `arbiter ledger render` regenerates this file and `arbiter ledger check` fails when it is stale. When an idea's status changes, edit its row and add the date; do not delete rows. [CHANGELOG.md](../CHANGELOG.md) says what shipped, and this file says what was decided.
 
 Status values:
 - `adopted`: in the code.
@@ -48,6 +48,7 @@ Source keys (`[DV-S4]`, `[DH-D10]`, `[AT-…]`, `[LR-…]`, `[CQ-…]`, `[LD1]`)
 | M-06 | 2026-11-23 | DeepSeek and GPT models | open | Untested: only the Anthropic provider is configured. The preflight is the safety net. GPT-6 Luna: the user will try it in their organization's harness (no OpenAI key here). Run `arbiter eval martian run --repo sentry --model openai/gpt-6-luna` in an omp with an OpenAI provider, or `--harness claude` behind a GPT gateway; any other harness needs I1. | README Models |
 | M-08 | 2026-11-23 | Cheap verifier panel first, escalate only split votes to the strong model | proposed | FrugalGPT: up to 98% cheaper at equal accuracy; code cascades save 26% on average `[AT]`. Ranked #2 | AT §ranking |
 | M-09 | 2026-11-23 | One verifier lens run by a different model family | proposed | 56.7% vs 42.7% caught; one pairing direction got worse `[AT]`. Ranked #7 | AT §ranking |
+| M-12 | 2026-11-25 | Jev (TypeSafe System One) as the eval matching judge with a confidence cascade to Sonnet | deferred, no TYPESAFE_API_KEY on this machine | reading-type judgments within 2-3 pts of GPT-6 at 0.36% of its fee; 13-28 pts behind on code/math/logic (arXiv 2609.26550; Scale Labs To Jev or Not to Jev); unfit as code verifier |  · next: set TYPESAFE_API_KEY, then build eval/judge.py jev cascade |
 
 ## 3. Decomposition (review units)
 

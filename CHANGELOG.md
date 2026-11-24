@@ -21,6 +21,26 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
 
 ### Added
 
+- Decision ledger as `docs/decisions.jsonl` with `arbiter ledger list|show|render|check`; `docs/decisions.md` is
+  generated. **Approach:** the user asked for a structured, queryable ledger; the markdown tables could only be
+  grepped and drifted in column layout between sections.
+- Requirement-first report: `RUN/report.md` leads with the verdict, tier counts and next action, then a table of
+  requirements (A0 claims `R1…`, `[block]` repo rules `B1…`) with the findings that put each at risk, then findings
+  by action tier (must fix, should fix, verify, optional, pre-existing) with folded evidence, the sandbox fix diff of
+  a confirmed proof and up to two suggestion patches, and a table of all 21 axes. Finders get the requirements and may
+  set `addresses` and `patches`; `report.json` gains `tier`, `sarif_level`, `requirements` and `decision`.
+  **Approach:** the user asked for a condensed report that starts from the requirements, shows every axis and tells
+  the author what to act on.
+- `--decide`: one end-of-run Opus call per review (claim file, no retry, no tools, omp `--max-cost`, default $1.00)
+  that links findings to requirements, dismisses non-blocking noise, challenges must-fix findings and adds at most
+  three unverified concerns; it cannot add or remove a block. Every omp call loads `arbiter/omp-overlay.yml` to keep
+  omp's advisor off. **Approach:** omp's advisor runtime retries and falls back across models, so it cannot keep the
+  user's one-Opus-call budget; arbiter makes the call itself. Measured in [benchmarks §3.9](docs/benchmarks.md).
+- Recall techniques T-27 (trigger and evidence before claim), T-19 (base checkout path for old-code reads), T-04
+  (co-change neighbours from the last 500 commits) and T-01 (uncovered analyzer hits on added lines become verifier
+  candidates). **Approach:** the next-ranked items of the accuracy research; measured together in benchmarks §3.9.
+- `arbiter eval aacr rescore`: judge several finished runs in one pass with one judge, plus their union.
+  **Approach:** separate runs were judged on different days, so judge drift hid small differences.
 - Leader study `research/research-leader-approaches.md` (Augment, Qodo 2.0 and PR-Agent, cubic, alibaba
   OpenCodeReview and AACR-Bench), ledger §4b and §4c, and ledger §8 "Rejected approaches": every dropped idea with
   its source tool, what it is, why that tool uses it and why arbiter dropped it. **Approach:** the user asked for the
