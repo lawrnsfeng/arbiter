@@ -87,6 +87,12 @@ Ranked in `research/research-accuracy-techniques.md`. Every gain is extrapolated
 | T-09 | Multi-agent debate | dropped | Majority voting explains most of its gains `[AT]` | — |
 | T-10 | Intrinsic self-critique without external feedback | dropped | No successful case `[AT]`, `[DV-S19]` | — |
 | T-11 | Few-shot bad-example prompts | dropped | Made Greptile's bot worse `[AI-§4 #11]` | — |
+| T-12 | Place a verified (panel TRUE_POSITIVE) but unproven finding in the main section as should-fix when the proof could not run for environment reasons (dependency fetch failed), instead of in Suspected; blocking still needs a proof | proposed | Martian 20-PR loss trace (benchmarks §3.7): both such findings were High golden bugs that the top tools report; 2/2 true, so no precision cost | +2 of 70 Core |
+| T-13 | Repair a finding with empty `evidence_lines` from its `file:line` instead of rejecting it | proposed | Same trace: 2 golden bugs (1 consensus) rejected for this formatting slip by Haiku | +≤2 of 70 |
+| T-14 | Loosen the verifier panel to recover true bugs it drops | dropped | The panel dropped 62 findings on 20 PRs, 5 of them true (about 92% right). Wholesale loosening trades about 11 FPs per TP | — |
+| T-15 | Semantic code retrieval ("context engine": Augment, Qodo) for finders | deferred | Leaders credit it for cross-system bugs. In the trace, 12 of 20 missed consensus bugs were never raised, several cross-file contract breaks. Try the `hier` contract pass and codegraph callers first (P4 A/B) | P4 |
+| T-16 | Reasoning-heavy finder model that makes more tool calls (Augment chose GPT-5.2 over Sonnet for review) | **open** | Cannot test: only the Anthropic provider is configured (M-06). The S+S matrix (M-11) shows a stronger Anthropic finder alone does not close the gap | — |
+| T-17 | Learn from PR history (Qodo recommendation agent) | proposed | Same as the learned-rules plan; see R-01..R-05 | §5 |
 
 ## 5. Learned rules from past PRs and MRs
 
