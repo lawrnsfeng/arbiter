@@ -21,6 +21,11 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
 
 ### Added
 
+- Model matrix results for Python and TypeScript (`docs/benchmarks.md` §3.7, score files in `eval/scores/`). Haiku
+  finders with a Sonnet verifier against Sonnet in every role, on seeded, Martian sentry and cal.com, and the 40-PR
+  SWR-Bench sample. **Approach:** the same datasets and r2 briefs per setup, one run each, Go and Rust postponed.
+  **Result:** Sonnet finders lose precision everywhere and lose on every metric on SWR-Bench, so Haiku finders stay
+  the default (ledger M-11).
 - `docs/decisions.md`: a ledger of every idea and concern raised, adopted, behind a switch, proposed, deferred or
   dropped, with its evidence. **Approach:** the user asked that technical decisions stay traceable, including the
   rejected ones; methodology's decision log only listed adopted design.

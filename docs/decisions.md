@@ -46,7 +46,8 @@ Source keys (`[DV-S4]`, `[DH-D10]`, `[AT-…]`, `[LR-…]`, `[CQ-…]`) resolve 
 | ID | Date | Idea or concern | Status | Decision and evidence | Where |
 |---|---|---|---|---|---|
 | M-01 | 2026-11-21 | Use the harness default model | dropped | It fell through to Opus and drained the token budget during the Martian and SWR runs | CHANGELOG 0.2.0 |
-| M-02 | 2026-11-22 | Haiku finders, Sonnet verifier, proof agent and judge | adopted | User decision; cheap independent finders, with the strong model where precision is decided `[AI-§4 #9]` | `harness.FALLBACK_MODELS` |
+| M-02 | 2026-11-22, confirmed 2026-11-24 | Haiku finders, Sonnet verifier, proof agent and judge | adopted | User decision; cheap independent finders, with the strong model where precision is decided `[AI-§4 #9]`. Confirmed by the 2026-11-23 matrix (benchmarks §3.7): see M-11 | `harness.FALLBACK_MODELS` |
+| M-11 | 2026-11-24 | Sonnet finders (Sonnet in every role) | dropped | Matrix, Python+TS, one run each. Seeded and Martian: recall +6 to +12 points, precision −2 to −8, F1 tied. SWR-Bench 40 PRs: P 0.38 vs 0.67, R 0.24 vs 0.26, FP 18 vs 6. Higher cost for no consistent gain | benchmarks §3.7 |
 | M-03 | 2026-11-23 | Resolve models from omp roles (`arbiter-finder` or `smol`; `arbiter-verify`) | adopted | User asked for omp roles mapped to Haiku and Sonnet at most; `default` and `slow` are Opus here and never used | `harness.settings` |
 | M-04 | 2026-11-23 | Cost ceiling `ARBITER_BLOCKED_MODELS` (default `opus,fable`) applied to the resolved model | adopted | User set Sonnet as the ceiling | `harness._resolve` |
 | M-05 | 2026-11-23 | Preflight each model: read a file, answer JSON | adopted | An unconfigured model crashed every omp call after about 80 s | `harness.preflight` |
@@ -134,3 +135,4 @@ Evaluation: `research/research-code-quality-platforms.md`.
 | E-08 | 2026-11-22 | Token accounting per call | proposed | Cost is reported as model calls only; roadmap P0.1 |
 | E-09 | 2026-11-21 | Project renamed curve → arbiter in a new repository | adopted | User decision |
 | E-10 | 2026-11-21 | devrem `reviewer` integration | deferred | Out of the original plan; roadmap I6 |
+| E-11 | 2026-11-24 | Run-to-run variance of each setup | **open concern** | Every matrix cell ran once; differences of a few points may be noise. Fix: repeat runs (roadmap P0) |
