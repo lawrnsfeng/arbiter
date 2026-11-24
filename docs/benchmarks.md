@@ -310,6 +310,36 @@ arbiter eval swr run --parallel 2 [--skip-scored eval/scores/swr-20261123031300.
 
 Each run was done once, and run-to-run variance was not measured (§5). Differences of a few points between setups may be noise; the SWR precision gap (0.67 against 0.38) is the only large one.
 
+### 3.8 Wave 1 spot check (2026-11-24)
+
+Old arm: master `8f04917`, run through `--review-from ~/relic/arbiter`. New arm: `feat/wave1-maintainability-recall` `73ccfbd` (T-12, T-13 + T-18, MA-03 facts, A6d, MA-05). Both arms ran on the same day with Haiku finders, a Sonnet verifier and judge, `standard` effort and `ocr` units. One extra arm ran the new code with `--decompose hier` on the AACR item only.
+
+Single runs on 3 items: a direction check, not an accuracy claim (E-11).
+
+| Item | Arm | Main findings | Precision | Recall | F2 | Maintainability recall | Evolvability findings | Verdict | Model calls (agents + verifier) | Wall |
+|---|---|---|---|---|---|---|---|---|---|---|
+| AACR ComfyUI 9560 (Python) | old | 0 | 0.00 | 0/6 | 0.00 | 0/3 | 0 | pass | 23 + 0 | 168 s |
+| AACR ComfyUI 9560 | new | 2 | 0.00 | 0/6 | 0.00 | 0/3 | 1 | pass | 25 + 9 | 193 s |
+| AACR ComfyUI 9560 | new + `hier` | 3 | 0.33 | 1/6 | 0.19 | 1/3 | 1 | pass | 37 + 15 | 384 s |
+| Martian sentry-greptile 3 (worst) | old | 6 | 0.00 | 0/3 Core | 0.00 | no `style` goldens | 1 | pass | 47 + 33 | 650 s |
+| Martian sentry-greptile 3 | new | 4 | 0.00 | 0/3 Core | 0.00 | no `style` goldens | 1 | pass | 51 + 36 | 509 s |
+| Martian cal.com 8330 (best) | old | 3 | 0.33 | 1/2 Core | 0.45 | no `style` goldens | 0 | block | 12 + 12 | 424 s |
+| Martian cal.com 8330 | new | 3 | 0.33 | 1/2 Core | 0.45 | no `style` goldens | 1 | pass | 13 + 15 | 775 s |
+
+AACR precision and recall use AACR's file-level semantic coverage (one judge call per finding, a reference counted once); Martian uses the Core profile. Model calls exclude the judge and proof agents.
+
+**Item choice.** The last H+S run's best PR was cal.com 8330 (F2 0.91, Core 2/2), and its worst was sentry-greptile 3 (F2 0, Core 0/3, 5 FP). The AACR item is ComfyUI 9560: Python, 319 changed lines, 3 Code Defect and 3 Maintainability and Readability references. Best and worst items regress toward the mean on any rerun, so the old arm reran both Martian PRs on the same day; today cal.com 8330 scored 1/2 in both arms. The `hier` arm ran on the AACR item only, because it is the only item large enough to split.
+
+**What changed.**
+- No Core or AACR recall was lost on any item; recall is identical across the two `ocr` arms.
+- Maintainability: arbiter measured 2 facts on ComfyUI. `server.py` crossed 1,000 lines (985 → 1005, block-eligible), and `cache_control` complexity rose from 4 to 11. A6d reported the complexity fact as a nit in both new arms and matched no reference; no agent cited the file fact, so nothing blocked. The 3 maintainability references ask to exclude 304 responses from the image rule, merge branches that set identical headers, and unify duplicate `no-cache` assignments (lines 60–72). Only the `hier` arm covered one of them (1/3).
+- T-13 repaired one finding's empty `evidence_lines` in each new AACR run. No finding was relocated by `quote` (T-18). T-12 placed nothing: dependency fetch failed on sentry and cal.com, but no verified finding there was left without a proof (0 Suspected in both new runs).
+- sentry-greptile 3: 4 instead of 6 false positives; both arms still miss all 3 Core bugs.
+- cal.com 8330: both arms proved a logic finding on the same golden bug. The old arm's panel kept it at block, while the new arm's panel rated it should-fix, so the verdicts differ (block vs pass). No wave-1 change touches functional severity, so this is run-to-run variance in the panel.
+- Cost: the new arm spends 1–4 more agent calls per run (A6d), plus verifier calls on the extra findings.
+
+Wave-1 acceptance (roadmap Phase A): "no Core recall loss" holds. "Maintainability recall up on AACR" holds only with `hier` (0/3 → 1/3); with `ocr` units it stays at 0/3.
+
 ## 4. Verdict-level view (r2)
 
 - Of the 15 functional bug cases, 10 ended with a BLOCK verdict.
@@ -359,6 +389,13 @@ unmatched findings.
 | [`swr-20261123031300.json`](../eval/scores/swr-20261123031300.json) | Matrix H+S, SWR-Bench, first 28 of 40 |
 | [`swr-20261123144505.json`](../eval/scores/swr-20261123144505.json) | Matrix H+S, SWR-Bench, remaining 12 |
 | [`swr-20261123195901.json`](../eval/scores/swr-20261123195901.json) | Matrix S+S, SWR-Bench, all 40 |
+| [`aacr-20261124033739.json`](../eval/scores/aacr-20261124033739.json) | Wave 1 spot check, old arm, AACR ComfyUI 9560 |
+| [`aacr-20261124040208.json`](../eval/scores/aacr-20261124040208.json) | Wave 1 spot check, new arm, AACR ComfyUI 9560 |
+| [`aacr-20261124042829.json`](../eval/scores/aacr-20261124042829.json) | Wave 1 spot check, new arm with `hier`, AACR ComfyUI 9560 |
+| [`martian-sentry-20261124034041.json`](../eval/scores/martian-sentry-20261124034041.json) | Wave 1 spot check, old arm, sentry-greptile 3 |
+| [`martian-sentry-20261124040537.json`](../eval/scores/martian-sentry-20261124040537.json) | Wave 1 spot check, new arm, sentry-greptile 3 |
+| [`martian-cal_dot_com-20261124035405.json`](../eval/scores/martian-cal_dot_com-20261124035405.json) | Wave 1 spot check, old arm, cal.com 8330 |
+| [`martian-cal_dot_com-20261124041504.json`](../eval/scores/martian-cal_dot_com-20261124041504.json) | Wave 1 spot check, new arm, cal.com 8330 |
 
 Four earlier Martian files are not tracked: one per repo, plus a second for cal.com. The API rate limit made agents fail in all four, and the reruns above replace them.
 
