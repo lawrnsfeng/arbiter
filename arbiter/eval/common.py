@@ -24,6 +24,7 @@ RUN_FLAGS = (
     ("verify_model", "ARBITER_VERIFY_MODEL"),
     ("decompose", "ARBITER_DECOMPOSE"),
     ("review_from", "ARBITER_REVIEW_FROM"),
+    ("decide", "ARBITER_DECIDE"),
 )
 
 
@@ -69,6 +70,7 @@ def models(s: harness.Settings) -> dict[str, str]:
         "verify_model": s.verify_model,
         "decompose": os.environ.get("ARBITER_DECOMPOSE", "ocr"),
         "review_from": os.environ.get("ARBITER_REVIEW_FROM", ""),
+        "decide": os.environ.get("ARBITER_DECIDE", ""),
     }
 
 

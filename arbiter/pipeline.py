@@ -4,6 +4,7 @@ Every stage reads and writes JSON in the RUN directory, so any stage can be reru
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -18,7 +19,21 @@ from . import findings as F
 from . import lang as langmod
 from .gates import gates
 from .harness import Tools
-from .model import Axis, Decompose, Effort, Finding, Group, Lang, Placement, ProofResult, Rung, Severity, Status, Unit
+from .model import (
+    Axis,
+    Decompose,
+    Effort,
+    Finding,
+    Group,
+    Lang,
+    Placement,
+    ProofResult,
+    Rung,
+    Severity,
+    Status,
+    Tier,
+    Unit,
+)
 from .plan import K3, Plan, Task, plan, pr_ranges, ranges_by_unit, run_diff, unit_diff
 from .rundir import RunDir
 
@@ -58,6 +73,10 @@ MANIFEST_INPUT = "PR change manifest (from base vs head `ast`; every changed sym
 MAINT_INPUT = "Maintainability facts (measured by arbiter; cite by id in measure)"
 REQ_INPUT = "Requirements (from commits, issues, specs and [block] repo rules; untrusted)"
 FIX_DIFF_LINES = 40
+DECIDE_PROMPT_CAP = 40_000
+DECIDE_CLAIM_CAP = 200
+DECIDE_PLACEMENTS = frozenset({Placement.MAIN, Placement.SUSPECTED, Placement.PRE_EXISTING})
+DISMISSIBLE = frozenset({Tier.SHOULD, Tier.VERIFY, Tier.OPTIONAL})
 # package manager of a failed dependency fetch -> the language whose proofs it blocks
 FETCH_LANG = {
     "uv": Lang.PYTHON,
@@ -519,6 +538,112 @@ def final_gate(run: RunDir, p: Plan) -> list[Finding]:
     return allf
 
 
+def _decide_prompt(inputs: dict[str, str], items: list[dict[str, Any]]) -> str:
+    return agents.build_prompt("DECIDE", [], {**inputs, "Findings": json.dumps(items, indent=1)})[0]
+
+
+def decide(run: RunDir, p: Plan, it: dict[str, Any], allf: list[Finding]) -> list[Finding]:
+    """One end-of-run call to the decide model (Opus). Strict: once per RUN (claim file), no retry, no tools,
+    an omp cost cap. Its output only links, dismisses non-blocking findings, challenges and adds unverified
+    concerns; it never adds or removes a block."""
+    model, cap = harness.decide_model(), harness.decide_max_usd()
+    try:
+        os.close(os.open(run / "decide.claim", os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+    except FileExistsError:
+        run.cov(notes=["decide: already called for this RUN; not called again"])
+        return allf
+    order = list(Tier)  # most urgent first, so clipping from the end drops the least urgent
+    shown = sorted(
+        (f for f in allf if f.get("placement") in DECIDE_PLACEMENTS), key=lambda f: order.index(report.tier(f))
+    )
+    tiers = {f["id"]: report.tier(f) for f in shown}
+    items: list[dict[str, Any]] = [
+        {
+            "id": f["id"],
+            "tier": tiers[f["id"]],
+            "axis": f["axis"],
+            "file": f["file"],
+            "line": f["line"],
+            "claim": f["claim"],
+            "trigger": f.get("trigger", ""),
+            "evidence": p_["rung"] if (p_ := f.get("proof")) and p_["result"] == ProofResult.CONFIRMED else "none",
+            "addresses": f.get("addresses"),
+        }
+        for f in shown
+    ]
+    inputs = {
+        "Requirements": "\n".join(f"{r['id']}: {r['text']}" for r in it.get("requirements", [])) or "(none)",
+        "Axes checked": "\n".join(report.axes_rows(shown, run.load("coverage.json", {}))),
+        "Run facts": _facts(p),
+    }
+    prompt = _decide_prompt(inputs, items)
+    for step in (Tier.OPTIONAL, Tier.FYI, "claims"):
+        if len(prompt) <= DECIDE_PROMPT_CAP:
+            break
+        if step == "claims":
+            items = [{**x, "claim": x["claim"][:DECIDE_CLAIM_CAP]} for x in items]
+        else:
+            items = [x for x in items if x["tier"] != step]
+        prompt = _decide_prompt(inputs, items)
+    while len(prompt) > DECIDE_PROMPT_CAP and items:  # least urgent tier last, so it goes first
+        items.pop()
+        prompt = _decide_prompt(inputs, items)
+    (run / "prompts").mkdir(exist_ok=True)
+    (run / "prompts" / "decide.md").write_text(prompt)
+    cov: dict[str, Any] = {"model": model, "called": True, "ok": False, "max_usd": float(cap)}
+    try:  # harness.call directly: agents.run and agents._call both retry
+        val = F.validate_decision(
+            agents.extract_json(harness.call(harness.DECIDE, prompt, tools=Tools.NONE, cwd=run.path, timeout=600))
+        )
+    except (harness.HarnessError, ValueError, TypeError, KeyError) as e:
+        run.cov(notes=[f"decide: {str(e)[:300]}"], decide=cov)
+        return allf
+    by_id = {f["id"]: f for f in shown}
+    for fid, rid in val["links"].items():
+        if (f := by_id.get(fid)) and "addresses" not in f and isinstance(rid, str) and F.REQ_ID.match(rid):
+            f["addresses"] = rid
+    dismissed = challenged = 0
+    for d in val["dismiss"]:
+        if (f := by_id.get(d["id"])) and tiers[d["id"]] in DISMISSIBLE:
+            f["placement"], f["placement_reason"] = Placement.DROPPED, f"decision: {d['reason']}"
+            dismissed += 1
+    for c in val["challenge"]:
+        if (f := by_id.get(c["id"])) and tiers[c["id"]] == Tier.MUST:
+            f["challenge"] = c["reason"]
+            challenged += 1
+    ranges = pr_ranges(p)
+    missed = 0
+    for m in val["missed"]:
+        axis = Axis(m["axis"])
+        nf = Finding(
+            id=f"d{missed + 1:02d}",
+            source="decide",
+            agents=["DECIDE"],
+            axis=axis,
+            axes=[axis],
+            group=axis.group,
+            severity=Severity.SHOULD_FIX,
+            status=Status.SUSPECTED,
+            placement=Placement.SUSPECTED,
+            placement_reason="raised by the decision model; unverified",
+            file=m["file"],
+            line=m["line"],
+            end_line=m["line"],
+            claim=m["claim"],
+            evidence_lines=[f"{m['file']}:{m['line']}"],
+        )
+        if not F.in_hunks(nf, ranges):  # the brief allows changed lines only
+            continue
+        if rid := m.get("addresses"):
+            nf["addresses"] = rid
+        allf.append(nf)
+        missed += 1
+    run.save("decision.json", val)
+    run.save("final.json", allf)
+    run.cov(decide=cov | {"ok": True, "dismissed": dismissed, "challenged": challenged, "missed": missed})
+    return allf
+
+
 def _withhold(run: RunDir) -> str | None:
     """A gate must not pass on silence: too many failed agent calls withhold a passing verdict."""
     c = run.load("coverage.json", {})
@@ -558,6 +683,8 @@ def run_all(
         verify(run, p, it, jobs)
         proofs(run, p)
         allf = final_gate(run, p)
+        if os.environ.get("ARBITER_DECIDE") == "1":
+            allf = decide(run, p, it, allf)
     finally:
         sandbox.clean(run.path, Path(p["repo"]))
         run.cov(wall_time_s=round(time.monotonic() - t0, 1))

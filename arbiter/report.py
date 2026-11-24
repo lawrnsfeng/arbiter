@@ -105,7 +105,7 @@ def _item(n: int, f: Finding) -> list[str]:
     return [*md, ""]
 
 
-def _axes_rows(reported: list[Finding], cov: dict[str, Any]) -> list[str]:
+def axes_rows(reported: list[Finding], cov: dict[str, Any]) -> list[str]:
     ran = {name.split("@", 1)[0] for name in cov.get("agents_run", [])}
     owners = axis_owners()
     rows = ["| Axis | Must | Should | Verify | Optional | Checked |", "|---|---|---|---|---|---|"]
@@ -215,7 +215,7 @@ def write(run_path: Path, p: Plan, allf: list[Finding], verdict: str) -> None:
         md += [f"- `{f['file']}:{f['line']}` {f['axis']}: {f['claim']}" for f in pre]
         md += [f"- gate: `{x['cmd']}` also fails on base" for x in pre_gates]
         md.append("")
-    md += [f"<details><summary>Axes checked ({len(AXIS_PRIORITY)})</summary>", "", *_axes_rows(reported, cov), ""]
+    md += [f"<details><summary>Axes checked ({len(AXIS_PRIORITY)})</summary>", "", *axes_rows(reported, cov), ""]
     md += ["</details>", "", "<details><summary>Coverage</summary>", ""]
     md += [
         f"- gate {r['name']}: {r['status']}" + (f", exit {r['exit_code']}" if "exit_code" in r else "")

@@ -100,3 +100,25 @@ The intent agent A0 replies with one Intent object.
  "unit_notes": {"u02": "Changes the SQL paging query used by the public /items endpoint."},
  "threat_model_draft": "## Assets\nItem records in SQLite.\n## Entry points\nCLI `items list`.\n## Trust boundaries\nCLI user → process.\n## Trusted inputs\nCLI flags, env vars.\n## In-scope classes\nSQL injection, path traversal.\n## Out-of-scope classes\nDoS.\n## DoS policy\nOut of scope: local CLI."}
 ```
+
+## Decision
+
+The decision agent DECIDE replies with one Decision object. Finding ids are the `id` values in the Findings input.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `summary` | string | yes | The merge decision in at most 300 characters. |
+| `next_action` | string | yes | What the author should do next, at most 200 characters. |
+| `links` | object | yes | Finding id → requirement id (`R2`, `B1`) it puts at risk, or `null`; only for findings without `addresses`. May be `{}`. |
+| `dismiss` | list of object | yes | `{"id", "reason"}` for should-fix, verify or optional findings that would not change a merge decision or are clearly wrong. May be empty. |
+| `challenge` | list of object | yes | `{"id", "reason"}` for must-fix findings you doubt; they stay must-fix. May be empty. |
+| `missed` | list of object | yes | At most 3: `{"file", "line", "axis", "claim", "addresses"}` on changed lines. May be empty. |
+
+```json
+{"summary": "Blocks on the proven off-by-one in page(); the rest is minor.",
+ "next_action": "Fix #1, then answer the should-fix item.",
+ "links": {"f002": "R1"},
+ "dismiss": [{"id": "f004", "reason": "Style preference with no effect on behaviour."}],
+ "challenge": [],
+ "missed": [{"file": "src/pager.py", "line": 50, "axis": "edge", "claim": "size=0 divides by zero.", "addresses": "R1"}]}
+```
