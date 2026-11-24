@@ -16,6 +16,7 @@ Keys used in [methodology.md](methodology.md) and [benchmarks.md](benchmarks.md)
 | `AT-` | `research/research-accuracy-techniques.md` (2026-11-23) | its source table; the top-8 ranking is the last section |
 | `LR-` | `research/research-learned-rules.md` (2026-11-23) | its source table (L1–L38); the phased plan is the last section |
 | `CQ-` | `research/research-code-quality-platforms.md` (2026-11-23) | its source table; the ranked platform table is the last section |
+| `LD-` | `research/research-leader-approaches.md` (2026-11-24) | §2 table (LD1–LD24) |
 | `SEC-` | `research/research-security.md` | §1 (S1–S50) |
 | `AI-` | `research/research-ai-review-systems.md` | sections §1–§4 (pipelines, systems, benchmarks, techniques) |
 | `PM-` | `research/prior-mint-review-research.md` | OCR, mattpocock, Google eng-practices, pstack code judo |
