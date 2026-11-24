@@ -10,6 +10,7 @@ from typing import Any, NotRequired, TypedDict
 
 from .. import HOME
 from ..findings import NEAR
+from ..model import EVOLVABILITY
 from .common import RESULTS, apply_models, models, ratio, review, stamp, write_summary
 
 CORPUS = HOME / "eval" / "seeded"
@@ -90,6 +91,7 @@ def score(case: Path, report: dict[str, Any] | None) -> dict[str, Any]:
     main = [f for f in report["findings"] if f.get("placement") == "main"]
     hit = {i for f in main for i in _matches(f, expected)}
     must = [i for i, e in enumerate(expected) if e.get("must", True)]
+    evo = [i for i in must if set(expected[i]["axes"]) & EVOLVABILITY]
     unmatched = [f for f in main if not _matches(f, expected)]
     return {
         "case": case_name(case),
@@ -100,6 +102,8 @@ def score(case: Path, report: dict[str, Any] | None) -> dict[str, Any]:
         "fp": len(unmatched),
         "must": len(must),
         "must_hit": sum(i in hit for i in must),
+        "evo_must": len(evo),
+        "evo_hit": sum(i in hit for i in evo),
         "suspected": sum(f.get("placement") == "suspected" for f in report["findings"]),
         "fp_findings": [f"{f['file']}:{f['line']} [{f['axis']}] {f['claim'][:100]}" for f in unmatched],
     }
@@ -132,6 +136,7 @@ def run(cs: list[Path], a: argparse.Namespace) -> dict[str, Any]:
         **models(settings),
         "precision": round(ratio(sum(r["matched"] for r in bug), sum(r["main"] for r in scored)), 3),
         "recall": round(ratio(sum(r["must_hit"] for r in bug), sum(r["must"] for r in bug)), 3),
+        "evolvability_recall": round(ratio(sum(r["evo_hit"] for r in bug), sum(r["evo_must"] for r in bug)), 3),
         "clean_case_findings": sum(r["main"] for r in clean),
         "suspected": sum(r["suspected"] for r in scored),
         "errors": [r for r in rows if "error" in r],
@@ -147,6 +152,7 @@ def run(cs: list[Path], a: argparse.Namespace) -> dict[str, Any]:
         )
     print(
         f"\nprecision {summary['precision']} · recall {summary['recall']} · "
+        f"evolvability recall {summary['evolvability_recall']} · "
         f"clean-case findings {summary['clean_case_findings']} · results {path}"
     )
     return summary

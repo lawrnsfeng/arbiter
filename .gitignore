@@ -1,6 +1,8 @@
 __pycache__/
 .venv/
 eval/martian/cache/
+eval/aacr/cache/
+eval/aacr/data/
 eval/results/
 eval/swr/upstream/
 eval/swr/cache/
