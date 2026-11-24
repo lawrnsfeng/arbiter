@@ -76,6 +76,8 @@ def _parser() -> argparse.ArgumentParser:
     sb.add_argument("--timeout", type=int, default=300)
     sb.add_argument("rest", nargs=argparse.REMAINDER)
     sub.add_parser("eval").add_argument("rest", nargs=argparse.REMAINDER)
+    lg = sub.add_parser("ledger", help="decision ledger: list, show ID, render, check")
+    lg.add_argument("rest", nargs=argparse.REMAINDER)
     return ap
 
 
@@ -167,6 +169,10 @@ def _dispatch(a: argparse.Namespace) -> int:
             from .eval import main as eval_main
 
             return eval_main(a.rest)
+        case "ledger":
+            from .ledger import main as ledger_main
+
+            return ledger_main(a.rest)
     run = RunDir(a.run)
     p = _plan(run)
     match a.cmd:
