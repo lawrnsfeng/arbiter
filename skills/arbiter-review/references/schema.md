@@ -10,7 +10,7 @@ Finder agents (`output: findings`, also SPEC) reply with `{"findings": [Candidat
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `axis` | string | yes | One of `logic edge tests errors resources observability security privacy concurrency api data portability deps performance ops a11y spec` (functional) or `maintainability idiom design docs` (evolvability). |
-| `severity` | string | yes | `block`, `should-fix` or `nit`. Evolvability is capped at `should-fix` by arbiter. |
+| `severity` | string | yes | `block`, `should-fix` or `nit`. Evolvability is capped at `should-fix` unless a block-eligible `measure` or a `[block]` repo rule backs it. |
 | `type` | string | no | `defect`, `refactor` or `nit`. Default `defect`. |
 | `file` | string | yes | Repo-relative path. |
 | `line` | int | yes | First line of the issue, on the new side. Must fall inside the unit's changed hunks ±3 lines. |
@@ -18,9 +18,11 @@ Finder agents (`output: findings`, also SPEC) reply with `{"findings": [Candidat
 | `claim` | string | yes | One sentence: what is wrong. |
 | `trigger` | string | functional axes | The input or state that makes the defect happen. |
 | `evidence_lines` | list of string | yes | ≥1 `"path:line"` you read that supports the claim. |
+| `quote` | string | no | The exact text of the first flagged line, copied from the code; arbiter uses it to fix a wrong `line`. Recommended for every finding. |
+| `measure` | string | no | Id of an arbiter maintainability fact (`m03`) the finding reports. |
 | `cwe` | int | `security`, `privacy` | CWE number, e.g. `89`. |
 | `rule` | string | evolvability axes | Canon key (`P8`, `EP3 Item 37`, `C-GOOD-ERR`, `GSD`), repo rule `file#heading`, or a linter rule id. |
-| `precedent` | string | no | `"path:line"` in this repo that follows the rule. Evolvability needs `precedent` unless `rule` is a linter id. |
+| `precedent` | string | no | `"path:line"` in this repo that follows the rule. Evolvability needs `precedent` unless `rule` is a linter id or `measure` names an arbiter fact. |
 | `code_judo` | bool | no | `true` only for a pstack code-judo item (A6b). |
 | `fix` | string | no | The smallest fix, in one or two sentences. |
 | `proof_plan` | object | functional axes | `{"rung": "E1".."E9", "idea": "<how to prove it>"}`. |

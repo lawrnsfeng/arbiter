@@ -337,6 +337,69 @@ def test_gate_deep_code_judo_e1_blocks():
     assert F.verdict([f]) == "block"
 
 
+def test_gate_env_gap_places_verified_unproven_in_main_as_should_fix():
+    f = F.gate(_verified(), "standard", None, env_gap="dependency fetch failed in .")
+    assert f["placement"] == "main" and f["severity"] == "should-fix"
+    assert f["placement_reason"].startswith("verified; no proof possible here")
+    assert F.verdict([f]) == "pass"
+    assert F.gate(_verified(), "standard", None)["placement"] == "suspected"
+
+
+def test_env_gap_only_for_failed_fetch_covering_the_file(tmp_path):
+    from arbiter.pipeline import _env_gap
+    from arbiter.rundir import RunDir
+
+    run = RunDir(tmp_path)
+    run.save("sandbox.json", {"fetch": [{"wt": "wt", "root": "", "exit_code": 1}]})
+    assert _env_gap(run, {"file": "api/x.py"}) == "dependency fetch failed in ."
+    run.save("sandbox.json", {"fetch": [{"wt": "wt", "root": "web", "exit_code": 1}]})
+    assert _env_gap(run, {"file": "api/x.py"}) is None
+    assert _env_gap(run, {"file": "web/x.ts"}) == "dependency fetch failed in web"
+
+
+def test_merge_repairs_empty_evidence_lines():
+    merged, rejected = F.merge([cand(evidence_lines=[])], RANGES, set())
+    assert not rejected and merged[0]["evidence_lines"] == ["a.py:10"] and merged[0]["repaired"]
+
+
+def test_merge_relocates_by_quote():
+    added = {"a.py": [(11, "x = 1"), (12, "    return total + 1")]}
+    merged, _ = F.merge([cand(line=90, quote="return  total + 1")], RANGES, set(), added=added)
+    assert merged[0]["line"] == 12 and merged[0]["relocated_from"] == 90
+    merged, rejected = F.merge([cand(line=90)], RANGES, set(), added=added)
+    assert not merged and rejected[0]["reject_reason"] == "line outside the unit's changed hunks ±3"
+
+
+def _fact(block: bool) -> dict:
+    return {
+        "id": "m01",
+        "path": "a.py",
+        "qualname": "f",
+        "line": 8,
+        "end_line": 40,
+        "metric": "complexity",
+        "base": 1,
+        "head": 24,
+        "warn": 10,
+        "block": block,
+    }
+
+
+def test_gate_maintainability_blocks_only_with_measured_fact_or_block_rule():
+    def evo(**kw):
+        return _verified(axis="maintainability", rule="arbiter:complexity", measure="m01", severity="block", **kw)
+
+    f = F.gate(evo(), "standard", None, facts={"m01": _fact(True)})
+    assert f["placement"] == "main" and f["severity"] == "block" and f["support"][0]["tool"] == "arbiter-maintain"
+    f = F.gate(evo(), "standard", None, facts={"m01": _fact(False)})
+    assert f["placement"] == "main" and f["severity"] == "should-fix"
+    far = _fact(True) | {"line": 200, "end_line": 260}
+    assert F.gate(evo(), "standard", None, facts={"m01": far})["placement"] == "dropped"
+    r = _verified(axis="maintainability", rule="AGENTS.md#No god functions", precedent="a.py:1", severity="block")
+    f = F.gate(r, "standard", None, blocking_rules=frozenset({"AGENTS.md#no god functions"}))
+    assert f["severity"] == "block"
+
+
 def test_check_proof_uses_exec_records():
     recs = {
         "a": {"exit_code": 1, "timed_out": False, "cmd": "pytest", "base": False},
@@ -584,7 +647,8 @@ def test_martian_judge_failure_is_not_a_false_positive(monkeypatch):
     from arbiter.eval import martian
 
     monkeypatch.setattr(martian, "_judge", lambda f, c: None)
-    row = martian._score_pr([{"file": "a.py", "line": 1, "claim": "c"}], [{"comment": "x", "category": "bug"}])
+    f = {"file": "a.py", "line": 1, "claim": "c", "axis": "logic"}
+    row = martian._score_pr([f], [{"comment": "x", "category": "bug"}])
     assert (row["fp"], row["unjudged"], row["tp"]) == (0, 1, 0)
 
 

@@ -28,4 +28,4 @@ Find documentation the change makes wrong or leaves missing: docstrings and comm
 ## Proof plan hints
 None needed; contradictions are shown by citing the doc line and the code line. Omit `proof_plan`.
 ## Output
-`{"findings": [...]}`; `axis` = `docs`; `severity` at most `should-fix`; `rule` required; `precedent` required unless `rule` is a linter id.
+`{"findings": [...]}`; `axis` = `docs`; `severity` at most `should-fix`, unless `rule` names a repo rule heading marked `[block]`; `rule` required; `precedent` required unless `rule` is a linter id.

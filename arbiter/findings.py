@@ -1,7 +1,7 @@
 """Schemas (hand-written validators), merge and dedup, the vote tally, and the evidence gate."""
 
 import re
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +12,7 @@ from .model import (
     ExecRecord,
     Finding,
     Group,
+    MaintFact,
     Placement,
     Proof,
     ProofResult,
@@ -59,6 +60,7 @@ LOC = re.compile(r"^[^\s:]+:\d+$")
 # linter ids: ruff/flake8/staticcheck (E501, SA4006), clippy::x, eslint (plugin/rule, no-x, prefer-x)
 LINT_ID = re.compile(r"^([A-Z]{1,4}\d{3,4}|clippy::\w+|(@[\w-]+/)?[\w-]+/[\w-]+|(no|prefer)-[\w-]+)$")
 NIT_CAP = 10
+UNPROVABLE = "verified; no proof possible here"  # placement reason prefix: verified, proof blocked by environment
 NEAR = 3  # lines of slack for hunk membership and dedup
 CLUSTERED = frozenset({SymbolChange.SIGNATURE, SymbolChange.RENAMED})  # interface changes with a head-side span
 
@@ -210,6 +212,44 @@ def _cited_symbol(f: Finding, symbols: Sequence[Symbol]) -> tuple[str, str] | No
     return None
 
 
+def _norm(s: str) -> str:
+    return " ".join(s.split())
+
+
+def _relocate(c: Finding, added: Mapping[str, Sequence[tuple[int, str]]]) -> bool:
+    """OCR-style anchoring: move a finding to the added line its `quote` names. True when it moved."""
+    want = _norm(c.get("quote") or "")
+    if not want:
+        return False
+    lines = added.get(c["file"], ())
+    hits = [n for n, text in lines if _norm(text) == want]
+    if not hits and len(want) >= 12:
+        hits = [n for n, text in lines if want in _norm(text)]
+    if not hits:
+        return False
+    # shortcut: no LLM relocation stage (OCR stage 3); add it if relocation misses show up in rejected.json
+    n = min(hits, key=lambda x: abs(x - c["line"]))
+    delta = n - c["line"]
+    c["relocated_from"] = c["line"]
+    c["end_line"] = c.get("end_line", c["line"]) + delta
+    c["line"] = n
+    return True
+
+
+def _repair(c: Any) -> None:
+    """Fill empty or malformed evidence_lines from the finding's own file:line instead of rejecting it."""
+    if (
+        isinstance(c, dict)
+        and isinstance(c.get("file"), str)
+        and c["file"]
+        and isinstance(c.get("line"), int)
+        and c["line"] > 0
+        and not _locs(c.get("evidence_lines"))
+    ):
+        c["evidence_lines"] = [f"{c['file']}:{c['line']}"]
+        c["repaired"] = "evidence_lines set from file:line"
+
+
 def merge(
     raw: Iterable[Any],
     ranges_by_unit: dict[str, Ranges],
@@ -217,26 +257,27 @@ def merge(
     *,
     widen: Ranges | None = None,
     symbols: Sequence[Symbol] = (),
+    added: Mapping[str, Sequence[tuple[int, str]]] | None = None,
 ) -> tuple[list[Finding], list[Any]]:
     """raw: candidates tagged with agent, pass and unit. Returns (merged, rejected).
 
     hier mode: `widen` (every changed hunk of the PR) replaces the unit's own hunks as the acceptance rule, and
     `symbols` (the change manifest) clusters findings citing one changed interface into one finding.
+    `added` (path -> added (line, text)) lets a finding with a wrong line move to the line its `quote` names.
     """
     rejected: list[Any] = []
     kept: list[Finding] = []
     for c in raw:
+        _repair(c)
         try:
             validate_candidate(c)
         except Invalid as e:
             rejected.append({**c, "reject_reason": str(e)})
             continue
-        if widen is not None:
-            if not in_hunks(c, widen):
-                rejected.append({**c, "reject_reason": f"line outside every changed hunk of the PR ±{NEAR}"})
-                continue
-        elif not in_hunks(c, ranges_by_unit.get(c["unit"], {})):
-            rejected.append({**c, "reject_reason": f"line outside the unit's changed hunks ±{NEAR}"})
+        ranges = widen if widen is not None else ranges_by_unit.get(c["unit"], {})
+        if not in_hunks(c, ranges) and not (added is not None and _relocate(c, added) and in_hunks(c, ranges)):
+            where = "every changed hunk of the PR" if widen is not None else "the unit's changed hunks"
+            rejected.append({**c, "reject_reason": f"line outside {where} ±{NEAR}"})
             continue
         kept.append(c)
     merged: list[Finding] = []
@@ -342,8 +383,31 @@ def _place(f: Finding, placement: Placement, reason: str | None = None) -> Findi
     return f
 
 
-def gate(f: Finding, effort: str, wt: Path | None) -> Finding:
-    """Final placement for a tallied finding: main, suspected, dropped or pre-existing."""
+def rule_key(s: str) -> str:
+    """Normalized repo-rule heading: `[block]` marker removed, lower case, single spaces."""
+    return " ".join(s.replace("[block]", "").lower().split())
+
+
+def _rule_blocks(rule: str, blocking_rules: frozenset[str]) -> bool:
+    path, sep, heading = rule.partition("#")
+    return bool(sep) and f"{path}#{rule_key(heading)}" in blocking_rules
+
+
+def gate(
+    f: Finding,
+    effort: str,
+    wt: Path | None,
+    *,
+    env_gap: str | None = None,
+    facts: Mapping[str, MaintFact] | None = None,
+    blocking_rules: frozenset[str] = frozenset(),
+) -> Finding:
+    """Final placement for a tallied finding: main, suspected, dropped or pre-existing.
+
+    env_gap: why no proof could run here (dependency fetch failed, no sandbox); a verified functional finding
+    then goes to the main section as should-fix instead of Suspected. facts: arbiter's maintainability facts by
+    id. blocking_rules: `path#heading` keys of repo rules marked `[block]`.
+    """
     eff = Effort(effort)
     status = f.get("status")
     if status != Status.VERIFIED:
@@ -353,21 +417,36 @@ def gate(f: Finding, effort: str, wt: Path | None) -> Finding:
     proof = f.get("proof")
     confirmed_rung = proof["rung"] if proof and proof["result"] == ProofResult.CONFIRMED else None
     if f["group"] == Group.EVOLVABILITY:
-        lint = bool(LINT_ID.match(f.get("rule") or ""))
-        if not f.get("rule") or not (lint or _precedent_ok(f.get("precedent"), wt)):
-            return _place(f, Placement.DROPPED, "evolvability needs rule + precedent or lint id")
+        rule = f.get("rule") or ""
+        fact = (facts or {}).get(f.get("measure") or "")
+        if fact is not None and not (
+            fact["path"] == f["file"] and fact["line"] - NEAR <= f["line"] <= fact["end_line"] + NEAR
+        ):
+            fact = None
+        lint = bool(LINT_ID.match(rule))
+        if not rule or not (lint or _precedent_ok(f.get("precedent"), wt) or fact is not None):
+            return _place(f, Placement.DROPPED, "evolvability needs rule + precedent, lint id or measured fact")
         if f.get("code_judo") and eff is Effort.QUICK:
             return _place(f, Placement.DROPPED, "code judo off in quick")
+        measured_block = fact is not None and fact["block"]
         judo_block = eff is Effort.DEEP and f.get("code_judo") and confirmed_rung == Rung.E1
-        if f["severity"] == Severity.BLOCK and not judo_block:
+        if f["severity"] == Severity.BLOCK and not (measured_block or _rule_blocks(rule, blocking_rules) or judo_block):
             f["severity"] = Severity.SHOULD_FIX
+        if f["severity"] == Severity.BLOCK and measured_block and fact is not None:
+            was = fact["base"] if fact["base"] is not None else "new"
+            f["support"] = [
+                *f.get("support", []),
+                {"rung": Rung.E1, "tool": "arbiter-maintain", "msg": f"{fact['metric']} {was}→{fact['head']}"},
+            ]
         return _place(f, Placement.MAIN)
     if confirmed_rung in ACCEPTED[Axis(f["axis"])] & EFFORT_RUNGS[eff]:
         return _place(f, Placement.MAIN)
     if f["axis"] == Axis.PERFORMANCE:
         return _place(f, Placement.DROPPED, "performance needs E8")
     if f["severity"] == Severity.BLOCK:
-        f["severity"] = Severity.SHOULD_FIX  # suspected never blocks
+        f["severity"] = Severity.SHOULD_FIX  # only a proof blocks
+    if env_gap:
+        return _place(f, Placement.MAIN, f"{UNPROVABLE}: {env_gap}")
     return _place(f, Placement.SUSPECTED, "verified but unproven")
 
 

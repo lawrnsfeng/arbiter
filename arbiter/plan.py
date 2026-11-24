@@ -11,21 +11,23 @@ import sys
 from pathlib import Path
 from typing import NamedTuple, TypedDict
 
-from . import decompose, diff, tools, triggers, units
+from . import decompose, diff, maintain, tools, triggers, units
 from .diff import hunk_ranges
-from .model import Decompose, DiffFile, Effort, Lang, Range, Ranges, Symbol, ToolSpec, Unit
+from .findings import rule_key
+from .model import Decompose, DiffFile, Effort, Lang, MaintFact, Range, Ranges, Symbol, ToolSpec, Unit
 from .rundir import RunDir
 
 ALWAYS = {
     Effort.QUICK: ("A1a", "A1b", "A2", "A3", "A6a"),
-    Effort.STANDARD: ("A1a", "A1b", "A1c", "A2", "A3", "A6a", "A6b", "A6c"),
-    Effort.DEEP: ("A1a", "A1b", "A1c", "A2", "A3", "A6a", "A6b", "A6c"),
+    Effort.STANDARD: ("A1a", "A1b", "A1c", "A2", "A3", "A6a", "A6b", "A6c", "A6d"),
+    Effort.DEEP: ("A1a", "A1b", "A1c", "A2", "A3", "A6a", "A6b", "A6c", "A6d"),
 }
 CORRECTNESS = frozenset({"A1a", "A1b", "A2", "A3"})  # all that runs on files with no arbiter language skill
 K3 = frozenset({"A1a", "A1b", "A2", "A3", "A4"})  # agents run 3 times in deep mode
 SKIP_ORDER = ("A9", "A7", "A8", "A5", "A5b", "A4")  # dropped first when over the agent budget
 RULE_FILES = ("CLAUDE.md", "AGENTS.md", "CONTRIBUTING.md")
 RULE_DIR = re.compile(r"\.claude/rules/[^/]+\.md$")
+HEADING = re.compile(r"^#{1,6}\s+(.*)$", re.MULTILINE)
 RULES_CAP = 20_000
 THREAT_MODELS = ("THREAT_MODEL.md", "docs/THREAT_MODEL.md")
 ORDERS = 3  # deterministic file orders, one per pass
@@ -71,6 +73,8 @@ class Plan(TypedDict):
     decompose: Decompose
     budget: int  # unit churn budget (hier modes)
     manifest: list[Symbol]  # hier: the PR change manifest
+    maint: list[MaintFact]  # measured maintainability facts (MA-03); empty in quick
+    blocking_rules: list[str]  # `path#heading` keys of repo rule headings marked [block] (MA-05)
 
 
 def _order(u: Unit, k: int) -> list[int]:
@@ -121,13 +125,16 @@ def schedule(
     return Schedule(tasks=tasks, once=once, skipped=skipped)
 
 
-def _rules(read: tools.Reader, tree: set[str], notes: list[str]) -> str:
+def _rules(read: tools.Reader, tree: set[str], notes: list[str]) -> tuple[str, list[str]]:
+    """Repo rule text for the prompts, and the `path#heading` keys of headings marked `[block]`."""
     paths = [*RULE_FILES, *sorted(p for p in tree if RULE_DIR.match(p))]
-    text = "\n\n".join(f"## {path}\n\n{body}" for path in paths if (body := read(path)))
+    bodies = [(path, body) for path in paths if (body := read(path))]
+    blocking = [f"{path}#{rule_key(h)}" for path, body in bodies for h in HEADING.findall(body) if "[block]" in h]
+    text = "\n\n".join(f"## {path}\n\n{body}" for path, body in bodies)
     if len(text) > RULES_CAP:
         notes.append(f"repo rules truncated at {RULES_CAP // 1000} KB")
-        return f"{text[:RULES_CAP]}\n\n[truncated at {RULES_CAP // 1000} KB]"
-    return text
+        return f"{text[:RULES_CAP]}\n\n[truncated at {RULES_CAP // 1000} KB]", blocking
+    return text, blocking
 
 
 def _affected(repo: Path, paths: list[str]) -> list[str]:
@@ -194,8 +201,10 @@ def plan(
     for f in included:
         changed.setdefault(f["lang"], []).append(f["path"])
     specs = tools.detect(tree, read, changed, _affected(repo, [f["path"] for f in included]))
+    maint = [] if eff == Effort.QUICK else maintain.facts(repo, base, included, read)
     run.path.mkdir(parents=True, exist_ok=True)
-    (run / "rules.md").write_text(_rules(read, tree, notes))
+    rules, blocking = _rules(read, tree, notes)
+    (run / "rules.md").write_text(rules)
     p = Plan(
         repo=str(repo),
         base=base,
@@ -215,6 +224,8 @@ def plan(
         decompose=mode,
         budget=budget,
         manifest=syms,
+        maint=maint,
+        blocking_rules=blocking,
     )
     run.save("plan.json", p)
     run.cov(
@@ -235,6 +246,7 @@ def plan(
             "interface_changes": sum(s["change"] in decompose.INTERFACE for s in syms),
         },
         notes=notes,
+        maint_facts=len(maint),
         excluded=[{"path": f["path"], "reason": f["excluded"]} for f in d["files"] if f["excluded"]],
     )
     return p

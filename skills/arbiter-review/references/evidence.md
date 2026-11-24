@@ -71,7 +71,7 @@ A verified functional finding reaches the main report only with a `confirmed` pr
 | a11y | E1 |
 | spec | E4, E9 |
 
-Evolvability axes (`maintainability idiom design docs`) need no execution proof. They need a `rule` plus either a `precedent` (`path:line` in the repo) or a `rule` that is a linter rule id. Their severity is capped at `should-fix`, except a deep-mode `code_judo: true` finding with a `confirmed` E1 measured fact.
+Evolvability axes (`maintainability idiom design docs`) need no execution proof. They need a `rule` plus either a `precedent` (`path:line` in the repo), a `rule` that is a linter rule id, or a `measure` naming an arbiter maintainability fact on the finding's lines. Their severity is capped at `should-fix`. Three exceptions may block: a finding whose `measure` names a block-eligible fact arbiter measured (complexity, nesting, length or file size regressions; `arbiter/maintain.py`), a finding whose `rule` names a repo rule heading marked `[block]`, and a deep-mode `code_judo: true` finding with a `confirmed` E1 measured fact.
 
 ## Effort → allowed rungs
 
