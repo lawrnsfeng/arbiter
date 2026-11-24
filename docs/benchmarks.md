@@ -338,7 +338,38 @@ AACR precision and recall use AACR's file-level semantic coverage (one judge cal
 - cal.com 8330: both arms proved a logic finding on the same golden bug. The old arm's panel kept it at block, while the new arm's panel rated it should-fix, so the verdicts differ (block vs pass). Neither wave 1 nor #3 changes functional severity, so this is run-to-run variance in the panel.
 - Cost: the new arm spends 1–4 more agent calls per run (A6d), plus verifier calls on the extra findings.
 
-Wave-1 acceptance (roadmap Phase A): "no Core recall loss" holds. "Maintainability recall up on AACR" holds only with `hier` (0/3 → 1/3); with `ocr` units it stays at 0/3.
+#### Three AACR samples, old vs new (2026-11-24)
+
+Two more Python AACR items ran later the same day, same models, effort and `ocr` units: ComfyUI 7952 (323 lines; 4 Code Defect, 1 Maintainability and Readability) and ragflow 7151 (207 lines; 6 Code Defect, 2 Security Vulnerability, 1 Maintainability and Readability). Both have more than 150 changed lines and a maintainability reference. With ComfyUI 9560 from the table above, that makes 3 AACR samples. The new arm is the pre-review wave 1 code, as above.
+
+| Item | Arm | Main findings | Matched (new refs) | Defect + security covered | Maintainability covered | Verdict | Model calls | Wall |
+|---|---|---|---|---|---|---|---|---|
+| ComfyUI 9560 | old | 0 | 0 | 0/3 | 0/3 | pass | 23 + 0 | 168 s |
+| ComfyUI 9560 | new | 2 | 0 | 0/3 | 0/3 | pass | 25 + 9 | 193 s |
+| ComfyUI 7952 | old | 5 | 2 | 1/4 | 1/1 | pass | 20 + 15 | 350 s |
+| ComfyUI 7952 | new | 6 | 3 | 2/4 | 1/1 | pass | 22 + 21 | 328 s |
+| ragflow 7151 | old | 7 | 1 | 0/8 | 1/1 | pass | 12 + 12 | 279 s |
+| ragflow 7151 | new | 9 | 1 | 0/8 | 1/1 | **block** | 13 + 18 | 337 s |
+| **Total** | **old** | 12 | 3 | **1/15** | **2/5** | | 55 + 27 | 797 s |
+| **Total** | **new** | 17 | 4 | **2/15** | **2/5** | | 60 + 48 | 858 s |
+
+| Over the 3 samples (AACR metric) | Old | New |
+|---|---|---|
+| Precision (findings covering a new reference / findings) | 3/12 = 0.25 | 4/17 = 0.24 |
+| Recall (references covered) | 3/20 = 0.15 | 4/20 = 0.20 |
+| F1 / F2 | 0.19 / 0.16 | 0.22 / 0.21 |
+| Functional (defect + security) recall | 1/15 | 2/15 |
+| Maintainability recall | 2/5 | 2/5 |
+| Model calls (agents + verifier) | 82 | 108 (+32%) |
+
+- **Recall up by one reference.** On ComfyUI 7952, the new arm's A1a also found that `RegexExtract` "All Matches" returns capture-group contents instead of full matches (reference at line 275). Both arms reported the `None` optional-group bug at line 297. Per category, the new arm covered at least as many references as the old one on every item.
+- **Precision flat.** 5 more findings, 1 more match. On ragflow both arms report ruff hits and maintainability findings that no reference names.
+- **ragflow 7151 blocks under the new policy (MA-05).** arbiter measured `InfinityConnection.update` complexity rising from 11 to 22, across the block line of 20. A6a and A6d both reported it with `measure: m03`, so it blocked. This is the user's blocking rule working as designed. The AACR references do not mention it, so it counts as an unmatched finding.
+- **Maintainability recall is the same, 2/5.** Both covered references were found by checks that predate wave 1, in both arms: A6b's unused `normalize_path` (ComfyUI 7952) and the ruff gate's SIM201 on `not res.total == 0` (ragflow 7151). The facts and A6d added findings, but none of them matched a reference.
+- Cost: 32% more agent and verifier calls, and 8% more wall time.
+- Three items, one run each: this is a direction check (E-11). A difference of one reference is within run-to-run noise.
+
+Wave-1 acceptance (roadmap Phase A): "no Core recall loss" holds on all 6 items. "Maintainability recall up on AACR" does not hold with `ocr` units (2/5 → 2/5); only the single `hier` run on ComfyUI 9560 raised it (0/3 → 1/3).
 
 ## 4. Verdict-level view (r2)
 
@@ -392,6 +423,8 @@ unmatched findings.
 | [`aacr-20261124033739.json`](../eval/scores/aacr-20261124033739.json) | Wave 1 spot check, old arm, AACR ComfyUI 9560 |
 | [`aacr-20261124040208.json`](../eval/scores/aacr-20261124040208.json) | Wave 1 spot check, new arm, AACR ComfyUI 9560 |
 | [`aacr-20261124042829.json`](../eval/scores/aacr-20261124042829.json) | Wave 1 spot check, new arm with `hier`, AACR ComfyUI 9560 |
+| [`aacr-20261124102355.json`](../eval/scores/aacr-20261124102355.json) | Wave 1, old arm, AACR ComfyUI 7952 and ragflow 7151 |
+| [`aacr-20261124103609.json`](../eval/scores/aacr-20261124103609.json) | Wave 1, new arm, AACR ComfyUI 7952 and ragflow 7151 |
 | [`martian-sentry-20261124034041.json`](../eval/scores/martian-sentry-20261124034041.json) | Wave 1 spot check, old arm, sentry-greptile 3 |
 | [`martian-sentry-20261124040537.json`](../eval/scores/martian-sentry-20261124040537.json) | Wave 1 spot check, new arm, sentry-greptile 3 |
 | [`martian-cal_dot_com-20261124035405.json`](../eval/scores/martian-cal_dot_com-20261124035405.json) | Wave 1 spot check, old arm, cal.com 8330 |
