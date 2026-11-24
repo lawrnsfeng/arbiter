@@ -26,6 +26,8 @@ Finder agents (`output: findings`, also SPEC) reply with `{"findings": [Candidat
 | `code_judo` | bool | no | `true` only for a pstack code-judo item (A6b). |
 | `fix` | string | no | The smallest fix, in one or two sentences. |
 | `proof_plan` | object | functional axes | `{"rung": "E1".."E9", "idea": "<how to prove it>"}`. |
+| `addresses` | string | no | Requirement id from the Requirements input, e.g. `R2`, when the finding puts that requirement at risk. |
+| `patches` | list of object | no | At most 2 GitHub-suggestion patches replacing lines `start_line`–`end_line` of `file`: `{"title", "start_line", "end_line", "code"}`, at most 10 lines each. |
 | `agent`, `pass`, `group`, `id` | — | arbiter | Filled in by arbiter. |
 
 ```json

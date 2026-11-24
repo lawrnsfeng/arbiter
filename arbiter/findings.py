@@ -63,6 +63,9 @@ LINT_ID = re.compile(r"^([A-Z]{1,4}\d{3,4}|clippy::\w+|(@[\w-]+/)?[\w-]+/[\w-]+|
 NIT_CAP = 10
 UNPROVABLE = "verified; no proof possible here"  # placement reason prefix: verified, proof blocked by environment
 NEAR = 3  # lines of slack for hunk membership and dedup
+REQ_ID = re.compile(r"^[RB]\d+$")  # requirement ids: R (claims) and B ([block] repo rules)
+MAX_PATCHES = 2
+MAX_PATCH_LINES = 10
 CLUSTERED = frozenset({SymbolChange.SIGNATURE, SymbolChange.RENAMED})  # interface changes with a head-side span
 
 type ExecLookup = Callable[[str], ExecRecord | None]
@@ -114,7 +117,30 @@ def validate_candidate(c: Any) -> Finding:
         _need(isinstance(c.get("cwe"), int), "cwe (int) required for security and privacy")
     if c.get("precedent") is not None:
         _need(isinstance(c["precedent"], str) and LOC.match(c["precedent"]), "precedent must be path:line")
+    # optional report extras: a malformed one is dropped, never a reason to reject the finding
+    if "addresses" in c and not (isinstance(c["addresses"], str) and REQ_ID.match(c["addresses"])):
+        del c["addresses"]
+    if "patches" in c and not _patches_ok(c["patches"]):
+        del c["patches"]
     return c
+
+
+def _patches_ok(v: object) -> bool:
+    return (
+        isinstance(v, list)
+        and len(v) <= MAX_PATCHES
+        and all(
+            isinstance(p, dict)
+            and isinstance(p.get("title"), str)
+            and isinstance(p.get("code"), str)
+            and len(p["code"].splitlines()) <= MAX_PATCH_LINES
+            and isinstance(p.get("start_line"), int)
+            and p["start_line"] >= 1
+            and isinstance(p.get("end_line"), int)
+            and p["end_line"] >= p["start_line"]
+            for p in v
+        )
+    )
 
 
 def validate_findings(v: Any) -> list[Any]:

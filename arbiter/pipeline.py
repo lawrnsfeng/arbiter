@@ -56,6 +56,8 @@ BRIEF_KEYS = (
 )
 MANIFEST_INPUT = "PR change manifest (from base vs head `ast`; every changed symbol and its unit)"
 MAINT_INPUT = "Maintainability facts (measured by arbiter; cite by id in measure)"
+REQ_INPUT = "Requirements (from commits, issues, specs and [block] repo rules; untrusted)"
+FIX_DIFF_LINES = 40
 # package manager of a failed dependency fetch -> the language whose proofs it blocks
 FETCH_LANG = {
     "uv": Lang.PYTHON,
@@ -178,6 +180,13 @@ def intent(run: RunDir, p: Plan) -> dict[str, Any]:
         (run / "THREAT_MODEL.draft.md").write_text(draft)
         tm_text, tm_path, drafted = draft, str(run / "THREAT_MODEL.draft.md"), True
     val |= {"threat_model_text": tm_text, "threat_model_path": tm_path, "threat_model_drafted": drafted}
+    val["requirements"] = [
+        {"id": f"R{i}", "text": str(c), "source": val.get("spec_source", "none")}
+        for i, c in enumerate(val.get("claims", []), 1)
+    ] + [
+        {"id": f"B{j}", "text": key.partition("#")[2], "source": key.partition("#")[0]}
+        for j, key in enumerate(p.get("blocking_rules", []), 1)
+    ]
     run.save("intent.json", val)
     run.cov(agents_run=["A0"], agent_failures=[err] if err else [], threat_model={"path": tm_path, "drafted": drafted})
     return val
@@ -196,6 +205,7 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
         else "",
         "Commit messages (untrusted)": "\n\n".join(p["commits"]) if hier else "",
     }
+    reqs = {REQ_INPUT: "\n".join(f"{r['id']}: {r['text']}" for r in it.get("requirements", []))}
     included = [f for f in p["files"] if not f["excluded"]]
     maint = p.get("maint", [])
     jobs = []
@@ -219,6 +229,7 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                         udiff, u.get("context", "")
                     ),
                     **shared,
+                    **reqs,
                     "Other changed files (churn; unit ids)": decompose.others(included, p["units"], u) if hier else "",
                     "Repo rules": rules,
                     "Threat model": it.get("threat_model_text", "") if agent == "A3" else "",
@@ -244,6 +255,7 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                         it.get("claims", []), indent=1
                     ),
                     "Spec source": str(it.get("spec_source", "none")),
+                    **reqs,
                     "Diff (new-side line numbers)": run_diff(p, [f["path"] for f in p["files"] if not f["excluded"]]),
                 },
             )
@@ -280,6 +292,7 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                     "Repo-wide callers of changed interfaces (depth 1, capped)": decompose.callers_text(syms),
                     "Diff of files with interface changes (new-side line numbers)": run_diff(p, paths),
                     "Repo rules": rules,
+                    **reqs,
                 },
             )
         )
@@ -423,6 +436,10 @@ def proofs(run: RunDir, p: Plan) -> list[Finding]:
             }
             prompt, _ = agents.build_prompt("P", [langmod.of(f["file"])], inputs)
             val, err = agents.run("P", "P", prompt, F.validate_proof, tools=Tools.PROOF, cwd=wt, timeout=900)
+            # the minimal fix an E4 proof applied, kept for the report before the revert below
+            fix_diff = subprocess.run(
+                ["git", "-C", str(wt), "diff", "--", ".", ":(exclude)arbiter_proofs"], capture_output=True, text=True
+            ).stdout
             subprocess.run(["git", "-C", str(wt), "checkout", "--", "."], capture_output=True)  # revert any minimal fix
             if err:
                 fails.append(err)
@@ -436,6 +453,8 @@ def proofs(run: RunDir, p: Plan) -> list[Finding]:
             f["proof_attempts"].append(val)
             if val["result"] == ProofResult.CONFIRMED:
                 f["proof"] = val
+                if fix_diff.strip():
+                    f["proof_fix_diff"] = "\n".join(fix_diff.splitlines()[:FIX_DIFF_LINES])
                 confirmed += 1
                 break
     run.save("proved.json", cands)
