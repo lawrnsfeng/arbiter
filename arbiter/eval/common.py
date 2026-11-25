@@ -74,7 +74,7 @@ def models(s: harness.Settings) -> dict[str, Any]:
         "decompose": os.environ.get("ARBITER_DECOMPOSE", "ocr"),
         "review_from": os.environ.get("ARBITER_REVIEW_FROM", ""),
         "decide": os.environ.get("ARBITER_DECIDE", ""),
-        "finder_passes": os.environ.get("ARBITER_FINDER_PASSES", "1"),
+        "finder_passes": os.environ.get("ARBITER_FINDER_PASSES", "2"),
         "judge": os.environ.get("ARBITER_JUDGE", "auto"),
         **({"judge_clef": clef.stats()} if clef.STATS else {}),
     }

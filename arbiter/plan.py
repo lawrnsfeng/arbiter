@@ -88,8 +88,8 @@ def _order(u: Unit, k: int) -> list[int]:
 
 
 def finder_passes() -> int:
-    """ARBITER_FINDER_PASSES: how often each per-unit finder runs at quick/standard effort (1 default, or 2)."""
-    raw = os.environ.get("ARBITER_FINDER_PASSES", "1")
+    """ARBITER_FINDER_PASSES: how often each per-unit finder runs at quick/standard effort (2 default, or 1)."""
+    raw = os.environ.get("ARBITER_FINDER_PASSES", "2")
     if raw not in ("1", "2"):
         raise ArbiterExit(2, "arbiter: ARBITER_FINDER_PASSES must be 1 or 2")
     return int(raw)

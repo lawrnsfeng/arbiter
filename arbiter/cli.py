@@ -64,7 +64,7 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument(
         "--finder-passes",
         choices=("1", "2"),
-        help="per-unit finder passes merged by location (ARBITER_FINDER_PASSES, default 1)",
+        help="per-unit finder passes merged by location (ARBITER_FINDER_PASSES, default 2)",
     )
     r.add_argument("--out", type=Path)
     r.add_argument("--jobs", type=_positive, default=os.environ.get("ARBITER_JOBS", "8"), help="agent calls at once")
