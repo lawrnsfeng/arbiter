@@ -84,6 +84,8 @@ DECIDE_PROMPT_CAP = 40_000
 DECIDE_CLAIM_CAP = 200
 DECIDE_PLACEMENTS = frozenset({Placement.MAIN, Placement.SUSPECTED, Placement.PRE_EXISTING})
 DISMISSIBLE = frozenset({Tier.SHOULD, Tier.VERIFY, Tier.OPTIONAL})
+
+
 # package manager of a failed dependency fetch -> the language whose proofs it blocks
 FETCH_LANG = {
     "uv": Lang.PYTHON,
@@ -603,6 +605,12 @@ def _decide_prompt(inputs: dict[str, str], items: list[dict[str, Any]]) -> str:
     return agents.build_prompt("DECIDE", [], {**inputs, "Findings": json.dumps(items, indent=1)})[0]
 
 
+def _backed_evolvability(f: Finding) -> bool:
+    """MA-01: maintainability findings with a measured fact or a repo precedent are evidence-backed; decide may not
+    dismiss them."""
+    return Axis(f["axis"]).group == Group.EVOLVABILITY and bool(f.get("measure") or f.get("precedent"))
+
+
 def decide(run: RunDir, p: Plan, it: dict[str, Any], allf: list[Finding]) -> list[Finding]:
     """One end-of-run call to the decide model (Opus). Strict: once per RUN (claim file), no retry, no tools,
     an omp cost cap. Its output only links, dismisses non-blocking findings, challenges and adds unverified
@@ -629,6 +637,7 @@ def decide(run: RunDir, p: Plan, it: dict[str, Any], allf: list[Finding]) -> lis
             "trigger": f.get("trigger", ""),
             "evidence": p_["rung"] if (p_ := f.get("proof")) and p_["result"] == ProofResult.CONFIRMED else "none",
             "addresses": f.get("addresses"),
+            "backed": _backed_evolvability(f),
         }
         for f in shown
     ]
@@ -663,9 +672,12 @@ def decide(run: RunDir, p: Plan, it: dict[str, Any], allf: list[Finding]) -> lis
     for fid, rid in val["links"].items():
         if (f := by_id.get(fid)) and "addresses" not in f and isinstance(rid, str) and F.REQ_ID.match(rid):
             f["addresses"] = rid
-    dismissed = challenged = 0
+    dismissed = challenged = refused = 0
     for d in val["dismiss"]:
         if (f := by_id.get(d["id"])) and tiers[d["id"]] in DISMISSIBLE:
+            if _backed_evolvability(f):
+                refused += 1
+                continue
             f["placement"], f["placement_reason"] = Placement.DROPPED, f"decision: {d['reason']}"
             dismissed += 1
     for c in val["challenge"]:
@@ -701,7 +713,10 @@ def decide(run: RunDir, p: Plan, it: dict[str, Any], allf: list[Finding]) -> lis
         missed += 1
     run.save("decision.json", val)
     run.save("final.json", allf)
-    run.cov(decide=cov | {"ok": True, "dismissed": dismissed, "challenged": challenged, "missed": missed})
+    run.cov(
+        decide=cov
+        | {"ok": True, "dismissed": dismissed, "challenged": challenged, "missed": missed, "refused": refused}
+    )
     return allf
 
 

@@ -78,6 +78,30 @@ def test_decide_effects_never_touch_blocks(decide_run):
     assert F.verdict([should, missed]) == "pass"
 
 
+def test_decide_never_dismisses_backed_evolvability(decide_run):
+    run, fake = decide_run
+    reply = {
+        "summary": "s",
+        "next_action": "n",
+        "links": {},
+        "dismiss": [{"id": i, "reason": "noise"} for i in ("f001", "f002", "f003")],
+        "challenge": [],
+        "missed": [],
+    }
+    (fake / "decide.json").write_text(json.dumps(reply))
+    backed = _f("f001", "should-fix", "main") | {
+        "axis": "maintainability",
+        "group": "evolvability",
+        "rule": "P8",
+        "precedent": "a.py:9",
+    }
+    lint = _f("f002", "nit", "main") | {"axis": "maintainability", "group": "evolvability", "rule": "E501"}
+    functional = _f("f003", "should-fix", "main")
+    P.decide(run, PLAN, {}, [backed, lint, functional])
+    assert [f["placement"] for f in (backed, lint, functional)] == ["main", "dropped", "dropped"]
+    assert run.load("coverage.json")["decide"]["refused"] == 1
+
+
 @pytest.mark.parametrize("model", ["anthropic/claude-fable-5", "anthropic/claude-sonnet-5-5"])
 def test_decide_model_only_opus(monkeypatch, model):
     monkeypatch.setenv("ARBITER_DECIDE_MODEL", model)

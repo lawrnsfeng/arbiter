@@ -151,7 +151,8 @@ def _coverage(p: Plan, cov: dict[str, Any]) -> Iterator[str]:
     if d := cov.get("decide"):
         yield (
             f"- decide: {d.get('model')}, ok {d.get('ok')}, dismissed {d.get('dismissed', 0)}, "
-            f"challenged {d.get('challenged', 0)}, missed {d.get('missed', 0)}, cap ${d.get('max_usd')}"
+            f"challenged {d.get('challenged', 0)}, missed {d.get('missed', 0)}, refused {d.get('refused', 0)}, "
+            f"cap ${d.get('max_usd')}"
         )
     yield f"- sandbox: {cov.get('sandbox', 'unknown')}" + "".join(f"; {n}" for n in cov.get("sandbox_notes", []))
     tm = cov.get("threat_model", {})
