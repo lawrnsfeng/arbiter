@@ -90,9 +90,10 @@ loads `arbiter/omp-overlay.yml`, which turns omp's advisor off. The decide call 
 idiom, design or docs finding that cites a measured fact (`measure`) or a repo precedent (`precedent`): arbiter keeps
 such a finding in place and counts the dismissal as `refused` in the coverage.
 
-`--finder-passes 2` (or `ARBITER_FINDER_PASSES=2`) runs every per-unit finder twice (in deep mode, every finder not
-already run three times), each pass with its own file order, and merges the candidates by location before the
-verifier. Over the agent budget, the second pass is the last thing dropped, after deep mode's k. Default 1.
+Every per-unit finder runs twice by default (in deep mode, every finder not already run three times), each pass
+with its own file order, and the candidates are merged by location before the verifier ([benchmarks
+§3.11](docs/benchmarks.md)). `--finder-passes 1` (or `ARBITER_FINDER_PASSES=1`) runs one pass. Over the agent
+budget, the second pass is the last thing dropped, after deep mode's k.
 
 Three recall techniques measured in wave 2a are off by default ([benchmarks §3.9](docs/benchmarks.md)):
 `ARBITER_BASE_READS=1` gives finders and the verifier the base checkout path, `ARBITER_COCHANGE=1` lists files
@@ -141,7 +142,7 @@ The decision ledger is `docs/decisions.jsonl`; `docs/decisions.md` is rendered f
 | Finders per unit | A1a A1b A2 A3 A6a | A1a A1b A1c A2 A3 A6a A6b A6c A6d | same as standard |
 | Once per run | A0 | A0 SPEC | A0 SPEC |
 | Conditional | none | triggered A4 A5 A5b A7 A8 A9 | same as standard |
-| k passes | 1 | 1 | 3 for A1a A1b A2 A3 A4 |
+| k passes | 2 | 2 | 3 for A1a A1b A2 A3 A4, 2 for the rest |
 | Verifier | 1 vote | 3 lenses | 3 lenses |
 | Proof rungs | E1 E3 | E1–E6 E8 | E1–E9 |
 | Code judo | off | should-fix only | blockers with an E1 measured fact |
@@ -174,7 +175,7 @@ deferred and dropped ideas are in [docs/decisions.md](docs/decisions.md).
 | U-06 | Accept findings in any changed hunk of the PR; cluster by changed symbol | switch |
 | U-07 | One contract pass per PR for signature changes | switch |
 | T-01 | SAST hits as verifier candidates, with a CWE-specific lens | switch: `ARBITER_SAST_CANDIDATES=1`, wave 2a |
-| T-03 | Repeated cheap finder passes merged by location (k=2 per unit at quick and standard effort) | switch: `ARBITER_FINDER_PASSES=2`, wave 2b measurement running |
+| T-03 | Repeated cheap finder passes merged by location (k=2 per unit at quick and standard effort) | adopted: default, wave 2b; `ARBITER_FINDER_PASSES=1` for one pass |
 | T-04 | Co-change neighbour map from `git log` | switch: `ARBITER_COCHANGE=1`, wave 2a |
 | T-12 | Place a verified (panel TRUE_POSITIVE) but unproven finding in the main section as should-fix when the proof could not run for environment reasons (dependency fetch failed), instead of in Suspected; blocking still needs a proof | adopted: wave 1, 2026-11-24 |
 | T-13 | Repair a finding with empty `evidence_lines` from its `file:line` instead of rejecting it | adopted: wave 1, 2026-11-24 |

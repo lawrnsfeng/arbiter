@@ -1,0 +1,802 @@
+{
+  "benchmark": "AACR-Bench rescore",
+  "runs": {
+    "base-1": "20261125032710",
+    "k2-1": "20261125055202"
+  },
+  "prs": [
+    "browser-use-browser-use-pull-1482",
+    "browser-use-browser-use-pull-3172",
+    "browser-use-browser-use-pull-857",
+    "comfyanonymous-ComfyUI-pull-6033",
+    "comfyanonymous-ComfyUI-pull-6542",
+    "comfyanonymous-ComfyUI-pull-7952",
+    "comfyanonymous-ComfyUI-pull-8446",
+    "comfyanonymous-ComfyUI-pull-9560",
+    "infiniflow-ragflow-pull-6691",
+    "infiniflow-ragflow-pull-7151"
+  ],
+  "arms": {
+    "base-1": {
+      "findings": 37,
+      "unjudged": 0,
+      "matched_new": 11,
+      "covered": 11,
+      "refs": 53,
+      "precision": 0.297,
+      "recall": 0.208,
+      "f1": 0.244,
+      "f2": 0.221,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 4,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "browser-use-browser-use-pull-3172": {
+          "findings": 3,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              2,
+              2
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "browser-use-browser-use-pull-857": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-6033": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              3
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-6542": {
+          "findings": 1,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 4,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              4
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 1
+        },
+        "comfyanonymous-ComfyUI-pull-8446": {
+          "findings": 11,
+          "matched_new": 5,
+          "unjudged": 0,
+          "refs": 18,
+          "covered": 5,
+          "by_category": {
+            "Code Defect": [
+              4,
+              13
+            ],
+            "Performance": [
+              1,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              4
+            ]
+          },
+          "evolvability_findings": 4
+        },
+        "comfyanonymous-ComfyUI-pull-9560": {
+          "findings": 1,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 6,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              3
+            ],
+            "Maintainability and Readability": [
+              0,
+              3
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "infiniflow-ragflow-pull-6691": {
+          "findings": 2,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 6,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              4
+            ],
+            "Performance": [
+              0,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "infiniflow-ragflow-pull-7151": {
+          "findings": 11,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              0,
+              6
+            ],
+            "Security Vulnerability": [
+              0,
+              2
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 10
+        }
+      }
+    },
+    "k2-1": {
+      "findings": 51,
+      "unjudged": 0,
+      "matched_new": 14,
+      "covered": 15,
+      "refs": 53,
+      "precision": 0.275,
+      "recall": 0.283,
+      "f1": 0.279,
+      "f2": 0.281,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 4,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 1
+        },
+        "browser-use-browser-use-pull-3172": {
+          "findings": 5,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              2,
+              2
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "browser-use-browser-use-pull-857": {
+          "findings": 5,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "comfyanonymous-ComfyUI-pull-6033": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              3
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-6542": {
+          "findings": 1,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 7,
+          "matched_new": 3,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 3,
+          "by_category": {
+            "Code Defect": [
+              2,
+              4
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "comfyanonymous-ComfyUI-pull-8446": {
+          "findings": 13,
+          "matched_new": 5,
+          "unjudged": 0,
+          "refs": 18,
+          "covered": 5,
+          "by_category": {
+            "Code Defect": [
+              5,
+              13
+            ],
+            "Performance": [
+              0,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              4
+            ]
+          },
+          "evolvability_findings": 4
+        },
+        "comfyanonymous-ComfyUI-pull-9560": {
+          "findings": 3,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 6,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              0,
+              3
+            ],
+            "Maintainability and Readability": [
+              2,
+              3
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "infiniflow-ragflow-pull-6691": {
+          "findings": 2,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 6,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              4
+            ],
+            "Performance": [
+              0,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "infiniflow-ragflow-pull-7151": {
+          "findings": 11,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              0,
+              6
+            ],
+            "Security Vulnerability": [
+              0,
+              2
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 10
+        }
+      }
+    },
+    "union": {
+      "findings": 88,
+      "unjudged": 0,
+      "matched_new": 15,
+      "covered": 16,
+      "refs": 53,
+      "precision": 0.17,
+      "recall": 0.302,
+      "f1": 0.218,
+      "f2": 0.262,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 8,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 1
+        },
+        "browser-use-browser-use-pull-3172": {
+          "findings": 8,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              2,
+              2
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "browser-use-browser-use-pull-857": {
+          "findings": 5,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "comfyanonymous-ComfyUI-pull-6033": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              3
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-6542": {
+          "findings": 2,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 11,
+          "matched_new": 3,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 3,
+          "by_category": {
+            "Code Defect": [
+              2,
+              4
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 3
+        },
+        "comfyanonymous-ComfyUI-pull-8446": {
+          "findings": 24,
+          "matched_new": 6,
+          "unjudged": 0,
+          "refs": 18,
+          "covered": 6,
+          "by_category": {
+            "Code Defect": [
+              5,
+              13
+            ],
+            "Performance": [
+              1,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              4
+            ]
+          },
+          "evolvability_findings": 8
+        },
+        "comfyanonymous-ComfyUI-pull-9560": {
+          "findings": 4,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 6,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              0,
+              3
+            ],
+            "Maintainability and Readability": [
+              2,
+              3
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "infiniflow-ragflow-pull-6691": {
+          "findings": 4,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 6,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              4
+            ],
+            "Performance": [
+              0,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 4
+        },
+        "infiniflow-ragflow-pull-7151": {
+          "findings": 22,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              0,
+              6
+            ],
+            "Security Vulnerability": [
+              0,
+              2
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 20
+        }
+      }
+    },
+    "union_dedup": {
+      "findings": 53,
+      "unjudged": 0,
+      "matched_new": 15,
+      "covered": 16,
+      "refs": 53,
+      "precision": 0.283,
+      "recall": 0.302,
+      "f1": 0.292,
+      "f2": 0.298,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 5,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 1
+        },
+        "browser-use-browser-use-pull-3172": {
+          "findings": 5,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              2,
+              2
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "browser-use-browser-use-pull-857": {
+          "findings": 4,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 1
+        },
+        "comfyanonymous-ComfyUI-pull-6033": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              3
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-6542": {
+          "findings": 1,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 7,
+          "matched_new": 3,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 3,
+          "by_category": {
+            "Code Defect": [
+              2,
+              4
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "comfyanonymous-ComfyUI-pull-8446": {
+          "findings": 16,
+          "matched_new": 6,
+          "unjudged": 0,
+          "refs": 18,
+          "covered": 6,
+          "by_category": {
+            "Code Defect": [
+              5,
+              13
+            ],
+            "Performance": [
+              1,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              4
+            ]
+          },
+          "evolvability_findings": 6
+        },
+        "comfyanonymous-ComfyUI-pull-9560": {
+          "findings": 3,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 6,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              0,
+              3
+            ],
+            "Maintainability and Readability": [
+              2,
+              3
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "infiniflow-ragflow-pull-6691": {
+          "findings": 1,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 6,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              4
+            ],
+            "Performance": [
+              0,
+              1
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 1
+        },
+        "infiniflow-ragflow-pull-7151": {
+          "findings": 11,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              0,
+              6
+            ],
+            "Security Vulnerability": [
+              0,
+              2
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 10
+        }
+      }
+    }
+  },
+  "decide_dismissed": {
+    "base-1": {
+      "dismissed": 0,
+      "matched_a_reference": 0
+    },
+    "k2-1": {
+      "dismissed": 0,
+      "matched_a_reference": 0
+    }
+  },
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "decompose": "ocr",
+  "review_from": "",
+  "decide": "",
+  "finder_passes": "1",
+  "judge": "auto",
+  "judge_clef": {
+    "model": "clef",
+    "min_confidence": 0.8,
+    "answered": 312,
+    "low_confidence": 18,
+    "last_errors": []
+  }
+}

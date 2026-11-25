@@ -523,6 +523,74 @@ sent 12 low-confidence pairs, with their findings, to Sonnet.
 A first run returned no Clef answers: one HTTP 429 was read as the daily quota and stopped Clef for the day. Only
 Workers AI's daily-allocation error stops it now; a plain rate limit falls back for that one call.
 
+### 3.11 Wave 2b (2026-11-25)
+
+**Setup.** Haiku finders, Sonnet verifier, judge `auto` (Clef first, Sonnet for low-confidence pairs), `standard`
+effort, `ocr` units, `ARBITER_JOBS=4`, all from branch `feat/wave2b-passes-decide`. The plan had four arms with two
+interleaved repeats each, on all 20 AACR v2 Python PRs (93 references):
+
+| Arm | What changes |
+|---|---|
+| `base` | nothing (master behaviour, one finder pass) |
+| `k2` | `--finder-passes 2`: every per-unit finder twice, merged by location (T-03) |
+| `k2d` | `k2` plus `--decide` |
+| `sw` | `ARBITER_BASE_READS=1 ARBITER_COCHANGE=1 ARBITER_SAST_CANDIDATES=1` |
+
+**What ran.** The user stopped the wave at 30 reviews: base-1 on all 20 PRs and k2-1 on the first 10. `k2d`, `sw`
+and the second repeats never ran, so the run-to-run noise band is not measured (E-11), and the decide change and
+the switched techniques have no new data. base-1's langflow 6044 review failed with exit 5 on a full disk
+(`OSError: [Errno 28]`); arbiter's Go caches (26 GB, unused by Python reviews) were removed and the rest of the wave
+ran with 30 GB free.
+
+**Rescore** (base-1 and k2-1 judged together on their 10 shared PRs, 53 references; Clef answered 312 pairs, 18 went
+to Sonnet):
+
+| Arm | Findings | Matched (new refs) | References covered | Precision | Recall | F1 | F2 |
+|---|---|---|---|---|---|---|---|
+| base-1 | 37 | 11 | 11/53 | 0.297 | 0.208 | 0.244 | 0.221 |
+| k2-1 | 51 | 14 | 15/53 | 0.275 | 0.283 | 0.279 | **0.281** |
+| union of both runs | 88 | 15 | 16/53 | 0.170 | 0.302 | 0.218 | 0.262 |
+| union, merged by location | 53 | 15 | 16/53 | 0.283 | 0.302 | 0.292 | 0.298 |
+
+| Item | base-1 findings / covered | k2-1 findings / covered |
+|---|---|---|
+| ComfyUI 7952 | 4 / 1/5 | 7 / 3/5 |
+| ComfyUI 8446 | 11 / 5/18 | 13 / 5/18 |
+| ComfyUI 6033 | 0 / 0/3 | 0 / 0/3 |
+| ComfyUI 9560 | 1 / 0/6 | 3 / 2/6 |
+| ComfyUI 6542 | 1 / 1/2 | 1 / 1/2 |
+| browser-use 1482 | 4 / 1/1 | 4 / 1/1 |
+| browser-use 857 | 0 / 0/1 | 5 / 0/1 |
+| browser-use 3172 | 3 / 2/2 | 5 / 2/2 |
+| ragflow 7151 | 11 / 1/9 | 11 / 1/9 |
+| ragflow 6691 | 2 / 0/6 | 2 / 0/6 |
+
+k2 covered 4 more references (ComfyUI 7952 and 9560, +2 each) and lost none. Its own run summary had counted
+browser-use 857 as 1/1; the joint rescore did not.
+
+**Cost** on the 10 PRs: base-1 225 agent and 159 verifier calls (384), k2-1 429 and 216 (645, +68%). Review wall
+time 6,074 s and 5,761 s: the extra calls run in parallel.
+
+**base-1 against the previous version.** On the 8 PRs reviewed before (the newest earlier run of the code then
+current, each with its own judge), base-1 covered 9 references against 12. Judging base-1's 28 panel-dropped
+findings against the references showed 3 that would have covered 4: langflow 6652's empty-list check at line 96,
+ComfyUI 9560's measured complexity rise 4 → 11 (2 references) and ComfyUI 6542's redundant branch. In each, the
+voters confirmed the trigger, fact or redundancy and still voted FALSE_POSITIVE for small impact or a rule name
+missing from `canon.md` (proposed fix: T-37). The other losses (ComfyUI 7952's unused `normalize_path` copy and the
+"All Matches" groups) were finder misses, the variance k2 targets. Between wave 1 and this branch, `V.md` and
+`findings.tally` did not change.
+
+**Decisions:**
+- T-03 two finder passes: **adopted as the default**. F2 0.281 against 0.221; precision fell 0.022, 0.002 past the
+  plan's 0.02 bound and without a measured noise band. The user adopted it on three consistent results (the
+  2026-11-25 re-judge, wave 2a's union, this rescore). `--finder-passes 1` restores one pass.
+- A-16 decide: stays opt-in; the protection of backed maintainability findings is unit-tested only.
+- T-01, T-04, T-19: unchanged, off by default; no new data.
+- E-11: still open.
+
+Two repeats per arm on 20 items was the plan; one run per arm on 10 items is what ran, so every difference here is
+a single-run difference.
+
 ## 4. Verdict-level view (r2)
 
 - Of the 15 functional bug cases, 10 ended with a BLOCK verdict.
@@ -587,6 +655,8 @@ unmatched findings.
 | [`aacr-20261124191715.json`](../eval/scores/aacr-20261124191715.json) | Wave 2a, new arm |
 | [`aacr-20261124194523.json`](../eval/scores/aacr-20261124194523.json) | Wave 2a, new+decide arm |
 | [`aacr-rescore-20261124202048.json`](../eval/scores/aacr-rescore-20261124202048.json) | Wave 2a, one-pass rescore of the three arms plus the union |
+| [`aacr-20261125032710.json`](../eval/scores/aacr-20261125032710.json) | Wave 2b, base-1 (one finder pass), 20 AACR Python PRs |
+| [`aacr-rescore-20261125073536.json`](../eval/scores/aacr-rescore-20261125073536.json) | Wave 2b, one-pass rescore of base-1 and k2-1 on their 10 shared PRs, plus the union |
 
 Four earlier Martian files are not tracked: one per repo, plus a second for cal.com. The API rate limit made agents fail in all four, and the reruns above replace them.
 
