@@ -7,6 +7,7 @@ import pytest
 
 from arbiter import SKILLS, ArbiterExit, agents, cli, diff, harness, triggers, units
 from arbiter import findings as F
+from arbiter import plan as plan_mod
 
 # ---------------------------------------------------------------- helpers
 
@@ -80,6 +81,36 @@ def test_twelve_files_three_modules_merged():
 def test_plan_required_thresholds(churns, expected):
     us = units.build([ffile(f"f{i}.py", [c]) for i, c in enumerate(churns)], set())
     assert len(us) == 1 and us[0]["plan_required"] is expected
+
+
+def _one_unit():
+    us = units.build([ffile("a.py", [10])], set())
+    us[0]["triggers"] = []
+    return us
+
+
+def test_two_finder_passes_double_every_per_unit_task():
+    one = plan_mod.schedule(_one_unit(), plan_mod.Effort.STANDARD, False, 300, [])
+    two = plan_mod.schedule(_one_unit(), plan_mod.Effort.STANDARD, False, 300, [], passes=2)
+    agents_ = [t.agent for t in one["tasks"]]
+    assert sorted((t.agent, t.pass_) for t in two["tasks"]) == sorted((a, n) for a in agents_ for n in (0, 1))
+    assert two["once"] == one["once"]
+
+
+def test_finder_passes_drop_to_one_over_budget():
+    single = plan_mod.schedule(_one_unit(), plan_mod.Effort.STANDARD, False, 300, [])
+    notes: list[str] = []
+    budget = len(single["once"]) + len(single["tasks"])  # fits one pass, not two
+    s = plan_mod.schedule(_one_unit(), plan_mod.Effort.STANDARD, False, budget, notes, passes=2)
+    assert s["tasks"] == single["tasks"] and {t.pass_ for t in s["tasks"]} == {0}
+    assert "agent budget: finder passes reduced to 1" in notes
+
+
+def test_finder_passes_rejects_other_values(monkeypatch):
+    monkeypatch.setenv("ARBITER_FINDER_PASSES", "3")
+    with pytest.raises(ArbiterExit) as e:
+        plan_mod.finder_passes()
+    assert e.value.code == 2
 
 
 # ---------------------------------------------------------------- diff

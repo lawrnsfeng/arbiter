@@ -146,6 +146,8 @@ def _coverage(p: Plan, cov: dict[str, Any]) -> Iterator[str]:
         )
     pr = cov.get("proofs", {})
     yield f"- proofs: {pr.get('attempted', 0)} attempted, {pr.get('confirmed', 0)} confirmed"
+    if (k := p.get("finder_passes", 1)) > 1:
+        yield f"- finder passes: {k} (merged by location)"
     if d := cov.get("decide"):
         yield (
             f"- decide: {d.get('model')}, ok {d.get('ok')}, dismissed {d.get('dismissed', 0)}, "

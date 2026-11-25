@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import NamedTuple, TypedDict
 
-from . import cochange, decompose, diff, maintain, tools, triggers, units
+from . import ArbiterExit, cochange, decompose, diff, maintain, tools, triggers, units
 from .diff import hunk_ranges
 from .findings import rule_key
 from .model import Decompose, DiffFile, Effort, Lang, MaintFact, Range, Ranges, Symbol, ToolSpec, Unit
@@ -77,6 +77,7 @@ class Plan(TypedDict):
     maint: list[MaintFact]  # measured maintainability facts (MA-03); empty in quick
     blocking_rules: list[str]  # `path#heading` keys of repo rule headings marked [block] (MA-05)
     cochange: dict[str, list[tuple[str, int]]]  # changed path -> files often changed with it (T-04)
+    finder_passes: int  # per-unit finder passes, merged by location (T-03)
 
 
 def _order(u: Unit, k: int) -> list[int]:
@@ -86,10 +87,26 @@ def _order(u: Unit, k: int) -> list[int]:
     return idx
 
 
+def finder_passes() -> int:
+    """ARBITER_FINDER_PASSES: how often each per-unit finder runs at quick/standard effort (1 default, or 2)."""
+    raw = os.environ.get("ARBITER_FINDER_PASSES", "1")
+    if raw not in ("1", "2"):
+        raise ArbiterExit(2, "arbiter: ARBITER_FINDER_PASSES must be 1 or 2")
+    return int(raw)
+
+
 def schedule(
-    us: list[Unit], effort: Effort, supply: bool, max_agents: int, notes: list[str], *, contract: bool = False
+    us: list[Unit],
+    effort: Effort,
+    supply: bool,
+    max_agents: int,
+    notes: list[str],
+    *,
+    contract: bool = False,
+    passes: int = 1,
 ) -> Schedule:
-    """Agent calls within the budget: conditional agents are skipped in SKIP_ORDER, then deep k drops to 1."""
+    """Agent calls within the budget: conditional agents are skipped in SKIP_ORDER, then deep k drops to 1,
+    then extra finder passes drop to 1."""
     once = ["A0", *([] if effort == Effort.QUICK else ["SPEC"]), *(["A5b"] if supply else [])]
     once += ["CONTRACT"] if contract else []
     per_unit = {
@@ -100,9 +117,10 @@ def schedule(
         for u in us
     }
     deep_k = effort == Effort.DEEP
+    k = passes
 
     def k_of(agent: str) -> int:
-        return 3 if deep_k and agent in K3 else 1
+        return 3 if deep_k and agent in K3 else k
 
     def count() -> int:
         return len(once) + sum(k_of(a) for ags in per_unit.values() for a in ags)
@@ -121,7 +139,10 @@ def schedule(
     if count() > max_agents and deep_k:
         deep_k = False
         notes.append("agent budget: k reduced to 1")
-    tasks = [Task(uid, a, k) for uid, ags in per_unit.items() for a in ags for k in range(k_of(a))]
+    if count() > max_agents and k > 1:
+        k = 1
+        notes.append("agent budget: finder passes reduced to 1")
+    tasks = [Task(uid, a, n) for uid, ags in per_unit.items() for a in ags for n in range(k_of(a))]
     if len(once) + len(tasks) > max_agents:
         notes.append(f"agent budget {max_agents} still exceeded ({len(once) + len(tasks)} calls); running all")
     return Schedule(tasks=tasks, once=once, skipped=skipped)
@@ -161,7 +182,7 @@ def plan(
     max_agents: int,
     decompose_mode: str = Decompose.OCR,
 ) -> Plan:
-    repo, eff, mode = repo.resolve(), Effort(effort), Decompose(decompose_mode)
+    repo, eff, mode, passes = repo.resolve(), Effort(effort), Decompose(decompose_mode), finder_passes()
     base = diff.resolve_base(repo, base_ref)
     d = diff.collect(repo, base)
     tree = set(diff.git(repo, "ls-tree", "-r", "--name-only", "HEAD").splitlines())
@@ -217,7 +238,7 @@ def plan(
         commits=d["commits"],
         units=us,
         supply=supply,
-        schedule=schedule(us, eff, supply, max_agents, notes, contract=contract),
+        schedule=schedule(us, eff, supply, max_agents, notes, contract=contract, passes=passes),
         tools=specs,
         threat_model=next((t for t in THREAT_MODELS if t in tree), None),
         notes=notes,
@@ -231,6 +252,7 @@ def plan(
         cochange=cochange.neighbours(repo, [f["path"] for f in included], tree)
         if eff != Effort.QUICK and os.environ.get("ARBITER_COCHANGE") == "1"
         else {},
+        finder_passes=passes,
     )
     run.save("plan.json", p)
     run.cov(

@@ -61,6 +61,11 @@ def _parser() -> argparse.ArgumentParser:
         const="1",
         help="one capped Opus decision call at the end of the run (ARBITER_DECIDE_MODEL, ARBITER_DECIDE_MAX_USD)",
     )
+    r.add_argument(
+        "--finder-passes",
+        choices=("1", "2"),
+        help="per-unit finder passes merged by location (ARBITER_FINDER_PASSES, default 1)",
+    )
     r.add_argument("--out", type=Path)
     r.add_argument("--jobs", type=_positive, default=os.environ.get("ARBITER_JOBS", "8"), help="agent calls at once")
     r.add_argument("--max-agents", type=int, default=300)
@@ -130,6 +135,7 @@ def _dispatch(a: argparse.Namespace) -> int:
                 ("model", "ARBITER_MODEL"),
                 ("verify_model", "ARBITER_VERIFY_MODEL"),
                 ("decide", "ARBITER_DECIDE"),
+                ("finder_passes", "ARBITER_FINDER_PASSES"),
             ):
                 if value := getattr(a, flag):
                     os.environ[env] = value
