@@ -7,12 +7,14 @@ import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
+from functools import cache
 from pathlib import Path
 from typing import Any, NotRequired, TypedDict
 
 from . import SKILLS, harness
 from . import lang as langmod
 from .harness import Tools
+from .model import Axis
 
 REFS = SKILLS / "arbiter-review" / "references"
 # label -> stem groups tried in order; the first group matching any row wins (languages name areas differently)
@@ -28,6 +30,7 @@ AREA_STEMS = {
 }
 HEADING = re.compile(r"^(#+) ")
 MISSION = re.compile(r"^## Mission\n(.+?)(?=\n## )", re.DOTALL | re.MULTILINE)
+AXES = re.compile(r"^## Axes\n(.+?)(?=\n## )", re.DOTALL | re.MULTILINE)
 FENCE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
 RETRY_PAUSE_S = 30
 
@@ -37,10 +40,17 @@ class Output(StrEnum):
     VOTE = "vote"
     PROOF = "proof"
     INTENT = "intent"
+    DECISION = "decision"
 
     @property
     def schema_heading(self) -> str:
-        return {"findings": "Candidate", "vote": "Vote", "proof": "Proof", "intent": "Intent"}[self]
+        return {
+            "findings": "Candidate",
+            "vote": "Vote",
+            "proof": "Proof",
+            "intent": "Intent",
+            "decision": "Decision",
+        }[self]
 
     @property
     def wrapper(self) -> str:
@@ -86,6 +96,18 @@ def brief(agent_id: str) -> Brief:
 
 def mission(body: str) -> str:
     return m[1].strip() if (m := MISSION.search(body)) else ""
+
+
+@cache
+def axis_owners() -> dict[Axis, set[str]]:
+    """Axis -> agent ids whose brief lists it (backticked) in its `## Axes` section."""
+    owners: dict[Axis, set[str]] = {}
+    for path in sorted((REFS / "agents").glob("*.md")):
+        if m := AXES.search(path.read_text()):
+            for word in re.findall(r"`([a-z0-9]+)`", m[1]):
+                if word in Axis:
+                    owners.setdefault(Axis(word), set()).add(path.stem)
+    return owners
 
 
 def _tables(text: str) -> list[tuple[list[str], list[str]]]:

@@ -1,0 +1,492 @@
+{
+  "benchmark": "AACR-Bench rescore",
+  "runs": {
+    "old": "20261124184936",
+    "new": "20261124191715",
+    "new+decide": "20261124194523"
+  },
+  "prs": [
+    "browser-use-browser-use-pull-1482",
+    "comfyanonymous-ComfyUI-pull-7952",
+    "infiniflow-ragflow-pull-5065",
+    "langflow-ai-langflow-pull-6044",
+    "vllm-project-vllm-pull-19756"
+  ],
+  "arms": {
+    "old": {
+      "findings": 21,
+      "unjudged": 0,
+      "matched_new": 4,
+      "covered": 4,
+      "refs": 20,
+      "precision": 0.19,
+      "recall": 0.2,
+      "f1": 0.195,
+      "f2": 0.198,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 3,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 1
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 6,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              1,
+              4
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "infiniflow-ragflow-pull-5065": {
+          "findings": 3,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ],
+            "Performance": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "langflow-ai-langflow-pull-6044": {
+          "findings": 9,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              9
+            ]
+          },
+          "evolvability_findings": 1
+        },
+        "vllm-project-vllm-pull-19756": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ]
+          },
+          "evolvability_findings": 0
+        }
+      }
+    },
+    "new": {
+      "findings": 22,
+      "unjudged": 0,
+      "matched_new": 4,
+      "covered": 4,
+      "refs": 20,
+      "precision": 0.182,
+      "recall": 0.2,
+      "f1": 0.19,
+      "f2": 0.196,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 4,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 6,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              1,
+              4
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "infiniflow-ragflow-pull-5065": {
+          "findings": 3,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ],
+            "Performance": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "langflow-ai-langflow-pull-6044": {
+          "findings": 9,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              9
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "vllm-project-vllm-pull-19756": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ]
+          },
+          "evolvability_findings": 0
+        }
+      }
+    },
+    "new+decide": {
+      "findings": 20,
+      "unjudged": 0,
+      "matched_new": 4,
+      "covered": 4,
+      "refs": 20,
+      "precision": 0.2,
+      "recall": 0.2,
+      "f1": 0.2,
+      "f2": 0.2,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 2,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 3,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              4
+            ],
+            "Maintainability and Readability": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "infiniflow-ragflow-pull-5065": {
+          "findings": 2,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ],
+            "Performance": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "langflow-ai-langflow-pull-6044": {
+          "findings": 13,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              2,
+              9
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "vllm-project-vllm-pull-19756": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ]
+          },
+          "evolvability_findings": 0
+        }
+      }
+    },
+    "union": {
+      "findings": 43,
+      "unjudged": 0,
+      "matched_new": 5,
+      "covered": 5,
+      "refs": 20,
+      "precision": 0.116,
+      "recall": 0.25,
+      "f1": 0.159,
+      "f2": 0.203,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 7,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 3
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 12,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              1,
+              4
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 4
+        },
+        "infiniflow-ragflow-pull-5065": {
+          "findings": 6,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ],
+            "Performance": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "langflow-ai-langflow-pull-6044": {
+          "findings": 18,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              2,
+              9
+            ]
+          },
+          "evolvability_findings": 3
+        },
+        "vllm-project-vllm-pull-19756": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ]
+          },
+          "evolvability_findings": 0
+        }
+      }
+    },
+    "union_dedup": {
+      "findings": 24,
+      "unjudged": 0,
+      "matched_new": 5,
+      "covered": 5,
+      "refs": 20,
+      "precision": 0.208,
+      "recall": 0.25,
+      "f1": 0.227,
+      "f2": 0.24,
+      "rows": {
+        "browser-use-browser-use-pull-1482": {
+          "findings": 4,
+          "matched_new": 1,
+          "unjudged": 0,
+          "refs": 1,
+          "covered": 1,
+          "by_category": {
+            "Code Defect": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "comfyanonymous-ComfyUI-pull-7952": {
+          "findings": 6,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 5,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              1,
+              4
+            ],
+            "Maintainability and Readability": [
+              1,
+              1
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "infiniflow-ragflow-pull-5065": {
+          "findings": 3,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 3,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ],
+            "Performance": [
+              0,
+              1
+            ]
+          },
+          "evolvability_findings": 0
+        },
+        "langflow-ai-langflow-pull-6044": {
+          "findings": 11,
+          "matched_new": 2,
+          "unjudged": 0,
+          "refs": 9,
+          "covered": 2,
+          "by_category": {
+            "Code Defect": [
+              2,
+              9
+            ]
+          },
+          "evolvability_findings": 2
+        },
+        "vllm-project-vllm-pull-19756": {
+          "findings": 0,
+          "matched_new": 0,
+          "unjudged": 0,
+          "refs": 2,
+          "covered": 0,
+          "by_category": {
+            "Code Defect": [
+              0,
+              2
+            ]
+          },
+          "evolvability_findings": 0
+        }
+      }
+    }
+  },
+  "decide_dismissed": {
+    "old": {
+      "dismissed": 0,
+      "matched_a_reference": 0
+    },
+    "new": {
+      "dismissed": 0,
+      "matched_a_reference": 0
+    },
+    "new+decide": {
+      "dismissed": 7,
+      "matched_a_reference": 2
+    }
+  },
+  "harness": "omp",
+  "model": "anthropic/claude-haiku-5-5",
+  "verify_model": "anthropic/claude-sonnet-5-5",
+  "decompose": "ocr",
+  "review_from": "",
+  "decide": ""
+}

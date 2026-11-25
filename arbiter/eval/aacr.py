@@ -17,7 +17,9 @@ from pathlib import Path
 from typing import Any
 
 from .. import HOME, agents, harness
+from ..findings import NEAR
 from ..model import Axis, Group
+from . import clef
 from .common import (
     NON_WORD,
     PR_URL,
@@ -127,12 +129,26 @@ def _prepare(item: dict[str, Any]) -> tuple[Path, str] | None:
     return repo, base
 
 
+def _ref_text(c: dict[str, Any]) -> str:
+    return f"[{c['category']}] lines {c['from_line']}-{c['to_line']}: {c['note']}"
+
+
 def _judge(f: dict[str, Any], refs: list[tuple[int, dict[str, Any]]]) -> list[int] | None:
     """Indices (into the PR's comments) of the references that express the finding's concern; None when the
-    judge failed twice, so the finding is "unjudged", not a false positive."""
-    listing = "\n".join(
-        f"{k}. [{c['category']}] lines {c['from_line']}-{c['to_line']}: {c['note']}" for k, (_, c) in enumerate(refs, 1)
-    )
+    judge failed twice, so the finding is "unjudged", not a false positive. Clef answers each pair first while the
+    free allowance lasts; any pair it cannot answer confidently sends the whole finding to the LLM judge."""
+    finding = f"{f['file']}:{f['line']} {f['claim']} {f.get('fix', '')}".strip()
+    matches = []
+    for i, c in refs:
+        if (same := clef.same_concern(finding, _ref_text(c))) is None:
+            return _llm_judge(f, refs)
+        if same:
+            matches.append(i)
+    return matches
+
+
+def _llm_judge(f: dict[str, Any], refs: list[tuple[int, dict[str, Any]]]) -> list[int] | None:
+    listing = "\n".join(f"{k}. {_ref_text(c)}" for k, (_, c) in enumerate(refs, 1))
     prompt = (
         "Which reference comments express the same concern as the generated review comment? Answer with only "
         '{"matches": [numbers]}, an empty list if none.\n\n'
@@ -152,18 +168,23 @@ def _norm(path: str) -> str:
     return path.removeprefix("./")
 
 
-def _score(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> dict[str, Any]:
-    """File-level semantic coverage (AACR-Bench docs/metrics.md): a finding matches the references in its file
-    the judge names; a finding is a true positive only when it covers a reference no earlier finding covered."""
+def _judge_all(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> list[list[int] | None]:
+    """Per finding: the reference indices it matches ([] when its file has no reference), None when unjudged."""
     by_file: dict[str, list[tuple[int, dict[str, Any]]]] = {}
     for i, c in enumerate(comments):
         by_file.setdefault(_norm(c["path"]), []).append((i, c))
+    return [_judge(f, refs) if (refs := by_file.get(_norm(f["file"]))) else [] for f in main]
+
+
+def _tally(
+    main: list[dict[str, Any]], matches: list[list[int] | None], comments: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """File-level semantic coverage (AACR-Bench docs/metrics.md): a finding is a true positive only when it covers a
+    reference no earlier finding covered."""
     covered: set[int] = set()
     matched_new = unjudged = 0
-    for f in main:
-        if not (refs := by_file.get(_norm(f["file"]))):
-            continue
-        if (m := _judge(f, refs)) is None:
+    for m in matches:
+        if m is None:
             unjudged += 1
             continue
         matched_new += bool(set(m) - covered)
@@ -182,6 +203,102 @@ def _score(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> dict[s
         "by_category": by_category,
         "evolvability_findings": sum(Axis(f["axis"]).group == Group.EVOLVABILITY for f in main),
     }
+
+
+def _score(main: list[dict[str, Any]], comments: list[dict[str, Any]]) -> dict[str, Any]:
+    return _tally(main, _judge_all(main, comments), comments)
+
+
+def _dedup(main: list[dict[str, Any]], matches: list[list[int] | None]) -> tuple[list[Any], list[list[int] | None]]:
+    """Findings at one file within NEAR lines become one, uniting their matches (unjudged only if all were)."""
+    out: list[dict[str, Any]] = []
+    out_m: list[list[int] | None] = []
+    for f, m in zip(main, matches, strict=True):
+        k = next((k for k, g in enumerate(out) if g["file"] == f["file"] and abs(g["line"] - f["line"]) <= NEAR), None)
+        if k is None:
+            out.append(f)
+            out_m.append(m)
+        elif m is not None:
+            out_m[k] = sorted({*(out_m[k] or []), *m})
+    return out, out_m
+
+
+def _arm(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    findings, unjudged = sum(r["findings"] for r in rows), sum(r["unjudged"] for r in rows)
+    matched, covered, refs = (sum(r[k] for r in rows) for k in ("matched_new", "covered", "refs"))
+    precision, recall = ratio(matched, findings - unjudged), ratio(covered, refs)
+    return {
+        "findings": findings,
+        "unjudged": unjudged,
+        "matched_new": matched,
+        "covered": covered,
+        "refs": refs,
+        "precision": round(precision, 3),
+        "recall": round(recall, 3),
+        "f1": fbeta(precision, recall, 1),
+        "f2": fbeta(precision, recall, 2),
+    }
+
+
+def rescore(a: argparse.Namespace) -> int:
+    """Judge several finished runs in one pass (same judge, same day), plus the union of the first two."""
+    labels: list[str] = a.label or []
+    if not a.runs or len(labels) != len(a.runs):
+        print("arbiter: rescore needs --runs TS... and one --label per run", file=sys.stderr)
+        return 2
+    items = {
+        NON_WORD.sub("-", i["githubPrUrl"].split("github.com/")[1]): i
+        for i in json.loads((DATA / "positive_samples.json").read_text())
+    }
+    dirs = dict(zip(labels, (RESULTS / "aacr" / ts for ts in a.runs), strict=True))
+    names = {lab: {p.name for p in d.iterdir() if (p / "report.json").exists()} for lab, d in dirs.items()}
+    keep = []
+    for name in sorted(set().union(*names.values())):
+        if name not in items:
+            print(f"skipped {name}: not an AACR v2 PR")
+        elif missing := [lab for lab in labels if name not in names[lab]]:
+            print(f"skipped {name}: missing in {missing[0]}")
+        else:
+            keep.append(name)
+    settings = apply_models(a)
+    judged: dict[str, dict[str, tuple[list[Any], list[list[int] | None]]]] = {}
+    dismissed: dict[str, int] = {}
+    dismissed_matched: dict[str, int] = {}
+    for lab, d in dirs.items():
+        for name in keep:
+            findings = json.loads((d / name / "report.json").read_text()).get("findings", [])
+            main = [f for f in findings if f.get("placement") == "main"]
+            judged.setdefault(lab, {})[name] = (main, _judge_all(main, _comments(items[name])))
+            # a decide dismissal that matches a reference is a decide error
+            final = json.loads(p.read_text()) if (p := d / name / "final.json").exists() else []
+            gone = [f for f in final if str(f.get("placement_reason", "")).startswith("decision: ")]
+            dismissed[lab] = dismissed.get(lab, 0) + len(gone)
+            dismissed_matched[lab] = dismissed_matched.get(lab, 0) + sum(
+                bool(m) for m in _judge_all(gone, _comments(items[name]))
+            )
+    arms = {lab: {n: _tally(*judged[lab][n], _comments(items[n])) for n in keep} for lab in labels}
+    if len(labels) >= 2:
+        x, y = labels[:2]
+        union = {n: ([*judged[x][n][0], *judged[y][n][0]], [*judged[x][n][1], *judged[y][n][1]]) for n in keep}
+        arms["union"] = {n: _tally(*union[n], _comments(items[n])) for n in keep}
+        arms["union_dedup"] = {n: _tally(*_dedup(*union[n]), _comments(items[n])) for n in keep}
+    scored = {lab: _arm(list(rows.values())) | {"rows": rows} for lab, rows in arms.items()}
+    summary = {
+        "benchmark": "AACR-Bench rescore",
+        "runs": dict(zip(labels, a.runs, strict=True)),
+        "prs": keep,
+        "arms": scored,
+        "decide_dismissed": {
+            lab: {"dismissed": n, "matched_a_reference": dismissed_matched[lab]} for lab, n in dismissed.items()
+        },
+        **models(settings),
+    }
+    write_summary(f"aacr-rescore-{stamp()}", summary)
+    print("| Arm | Findings | Matched | Precision | Recall | F1 | F2 |\n|---|---|---|---|---|---|---|")
+    for lab, s in scored.items():
+        cells = [lab, *(s[k] for k in ("findings", "matched_new", "precision", "recall", "f1", "f2"))]
+        print("| " + " | ".join(map(str, cells)) + " |")
+    return 0
 
 
 def _recall(ok: list[dict[str, Any]], keep: Any) -> float | None:
@@ -255,5 +372,7 @@ def main(a: argparse.Namespace) -> int:
         case "fetch":
             fetch()
             return 0
+        case "rescore":
+            return rescore(a)
         case _:
             return run(a)

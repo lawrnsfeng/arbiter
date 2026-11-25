@@ -143,6 +143,16 @@ class Placement(StrEnum):
     NIT_OVERFLOW = "nit-overflow"
 
 
+class Tier(StrEnum):
+    """Action tier of a reported finding (report.tier)."""
+
+    MUST = "must-fix"
+    SHOULD = "should-fix"
+    VERIFY = "verify"
+    OPTIONAL = "optional"
+    FYI = "fyi"
+
+
 class Decompose(StrEnum):
     """How the diff is split into review units (research-decompose-hierarchical.md §4, §5)."""
 
@@ -340,6 +350,8 @@ Finding = TypedDict(
         "proof_plan": ProofPlan,
         "quote": str,  # exact text of the first flagged line; used to fix a wrong `line`
         "measure": str,  # id of an arbiter maintainability fact the finding reports
+        "addresses": str,  # requirement id (R1, B2) the finding puts at risk
+        "patches": list[dict[str, object]],  # GitHub-suggestion patches: title, start_line, end_line, code
         # filled by arbiter: provenance, merge, tally, proof and gate
         "id": str,
         "agent": str,
@@ -361,6 +373,8 @@ Finding = TypedDict(
         "locations": list[str],  # hier root-cause clustering: other path:line sites of the same changed symbol
         "relocated_from": int,
         "repaired": str,
+        "proof_fix_diff": str,  # the proof agent's minimal fix, captured before the worktree revert
+        "challenge": str,  # the decision model's doubt about a must-fix finding
     },
     total=False,
 )

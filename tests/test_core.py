@@ -610,7 +610,7 @@ def test_report_block_exit_1(tmp_path, capsys):
     run = _report_run(tmp_path, "block")
     assert cli.main(["report", str(run)]) == 1
     md = (run / "report.md").read_text()
-    assert "verdict BLOCK" in md and "[block][logic][E4] `a.py:3`" in md
+    assert "🔴 BLOCK: 1 must fix" in md and "**#1 · functional · logic · proven E4** `a.py:3`: c" in md
 
 
 def test_report_pass_exit_0(tmp_path):

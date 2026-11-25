@@ -4,6 +4,7 @@ Also renders the numbered diffs that agent prompts show.
 """
 
 import functools
+import os
 import random
 import re
 import subprocess
@@ -11,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import NamedTuple, TypedDict
 
-from . import decompose, diff, maintain, tools, triggers, units
+from . import cochange, decompose, diff, maintain, tools, triggers, units
 from .diff import hunk_ranges
 from .findings import rule_key
 from .model import Decompose, DiffFile, Effort, Lang, MaintFact, Range, Ranges, Symbol, ToolSpec, Unit
@@ -75,6 +76,7 @@ class Plan(TypedDict):
     manifest: list[Symbol]  # hier: the PR change manifest
     maint: list[MaintFact]  # measured maintainability facts (MA-03); empty in quick
     blocking_rules: list[str]  # `path#heading` keys of repo rule headings marked [block] (MA-05)
+    cochange: dict[str, list[tuple[str, int]]]  # changed path -> files often changed with it (T-04)
 
 
 def _order(u: Unit, k: int) -> list[int]:
@@ -226,6 +228,9 @@ def plan(
         manifest=syms,
         maint=maint,
         blocking_rules=blocking,
+        cochange=cochange.neighbours(repo, [f["path"] for f in included], tree)
+        if eff != Effort.QUICK and os.environ.get("ARBITER_COCHANGE") == "1"
+        else {},
     )
     run.save("plan.json", p)
     run.cov(

@@ -26,4 +26,4 @@ None.
 - E4: one test per failing acceptance criterion, with the oracle quoted from the spec.
 - E9: an end-to-end run of the documented command or request when the criterion is about the whole flow.
 ## Output
-`{"findings": [...]}`; `axis` = `spec`; `severity` `block` for a missing or wrong acceptance criterion, `should-fix` for partial or scope creep.
+`{"findings": [...]}`; `axis` = `spec`; `severity` `block` for a missing or wrong acceptance criterion, `should-fix` for partial or scope creep. `addresses` is required: the id of the requirement you checked.

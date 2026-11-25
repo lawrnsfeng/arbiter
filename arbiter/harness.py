@@ -38,6 +38,11 @@ FALLBACK_MODELS = {
 DEFAULT_BLOCKED = "opus,fable"  # cost ceiling: Sonnet-class is the most expensive model arbiter calls by default
 THINKING_SUFFIXES = frozenset({"off", "minimal", "low", "medium", "high", "xhigh", "max", "auto", "inherit"})
 ROLE_DEPTH = 5
+OVERLAY = Path(__file__).with_name("omp-overlay.yml")
+DECIDE = "decide"
+DECIDE_MODEL = "anthropic/claude-opus-5-5"
+DECIDE_MAX_USD = "1.00"
+DECIDE_MAX_USD_LIMIT = 5.0
 
 
 class HarnessError(Exception):
@@ -174,11 +179,33 @@ def preflight(s: Settings) -> None:
     os.environ["ARBITER_PREFLIGHT_OK"] = key
 
 
+def decide_model() -> str:
+    """The one model allowed above the cost ceiling, for the single decide call: an Opus model through omp."""
+    if os.environ.get("ARBITER_HARNESS", "omp") == "claude":
+        raise ArbiterExit(2, "arbiter: --decide needs --harness omp (it enforces a cost cap)")
+    m = os.environ.get("ARBITER_DECIDE_MODEL", DECIDE_MODEL)
+    if "opus" not in m.lower() or "fable" in m.lower():
+        raise ArbiterExit(2, f"arbiter: decide model {m} is not allowed (only an opus model)")
+    return m
+
+
+def decide_max_usd() -> str:
+    raw = os.environ.get("ARBITER_DECIDE_MAX_USD", DECIDE_MAX_USD)
+    try:
+        ok = 0 < float(raw) <= DECIDE_MAX_USD_LIMIT
+    except ValueError:
+        ok = False
+    if not ok:
+        raise ArbiterExit(2, "arbiter: ARBITER_DECIDE_MAX_USD must be a number in (0, 5]")
+    return raw
+
+
 def argv(role: str, tools: Tools | str) -> list[str]:
     s, tools = settings(), Tools(tools)
     match s.harness:
         case "omp":
-            # no skills, rules, context files or extensions: repo instruction files must not steer agents
+            # no skills, rules, context files or extensions: repo instruction files must not steer agents;
+            # the overlay turns omp's advisor off, which would otherwise add premium-model calls and retries
             cmd = [
                 "omp",
                 "-p",
@@ -187,11 +214,17 @@ def argv(role: str, tools: Tools | str) -> list[str]:
                 "--no-rules",
                 "--no-context-files",
                 "--no-extensions",
-                "--thinking",
-                "high" if role in HIGH_THINKING else "low",
+                "--config",
+                str(OVERLAY),
             ]
+            if role == DECIDE:
+                cmd += ["--thinking", "medium", "--no-tools", "--max-cost", decide_max_usd()]
+                return [*cmd, "--model", decide_model()]
+            cmd += ["--thinking", "high" if role in HIGH_THINKING else "low"]
             cmd += ["--tools", TOOL_NAMES["omp"][tools], "--approval-mode", "yolo"] if tools else ["--no-tools"]
         case "claude":
+            if role == DECIDE:
+                decide_model()  # raises: no cost cap through claude -p
             cmd = ["claude", "-p", "--output-format", "text", "--tools", TOOL_NAMES["claude"][tools]]
             if tools:
                 cmd += ["--permission-mode", "bypassPermissions"]
@@ -221,6 +254,7 @@ FAKE_DEFAULTS = {
     "P": '{"rung": "E3", "result": "not_reproduced", "before": {"exec_id": "", "cmd": "", "exit_code": 0, '
     '"output_excerpt": ""}, "artifact": ""}',
     "judge": '{"match": false}',
+    "decide": '{"summary": "fake", "next_action": "none", "links": {}, "dismiss": [], "challenge": [], "missed": []}',
 }
 
 

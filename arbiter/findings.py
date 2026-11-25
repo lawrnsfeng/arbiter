@@ -63,6 +63,10 @@ LINT_ID = re.compile(r"^([A-Z]{1,4}\d{3,4}|clippy::\w+|(@[\w-]+/)?[\w-]+/[\w-]+|
 NIT_CAP = 10
 UNPROVABLE = "verified; no proof possible here"  # placement reason prefix: verified, proof blocked by environment
 NEAR = 3  # lines of slack for hunk membership and dedup
+REQ_ID = re.compile(r"^[RB]\d+$")  # requirement ids: R (claims) and B ([block] repo rules)
+MAX_PATCHES = 2
+MAX_PATCH_LINES = 10
+MAX_MISSED = 3
 CLUSTERED = frozenset({SymbolChange.SIGNATURE, SymbolChange.RENAMED})  # interface changes with a head-side span
 
 type ExecLookup = Callable[[str], ExecRecord | None]
@@ -114,7 +118,30 @@ def validate_candidate(c: Any) -> Finding:
         _need(isinstance(c.get("cwe"), int), "cwe (int) required for security and privacy")
     if c.get("precedent") is not None:
         _need(isinstance(c["precedent"], str) and LOC.match(c["precedent"]), "precedent must be path:line")
+    # optional report extras: a malformed one is dropped, never a reason to reject the finding
+    if "addresses" in c and not (isinstance(c["addresses"], str) and REQ_ID.match(c["addresses"])):
+        del c["addresses"]
+    if "patches" in c and not _patches_ok(c["patches"]):
+        del c["patches"]
     return c
+
+
+def _patches_ok(v: object) -> bool:
+    return (
+        isinstance(v, list)
+        and len(v) <= MAX_PATCHES
+        and all(
+            isinstance(p, dict)
+            and isinstance(p.get("title"), str)
+            and isinstance(p.get("code"), str)
+            and len(p["code"].splitlines()) <= MAX_PATCH_LINES
+            and isinstance(p.get("start_line"), int)
+            and p["start_line"] >= 1
+            and isinstance(p.get("end_line"), int)
+            and p["end_line"] >= p["start_line"]
+            for p in v
+        )
+    )
 
 
 def validate_findings(v: Any) -> list[Any]:
@@ -151,6 +178,39 @@ def validate_proof(v: Any) -> Proof:
 def validate_intent(v: Any) -> dict[str, Any]:
     _need(isinstance(v, dict) and isinstance(v.get("claims"), list), "intent needs claims[]")
     v.setdefault("unit_notes", {})
+    return v
+
+
+def validate_decision(v: Any) -> dict[str, Any]:
+    """The decide call's reply. Effects are applied in pipeline.decide; the proof gate stays authoritative."""
+    _need(isinstance(v, dict), "decision must be an object")
+    _need(isinstance(v.get("summary"), str), "summary must be a string")
+    _need(isinstance(v.get("next_action"), str), "next_action must be a string")
+    v["summary"], v["next_action"] = v["summary"][:300], v["next_action"][:200]
+    links = v.setdefault("links", {})
+    _need(
+        isinstance(links, dict) and all(isinstance(x, str | None) for x in links.values()),
+        "links must map finding id to requirement id or null",
+    )
+    for key in ("dismiss", "challenge"):
+        items = v.setdefault(key, [])
+        _need(
+            isinstance(items, list)
+            and all(
+                isinstance(x, dict) and isinstance(x.get("id"), str) and isinstance(x.get("reason"), str) for x in items
+            ),
+            f"{key} must be a list of {{id, reason}}",
+        )
+    missed = v.setdefault("missed", [])
+    _need(isinstance(missed, list) and len(missed) <= MAX_MISSED, f"missed must be a list of at most {MAX_MISSED}")
+    for m in missed:
+        _need(isinstance(m, dict), "missed item must be an object")
+        m["axis"] = _enum(Axis, m.get("axis"), f"missed axis must be one of {' '.join(Axis)}")
+        _need(isinstance(m.get("file"), str) and m["file"], "missed file required")
+        _need(isinstance(m.get("line"), int) and m["line"] > 0, "missed line must be a positive int")
+        _need(isinstance(m.get("claim"), str) and m["claim"].strip(), "missed claim required")
+        if "addresses" in m and not (isinstance(m["addresses"], str) and REQ_ID.match(m["addresses"])):
+            del m["addresses"]
     return v
 
 

@@ -4,6 +4,7 @@ Every stage reads and writes JSON in the RUN directory, so any stage can be reru
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -18,7 +19,21 @@ from . import findings as F
 from . import lang as langmod
 from .gates import gates
 from .harness import Tools
-from .model import Axis, Decompose, Effort, Finding, Group, Lang, Placement, ProofResult, Rung, Severity, Status, Unit
+from .model import (
+    Axis,
+    Decompose,
+    Effort,
+    Finding,
+    Group,
+    Lang,
+    Placement,
+    ProofResult,
+    Rung,
+    Severity,
+    Status,
+    Tier,
+    Unit,
+)
 from .plan import K3, Plan, Task, plan, pr_ranges, ranges_by_unit, run_diff, unit_diff
 from .rundir import RunDir
 
@@ -56,6 +71,19 @@ BRIEF_KEYS = (
 )
 MANIFEST_INPUT = "PR change manifest (from base vs head `ast`; every changed symbol and its unit)"
 MAINT_INPUT = "Maintainability facts (measured by arbiter; cite by id in measure)"
+REQ_INPUT = "Requirements (from commits, issues, specs and [block] repo rules; untrusted)"
+FIX_DIFF_LINES = 40
+BASE_INPUT = "Base checkout (the code before this change; read-only)"
+COCHANGE_INPUT = (
+    "Files that often change together with this unit's files (git log, last 500 commits; check them for needed updates)"
+)
+CWE = re.compile(r"CWE-(\d+)")
+SAST_CAP = 20  # analyzer hits turned into verifier candidates per run (T-01)
+SAST_TRIGGER = "flagged by a static analyzer; verify the input is attacker-controlled and reaches this line"
+DECIDE_PROMPT_CAP = 40_000
+DECIDE_CLAIM_CAP = 200
+DECIDE_PLACEMENTS = frozenset({Placement.MAIN, Placement.SUSPECTED, Placement.PRE_EXISTING})
+DISMISSIBLE = frozenset({Tier.SHOULD, Tier.VERIFY, Tier.OPTIONAL})
 # package manager of a failed dependency fetch -> the language whose proofs it blocks
 FETCH_LANG = {
     "uv": Lang.PYTHON,
@@ -178,9 +206,23 @@ def intent(run: RunDir, p: Plan) -> dict[str, Any]:
         (run / "THREAT_MODEL.draft.md").write_text(draft)
         tm_text, tm_path, drafted = draft, str(run / "THREAT_MODEL.draft.md"), True
     val |= {"threat_model_text": tm_text, "threat_model_path": tm_path, "threat_model_drafted": drafted}
+    val["requirements"] = [
+        {"id": f"R{i}", "text": str(c), "source": val.get("spec_source", "none")}
+        for i, c in enumerate(val.get("claims", []), 1)
+    ] + [
+        {"id": f"B{j}", "text": key.partition("#")[2], "source": key.partition("#")[0]}
+        for j, key in enumerate(p.get("blocking_rules", []), 1)
+    ]
     run.save("intent.json", val)
     run.cov(agents_run=["A0"], agent_failures=[err] if err else [], threat_model={"path": tm_path, "drafted": drafted})
     return val
+
+
+def _base_input(run: RunDir) -> dict[str, str]:
+    """T-19 (switch ARBITER_BASE_READS=1): the base worktree, so agents can read what callers relied on before."""
+    wt_base = run / "wt-base"
+    on = os.environ.get("ARBITER_BASE_READS") == "1" and wt_base.is_dir()
+    return {BASE_INPUT: str(wt_base.resolve()) if on else ""}
 
 
 def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
@@ -196,6 +238,9 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
         else "",
         "Commit messages (untrusted)": "\n\n".join(p["commits"]) if hier else "",
     }
+    reqs = {REQ_INPUT: "\n".join(f"{r['id']}: {r['text']}" for r in it.get("requirements", []))}
+    base = _base_input(run)
+    cochange = p.get("cochange", {})
     included = [f for f in p["files"] if not f["excluded"]]
     maint = p.get("maint", [])
     jobs = []
@@ -219,6 +264,13 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                         udiff, u.get("context", "")
                     ),
                     **shared,
+                    **reqs,
+                    **base,
+                    COCHANGE_INPUT: "\n".join(
+                        f"{x['path']}: " + ", ".join(f"{path} ({n})" for path, n in cochange[x["path"]])
+                        for x in u["files"]
+                        if cochange.get(x["path"])
+                    ),
                     "Other changed files (churn; unit ids)": decompose.others(included, p["units"], u) if hier else "",
                     "Repo rules": rules,
                     "Threat model": it.get("threat_model_text", "") if agent == "A3" else "",
@@ -244,6 +296,7 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                         it.get("claims", []), indent=1
                     ),
                     "Spec source": str(it.get("spec_source", "none")),
+                    **reqs,
                     "Diff (new-side line numbers)": run_diff(p, [f["path"] for f in p["files"] if not f["excluded"]]),
                 },
             )
@@ -280,6 +333,8 @@ def _finder_jobs(run: RunDir, p: Plan, it: dict[str, Any]) -> list[Job]:
                     "Repo-wide callers of changed interfaces (depth 1, capped)": decompose.callers_text(syms),
                     "Diff of files with interface changes (new-side line numbers)": run_diff(p, paths),
                     "Repo rules": rules,
+                    **reqs,
+                    **base,
                 },
             )
         )
@@ -311,6 +366,38 @@ def finders(run: RunDir, p: Plan, it: dict[str, Any], jobs: int) -> list[dict[st
     return raw
 
 
+def _sast_candidates(run: RunDir, p: Plan, merged: list[Finding]) -> list[dict[str, Any]]:
+    """T-01: analyzer hits on added lines that no agent finding covers become verifier candidates."""
+    ranges = pr_ranges(p)
+    hits = sorted(run.load("gates.json", {}).get("analyzer_hits", []), key=lambda h: (h["tool"], h["path"], h["line"]))
+    out: list[dict[str, Any]] = []
+    for h in hits:
+        if not any(lo <= h["line"] <= hi for lo, hi in ranges.get(h["path"], [])):
+            continue
+        if any(f["file"] == h["path"] and abs(f["line"] - h["line"]) <= F.NEAR for f in merged):
+            continue
+        rule = h.get("rule") or ""
+        out.append(
+            {
+                "axis": "security",
+                "severity": "should-fix",
+                "file": h["path"],
+                "line": h["line"],
+                "claim": f"{h['tool']} {rule}: {str(h.get('msg', ''))[:200]}",
+                "trigger": SAST_TRIGGER,
+                "evidence_lines": [f"{h['path']}:{h['line']}"],
+                "cwe": int(m[1]) if (m := CWE.search(f"{rule} {h.get('msg', '')}")) else 0,
+                "proof_plan": {"rung": "E3", "idea": "run the flagged code path with attacker-controlled input"},
+                "agent": "sast",
+                "pass": 0,
+                "unit": "run",
+            }
+        )
+        if len(out) == SAST_CAP:
+            break
+    return out
+
+
 def merge(run: RunDir, p: Plan) -> list[Finding]:
     hier = p.get("decompose") == Decompose.HIER
     merged, rejected = F.merge(
@@ -321,8 +408,13 @@ def merge(run: RunDir, p: Plan) -> list[Finding]:
         symbols=p.get("manifest", []) if hier else (),
         added={f["path"]: [(n, t) for h in f["hunks"] for n, t in h["added"]] for f in p["files"] if not f["excluded"]},
     )
+    sast_raw = _sast_candidates(run, p, merged) if os.environ.get("ARBITER_SAST_CANDIDATES") == "1" else []
+    sast, sast_rejected = F.merge(sast_raw, {"run": pr_ranges(p)}, set())
+    merged += sast
+    for n, m in enumerate(merged, 1):
+        m["id"] = f"f{n:03d}"
     run.save("candidates.json", merged)
-    run.save("rejected.json", rejected)
+    run.save("rejected.json", rejected + sast_rejected)
     return merged
 
 
@@ -361,6 +453,7 @@ def verify(run: RunDir, p: Plan, it: dict[str, Any], jobs: int) -> list[Finding]
             "Finding to judge (untrusted claim)": _finding_brief(f),
             "Diff (new-side line numbers; base side shown as - lines)": _diff_for(p, f),
             "Repo rules": rules,
+            **_base_input(run),
             "Threat model": it.get("threat_model_text", "") if f["axis"] in SECURITY_AXES else "",
             MAINT_INPUT: maintain.facts_text([facts[m]]) if (m := f.get("measure")) in facts else "",
         }
@@ -423,6 +516,10 @@ def proofs(run: RunDir, p: Plan) -> list[Finding]:
             }
             prompt, _ = agents.build_prompt("P", [langmod.of(f["file"])], inputs)
             val, err = agents.run("P", "P", prompt, F.validate_proof, tools=Tools.PROOF, cwd=wt, timeout=900)
+            # the minimal fix an E4 proof applied, kept for the report before the revert below
+            fix_diff = subprocess.run(
+                ["git", "-C", str(wt), "diff", "--", ".", ":(exclude)arbiter_proofs"], capture_output=True, text=True
+            ).stdout
             subprocess.run(["git", "-C", str(wt), "checkout", "--", "."], capture_output=True)  # revert any minimal fix
             if err:
                 fails.append(err)
@@ -436,6 +533,8 @@ def proofs(run: RunDir, p: Plan) -> list[Finding]:
             f["proof_attempts"].append(val)
             if val["result"] == ProofResult.CONFIRMED:
                 f["proof"] = val
+                if fix_diff.strip():
+                    f["proof_fix_diff"] = "\n".join(fix_diff.splitlines()[:FIX_DIFF_LINES])
                 confirmed += 1
                 break
     run.save("proved.json", cands)
@@ -500,6 +599,112 @@ def final_gate(run: RunDir, p: Plan) -> list[Finding]:
     return allf
 
 
+def _decide_prompt(inputs: dict[str, str], items: list[dict[str, Any]]) -> str:
+    return agents.build_prompt("DECIDE", [], {**inputs, "Findings": json.dumps(items, indent=1)})[0]
+
+
+def decide(run: RunDir, p: Plan, it: dict[str, Any], allf: list[Finding]) -> list[Finding]:
+    """One end-of-run call to the decide model (Opus). Strict: once per RUN (claim file), no retry, no tools,
+    an omp cost cap. Its output only links, dismisses non-blocking findings, challenges and adds unverified
+    concerns; it never adds or removes a block."""
+    model, cap = harness.decide_model(), harness.decide_max_usd()
+    try:
+        os.close(os.open(run / "decide.claim", os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+    except FileExistsError:
+        run.cov(notes=["decide: already called for this RUN; not called again"])
+        return allf
+    order = list(Tier)  # most urgent first, so clipping from the end drops the least urgent
+    shown = sorted(
+        (f for f in allf if f.get("placement") in DECIDE_PLACEMENTS), key=lambda f: order.index(report.tier(f))
+    )
+    tiers = {f["id"]: report.tier(f) for f in shown}
+    items: list[dict[str, Any]] = [
+        {
+            "id": f["id"],
+            "tier": tiers[f["id"]],
+            "axis": f["axis"],
+            "file": f["file"],
+            "line": f["line"],
+            "claim": f["claim"],
+            "trigger": f.get("trigger", ""),
+            "evidence": p_["rung"] if (p_ := f.get("proof")) and p_["result"] == ProofResult.CONFIRMED else "none",
+            "addresses": f.get("addresses"),
+        }
+        for f in shown
+    ]
+    inputs = {
+        "Requirements": "\n".join(f"{r['id']}: {r['text']}" for r in it.get("requirements", [])) or "(none)",
+        "Axes checked": "\n".join(report.axes_rows(shown, run.load("coverage.json", {}))),
+        "Run facts": _facts(p),
+    }
+    prompt = _decide_prompt(inputs, items)
+    for step in (Tier.OPTIONAL, Tier.FYI, "claims"):
+        if len(prompt) <= DECIDE_PROMPT_CAP:
+            break
+        if step == "claims":
+            items = [{**x, "claim": x["claim"][:DECIDE_CLAIM_CAP]} for x in items]
+        else:
+            items = [x for x in items if x["tier"] != step]
+        prompt = _decide_prompt(inputs, items)
+    while len(prompt) > DECIDE_PROMPT_CAP and items:  # least urgent tier last, so it goes first
+        items.pop()
+        prompt = _decide_prompt(inputs, items)
+    (run / "prompts").mkdir(exist_ok=True)
+    (run / "prompts" / "decide.md").write_text(prompt)
+    cov: dict[str, Any] = {"model": model, "called": True, "ok": False, "max_usd": float(cap)}
+    try:  # harness.call directly: agents.run and agents._call both retry
+        val = F.validate_decision(
+            agents.extract_json(harness.call(harness.DECIDE, prompt, tools=Tools.NONE, cwd=run.path, timeout=600))
+        )
+    except (harness.HarnessError, ValueError, TypeError, KeyError) as e:
+        run.cov(notes=[f"decide: {str(e)[:300]}"], decide=cov)
+        return allf
+    by_id = {f["id"]: f for f in shown}
+    for fid, rid in val["links"].items():
+        if (f := by_id.get(fid)) and "addresses" not in f and isinstance(rid, str) and F.REQ_ID.match(rid):
+            f["addresses"] = rid
+    dismissed = challenged = 0
+    for d in val["dismiss"]:
+        if (f := by_id.get(d["id"])) and tiers[d["id"]] in DISMISSIBLE:
+            f["placement"], f["placement_reason"] = Placement.DROPPED, f"decision: {d['reason']}"
+            dismissed += 1
+    for c in val["challenge"]:
+        if (f := by_id.get(c["id"])) and tiers[c["id"]] == Tier.MUST:
+            f["challenge"] = c["reason"]
+            challenged += 1
+    ranges = pr_ranges(p)
+    missed = 0
+    for m in val["missed"]:
+        axis = Axis(m["axis"])
+        nf = Finding(
+            id=f"d{missed + 1:02d}",
+            source="decide",
+            agents=["DECIDE"],
+            axis=axis,
+            axes=[axis],
+            group=axis.group,
+            severity=Severity.SHOULD_FIX,
+            status=Status.SUSPECTED,
+            placement=Placement.SUSPECTED,
+            placement_reason="raised by the decision model; unverified",
+            file=m["file"],
+            line=m["line"],
+            end_line=m["line"],
+            claim=m["claim"],
+            evidence_lines=[f"{m['file']}:{m['line']}"],
+        )
+        if not F.in_hunks(nf, ranges):  # the brief allows changed lines only
+            continue
+        if rid := m.get("addresses"):
+            nf["addresses"] = rid
+        allf.append(nf)
+        missed += 1
+    run.save("decision.json", val)
+    run.save("final.json", allf)
+    run.cov(decide=cov | {"ok": True, "dismissed": dismissed, "challenged": challenged, "missed": missed})
+    return allf
+
+
 def _withhold(run: RunDir) -> str | None:
     """A gate must not pass on silence: too many failed agent calls withhold a passing verdict."""
     c = run.load("coverage.json", {})
@@ -539,6 +744,8 @@ def run_all(
         verify(run, p, it, jobs)
         proofs(run, p)
         allf = final_gate(run, p)
+        if os.environ.get("ARBITER_DECIDE") == "1":
+            allf = decide(run, p, it, allf)
     finally:
         sandbox.clean(run.path, Path(p["repo"]))
         run.cov(wall_time_s=round(time.monotonic() - t0, 1))

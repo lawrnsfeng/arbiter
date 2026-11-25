@@ -55,6 +55,12 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--harness", choices=harness.HARNESSES)
     r.add_argument("--model", help="finders, A0 and SPEC (default: Haiku)")
     r.add_argument("--verify-model", help="verifier, proof agent and eval judge (default: Sonnet)")
+    r.add_argument(
+        "--decide",
+        action="store_const",
+        const="1",
+        help="one capped Opus decision call at the end of the run (ARBITER_DECIDE_MODEL, ARBITER_DECIDE_MAX_USD)",
+    )
     r.add_argument("--out", type=Path)
     r.add_argument("--jobs", type=_positive, default=os.environ.get("ARBITER_JOBS", "8"), help="agent calls at once")
     r.add_argument("--max-agents", type=int, default=300)
@@ -76,6 +82,8 @@ def _parser() -> argparse.ArgumentParser:
     sb.add_argument("--timeout", type=int, default=300)
     sb.add_argument("rest", nargs=argparse.REMAINDER)
     sub.add_parser("eval").add_argument("rest", nargs=argparse.REMAINDER)
+    lg = sub.add_parser("ledger", help="decision ledger: list, show ID, render, check")
+    lg.add_argument("rest", nargs=argparse.REMAINDER)
     return ap
 
 
@@ -121,9 +129,13 @@ def _dispatch(a: argparse.Namespace) -> int:
                 ("harness", "ARBITER_HARNESS"),
                 ("model", "ARBITER_MODEL"),
                 ("verify_model", "ARBITER_VERIFY_MODEL"),
+                ("decide", "ARBITER_DECIDE"),
             ):
                 if value := getattr(a, flag):
                     os.environ[env] = value
+            if os.environ.get("ARBITER_DECIDE") == "1":  # a bad decide model or cap is a usage error before any work
+                harness.decide_model()
+                harness.decide_max_usd()
             # resolve models (cost ceiling included) and check each one answers, before any review work
             harness.preflight(harness.settings())
             path, v = P.run_all(
@@ -167,6 +179,10 @@ def _dispatch(a: argparse.Namespace) -> int:
             from .eval import main as eval_main
 
             return eval_main(a.rest)
+        case "ledger":
+            from .ledger import main as ledger_main
+
+            return ledger_main(a.rest)
     run = RunDir(a.run)
     p = _plan(run)
     match a.cmd:

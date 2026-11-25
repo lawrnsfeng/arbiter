@@ -7,6 +7,8 @@ from . import aacr, martian, seeded, swr
 
 REVIEW_FROM = "review with the arbiter checkout at DIR (its .venv), for A/B runs"
 PR_HELP = "only PRs whose URL ends with this text (owner/repo/pull/N or repo/pull/N); repeatable"
+DECIDE = "one capped Opus decision call per review (exports ARBITER_DECIDE)"
+JUDGE = "auto (default): Clef first while the free Workers AI allowance lasts, else the LLM judge; sonnet: LLM only"
 
 
 def _non_negative(text: str) -> int:
@@ -29,6 +31,7 @@ def main(argv: list[str]) -> int:
     s.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     s.add_argument("--parallel", type=int, default=2, help="cases reviewed at once")
     s.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
+    s.add_argument("--decide", action="store_const", const="1", help=DECIDE)
     m = sub.add_parser("martian")
     m.add_argument("action", choices=("fetch", "run"))
     m.add_argument("--repo", choices=("sentry", "grafana", "cal_dot_com"))
@@ -41,6 +44,8 @@ def main(argv: list[str]) -> int:
     m.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     m.add_argument("--pr", action="append", help=PR_HELP)
     m.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
+    m.add_argument("--decide", action="store_const", const="1", help=DECIDE)
+    m.add_argument("--judge", choices=("auto", "sonnet"), help=JUDGE)
     w = sub.add_parser("swr", help="SWR-Bench: fetch the pinned upstream, draw the sample, run and judge")
     w.add_argument("action", choices=("fetch", "sample", "run"))
     w.add_argument("--issue", type=int, default=28, help="sample: PRs with a functional issue")
@@ -55,8 +60,11 @@ def main(argv: list[str]) -> int:
     w.add_argument("--verify-model")
     w.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     w.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
+    w.add_argument("--decide", action="store_const", const="1", help=DECIDE)
     r = sub.add_parser("aacr", help="AACR-Bench v2: fetch the pinned dataset, run and judge (file-level coverage)")
-    r.add_argument("action", choices=("fetch", "run"))
+    r.add_argument("action", choices=("fetch", "run", "rescore"))
+    r.add_argument("--runs", nargs="+", metavar="TS", help="rescore: result folders under eval/results/aacr/")
+    r.add_argument("--label", action="append", help="rescore: one name per --runs folder, in order")
     r.add_argument("--lang", help="python,ts,go,rust (or a dataset language name)")
     r.add_argument("--pr", action="append", help=PR_HELP)
     r.add_argument("--limit", type=int)
@@ -66,5 +74,7 @@ def main(argv: list[str]) -> int:
     r.add_argument("--verify-model")
     r.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     r.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
+    r.add_argument("--decide", action="store_const", const="1", help=DECIDE)
+    r.add_argument("--judge", choices=("auto", "sonnet"), help=JUDGE)
     a = ap.parse_args(argv)
     return {"seeded": seeded, "martian": martian, "swr": swr, "aacr": aacr}[a.suite].main(a)
