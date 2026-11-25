@@ -7,6 +7,8 @@ The designer writes the obligations and then the tests. The judge re-derives the
 - `C<n>`: atomic requirement clause, numbered in order of appearance in the requirements.
 - `Q<n>`: open question: a requirement is ambiguous or silent.
 - `O<n>`: obligation.
+- `E<n>`: example: one concrete case from the requirements (given, when, then per channel), owner-approved or `unconfirmed`.
+- `EN<n>`: entry point: one way a user reaches the behaviour (route or screen element, command, deep link, notification, retry, back/undo, second device).
 - `M<n>`: code mutant (judge only).
 - `SM<n>`: spec mutant (judge only).
 - Test titles start with the obligation IDs they cover, joined by `+`, then a colon. Runners whose test names must be identifiers (pytest, Go, Rust) use `test_o7_o8_<summary>` / `TestO7O8_<Summary>` instead:
@@ -54,6 +56,12 @@ The **channel inventory** lists every DB table, queue, outbox, mail sink, webhoo
   "source": "<path or issue URL of the requirements>",
   "slug": "<kebab-case feature name>",
   "channels": ["ui", "api", "db:orders", "queue:exports", "log", "tracker", "mail"],
+  "examples": [
+    {"id": "E1", "clause": "C1", "status": "approved | unconfirmed", "text": "<given …, when …, then U: … · P: … · S: … · N: …>"}
+  ],
+  "entry_points": [
+    {"id": "EN1", "text": "<how the user reaches it>"}
+  ],
   "clauses": [
     {"id": "C1", "origin": "explicit", "quote": "<verbatim requirement text>",
      "ears": "IF <trigger> THEN THE SYSTEM SHALL <response>"}
@@ -67,6 +75,9 @@ The **channel inventory** lists every DB table, queue, outbox, mail sink, webhoo
       "clause": "C1",
       "kind": "happy | partition | boundary | decision | state | flow | combination | unhappy | must-not | property | metamorphic | fault-checklist",
       "technique": "EP | BVA | DT | CE | ST | UC | PICT | EG | PBT | MR",
+      "example": "E1 | null",
+      "entry_point": "EN1 | null",
+      "layer": ["e2e"],
       "unhappy_class": null,
       "action": "none | default | error | delegate | user-message | emit",
       "precondition": "<seeded state>",
@@ -83,22 +94,27 @@ The **channel inventory** lists every DB table, queue, outbox, mail sink, webhoo
 Field rules:
 - `unhappy_class` is the class number 1–14 from `unhappy.md` §10, or `null`.
 - `expect.N` is empty only for `kind: happy` obligations whose clause names no forbidden effect.
+- Every example maps to ≥1 obligation, and every entry point to ≥1 obligation. An example that contradicts its clause is a `Q`, never silently dropped.
+- `layer` is `["e2e"]` unless the caller assigned layers (`--layers`); an obligation may carry several.
 
-The designer adds `"tests": [{"id": "T1", "file": "<path>", "title": "<title>", "obligations": ["O1"]}]` at top level.
+Every author of tests adds entries to the top-level `tests` array, continuing the `T<n>` numbering:
+`"tests": [{"id": "T1", "file": "<path>", "title": "<title>", "obligations": ["O1"], "layer": "e2e", "author": "<role>"}]`.
 
 The judge adds these fields to each obligation in its own copy (for `tests`, use the designer's `T<n>` instead when its file exists):
 `"tests": ["<file>::<test name>"]`, `"grade": "O0|O1|O2|O3"`, `"coverage": "hit|miss|not measured: <reason>"`,
 `"mutants": {"killed_oracle": ["M3"], "killed_incidental": [], "survived": ["M4"]}`,
 `"spec_mutants": {"distinguished": ["SM2"], "missed": []}`,
-`"gap": null | "GAP-MISSING" | "GAP-ORACLE" | "GAP-UNREACHED" | "GAP-PSEUDO" | "GAP-QUESTION" | "GAP-FLAKY"`,
+`"gap": null | "GAP-MISSING" | "GAP-ORACLE" | "GAP-UNREACHED" | "GAP-PSEUDO" | "GAP-QUESTION" | "GAP-FLAKY" | "GAP-FAILREASON" | "GAP-TAMPERED" | "GAP-EVIDENCE"`,
 `"needed": "<exact assertion on which channel that would close the gap>"`,
 `"origin": "blind | designer"`.
+
+The judge's freeze and evidence records are defined in `../../e2e-judge/references/evidence.md`.
 
 ## `<slug>.matrix.md`
 One table rendered from `obligations.json`, one row per obligation:
 
-| Obligation | Clause | Kind / technique | Action | Test | U | P | S | N | Determinism (seed · clock · fault) | Risk | Status |
-|---|---|---|---|---|---|---|---|---|---|---|---|
+| Obligation | Clause | Example · entry point · layer | Kind / technique | Action | Test | U | P | S | N | Determinism (seed · clock · fault) | Risk | Status |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 After the table:
 - **per-technique coverage**: covered items / identified items, as a %;

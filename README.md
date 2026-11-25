@@ -37,7 +37,7 @@ Skills and agent prompts:
 - [skills/arbiter-review/SKILL.md](skills/arbiter-review/SKILL.md): the core launcher
 - [skills/arbiter-review/references/](skills/arbiter-review/references/): the shared material, listed in the table below
 - Language skills, each with `references/` (canon, tools, idioms, design, severity, security, cookbook): [python-review](skills/python-review/), [go-review](skills/go-review/), [rust-review](skills/rust-review/), [ts-review](skills/ts-review/)
-- [skills/e2e-design/](skills/e2e-design/) and [skills/e2e-judge/](skills/e2e-judge/): design a ground-truth e2e suite from requirements, and judge an existing one; [agents/](agents/) runs each as a subagent (`e2e-designer`, `e2e-judge`)
+- [skills/e2e-design/](skills/e2e-design/) and [skills/e2e-judge/](skills/e2e-judge/): design a ground-truth e2e suite from requirements and their approved examples, judge it before the change exists (`--stage design`, which freezes the suite), then prove the change with one evidence record per obligation (`--stage evidence`, [evidence ladder](skills/e2e-judge/references/evidence.md)); [agents/](agents/) runs each as a subagent (`e2e-designer`, `e2e-judge`)
 
 | File | Contents |
 |---|---|

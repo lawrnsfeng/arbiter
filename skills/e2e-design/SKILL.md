@@ -1,7 +1,7 @@
 ---
 name: e2e-design
-description: Design and write a ground-truth e2e test suite from functional requirements (issue, spec, PRD or EARS list). Decomposes requirements into EARS clauses and obligations, applies ISO 29119-4/ISTQB techniques (partitions, boundaries, decision tables, state transitions, flows, pairwise, properties), walks a 14-class unhappy-path taxonomy, and gives every test a four-part oracle (user-visible, persisted, side-effect, negative) that names the exact required action - default return, error, delegation, user message or emission to a sink. Outputs obligations.json, a traceability matrix and runnable tests. Use when asked to design, plan or write e2e/acceptance tests for a requirement; judge an existing suite with e2e-judge instead.
-argument-hint: "<requirements path | issue URL | #N> [--design-only] [--slug NAME]"
+description: Design and write a ground-truth e2e test suite from functional requirements (issue, spec, PRD or EARS list) and their approved examples and entry points. Decomposes requirements into EARS clauses and obligations, applies ISO 29119-4/ISTQB techniques (partitions, boundaries, decision tables, state transitions, flows, pairwise, properties), walks a 14-class unhappy-path taxonomy, and gives every test a four-part oracle (user-visible, persisted, side-effect, negative) that names the exact required action - default return, error, delegation, user message or emission to a sink. Can assign obligations to the repo's own test layers so other authors write the non-e2e tests. Before the change exists, its new tests must fail for the right reason. Outputs obligations.json, a traceability matrix and runnable tests. Use when asked to design, plan or write e2e/acceptance tests for a requirement; judge a suite with e2e-judge instead.
+argument-hint: "<requirements path | issue URL | #N> [--design-only] [--slug NAME] [--layers \"<repo layer tags>\"] [--out-dir DIR]"
 ---
 
 # e2e-design
@@ -21,6 +21,8 @@ References, read in this order:
    - a file path: read it;
    - `#N` or an issue URL: `gh issue view <N> --json title,body,comments`;
    - otherwise the text given.
+
+   Its `## Examples` (`E<n>`) and `## Entry points` (`EN<n>`) sections, when present, are requirements too. Copy them into `examples` and `entry_points` with their status.
 2. Set the slug:
    - `--slug` if given;
    - else the requirement title in kebab-case, at most 5 words.
@@ -30,9 +32,14 @@ References, read in this order:
    - the channel inventory (`obligations.md`).
 
    Do not read the implementation of the feature under test to decide expected values.
+4. If `<slug>.obligations.json` already exists in the output directory (an earlier `--design-only` run), reuse it: do not redesign; write the tests it assigns to the `e2e` layer.
 
 ## Harness choice
 Take the first rule that applies:
+0. `--layers` names the repo's own test layers. Assign each obligation in `layer` (`obligations.md`):
+   - `e2e` when it is user-visible across a process boundary, or its sink is reachable only through the running system;
+   - else the given layer that reaches it most directly through a public interface: pure calculation, parser or property → the unit-like layer; a client against its API contract → the contract-like layer.
+   - An obligation may carry both. This designer writes only the `e2e` tests, with rules 1–3 choosing their harness. The authors of the other layers add their tests to the `tests` array.
 1. An e2e harness exists (Playwright config, `tests/e2e`, `e2e/`, an integration tier with containers): use it. Follow its fixtures, naming and run command.
 2. The feature has a browser UI: Playwright Test in `e2e/`, with its own `package.json`, plus `playwright.config.ts`:
    - `fullyParallel: true`
@@ -44,7 +51,7 @@ Take the first rule that applies:
 Owned dependencies (DB, queue, cache) run real, via testcontainers or the repo's compose file. Only third parties are faked, at the network edge: WireMock, MSW or Playwright `route`.
 
 ## Procedure
-1. **Clauses.** Split every requirement sentence into atomic EARS clauses `C<n>` (`obligations.md`), keeping the verbatim quote. Add the complement clause for every conditional clause.
+1. **Clauses.** Split every requirement sentence into atomic EARS clauses `C<n>` (`obligations.md`), keeping the verbatim quote. Add the complement clause for every conditional clause. Attach each example to its clause; an example that contradicts its clause is a `Q`.
 2. **Questions.** Log every ambiguity as `Q<n>`: inclusive or exclusive bounds, exact error text or code, whether a specified body, message or record is exact or a minimum (extra fields allowed), an unspecified unhappy action, an unnamed sink.
    - Interactive session: ask them all in one batch, then record the answers.
    - Running as an agent, or unanswered: leave `answer: null` and mark the dependent obligations `blocked-on Q<n>`.
@@ -60,7 +67,7 @@ Owned dependencies (DB, queue, cache) run real, via testcontainers or the repo's
    - one stateful property test per stateful feature;
    - ≥2 metamorphic relations where exact output is impractical.
 
-   Each item becomes an obligation.
+   Each item becomes an obligation. Each example becomes ≥1 obligation with its `example` id, and each entry point ≥1 obligation, with its `entry_point` id, that drives the behaviour from there.
 5. **Unhappy taxonomy.** For every clause, walk all 14 classes in `unhappy.md` §10. Each class becomes obligations, or `na: <reason>` in the matrix. Leave none blank. Apply the fault checklist from `techniques.md` §2.9 the same way.
 6. **Oracles.** Fill `expect.U/P/S/N` for every obligation, following these rules:
    - **Primary action.** Unhappy obligations name exactly one action and assert it on its primary channel (`obligations.md` Actions).
@@ -72,7 +79,8 @@ Owned dependencies (DB, queue, cache) run real, via testcontainers or the repo's
    - **Sinks.** Assert on the sink with a bounded poll. Negative async checks wait for a positive completion signal first.
    - **Negative oracle.** `N` covers every channel in the inventory.
    - **Fault proof.** Every injected fault records `trigger_proof`: a journal hit, a toxic counter, a failpoint hit.
-   - **Open questions.** No assertion, parametrized case or property/model rule may pin behaviour that depends on an open `Q`. Move that input into the blocked obligation's skipped test.
+   - **Open questions.** No assertion, parametrized case or property/model rule may pin behaviour that depends on an open `Q`. Move that input into the blocked obligation's skipped test. Block only what the `Q` decides: an assertion that holds under every possible answer (a `must-not` both answers share, "not a success status") stays in a running test.
+   - **No loops around assertions** outside `property` and `metamorphic` tests: compare whole collections (`assert lines == [...]`) instead of asserting inside a `for`.
 7. **Assemble tests.**
    - Each test has one When action, or one command sequence.
    - Each test has at most one invalid or unhappy obligation.
@@ -86,16 +94,18 @@ Owned dependencies (DB, queue, cache) run real, via testcontainers or the repo's
 
    One global after-each fails on uncaught page errors and unexpected 5xx responses.
 9. **Reachability.** Every unhappy branch needs proof that the run reached it. Use the fault's `trigger_proof`. If none is observable, the test asserts a log line, span or metric that only that branch emits. Never add code to the system under test for this.
-10. **Write the tests** (skip with `--design-only`):
+10. **Write the tests** (skip with `--design-only`; with `--layers`, only the `e2e` ones):
     - Obligations marked `blocked-on Q<n>` are written as skipped tests with reason `blocked-on Q<n>`: Playwright `test.fixme`, pytest `pytest.mark.skip(reason=...)`, Go `t.Skip`.
     - Never weaken a matcher, change an expected value or delete a test to get green. When a test fails, the code or the requirement is wrong: report it.
-11. **Run** the suite 3× with the repo's command.
-    - A test that fails with the system behaving per spec is fixed in the test's setup, never in its expected value.
-    - A test that fails because the system violates the spec is a finding. Keep it failing, list it in the report, and do not fix the product code.
-    - Any flake is fixed at its root cause. Retries do not count as a fix.
+11. **Run** with the repo's command.
+    - **Before the change exists** (the requirement adds or changes behaviour that is not implemented yet): run once. Each test of new behaviour must fail on an assertion about its obligation's primary channel; a test of `must-not` obligations only may pass, because the old code may already satisfy the absence. Each test of behaviour the requirements call unchanged must pass. A collection, import, fixture or harness error is the wrong reason: fix the test's setup, never its expected value.
+    - **After the change, or for behaviour that already exists:** run 3×.
+      - A test that fails with the system behaving per spec is fixed in the test's setup, never in its expected value.
+      - A test that fails because the system violates the spec is a finding. Keep it failing, list it in the report, and do not fix the product code.
+      - Any flake is fixed at its root cause. Retries do not count as a fix.
 
 ## Outputs
-Place these beside the tests, in the harness's e2e directory, or `tests/e2e/` when the harness has none:
+Place these in `--out-dir` when given, else beside the tests, in the harness's e2e directory, or `tests/e2e/` when the harness has none:
 - `<slug>.obligations.json`, in the `obligations.md` schema, with the top-level `tests` array;
 - `<slug>.matrix.md`;
 - the test files.
@@ -110,13 +120,14 @@ Technique coverage: EP x% · BVA x% · DT x% · ST x% · flows x% · taxonomy x%
 ### Spec violations found (tests left failing)
 - O7 <title>: expected <...>, got <...>
 ### Run
-<command> · 3 runs · pass p / fail q / skipped r · flaky: none | <list>
+<command> · before the change: new fail by assertion n/N, unchanged pass m/M | after: 3 runs · pass p / fail q / skipped r · flaky: none | <list>
 Files: <paths>
 ```
 
 ## Rules
 - Every clause maps to ≥1 obligation, and every obligation maps to ≥1 test or is `blocked`/`na` with a reason. Orphans fail.
+- Every example and every entry point maps to ≥1 obligation.
 - Every boundary is tested at min−1, min, max and max+1, with inclusivity cited from the spec or raised as a `Q`.
 - No first-party endpoint is mocked. Owned dependencies run real.
 - Every error class has ≥1 test against the real backend.
-- The designer never judges its own suite. Hand it to `e2e-judge` (agent `e2e-judge`) for the verdict.
+- The designer never judges its own suite. Hand it to `e2e-judge` (agent `e2e-judge`): `--stage design` before the change, `--stage evidence --freeze <freeze.json>` after it.
