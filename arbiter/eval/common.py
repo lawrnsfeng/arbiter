@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import HOME, harness
+from . import clef
 
 RESULTS = HOME / "eval" / "results"
 PR_URL = re.compile(r"https://github.com/([^/]+)/([^/]+)/pull/(\d+)")
@@ -25,6 +26,7 @@ RUN_FLAGS = (
     ("decompose", "ARBITER_DECOMPOSE"),
     ("review_from", "ARBITER_REVIEW_FROM"),
     ("decide", "ARBITER_DECIDE"),
+    ("judge", "ARBITER_JUDGE"),
 )
 
 
@@ -62,8 +64,8 @@ def apply_models(a: argparse.Namespace) -> harness.Settings:
     return s
 
 
-def models(s: harness.Settings) -> dict[str, str]:
-    """The settings an eval summary records: the models and the unit decomposition its runs used."""
+def models(s: harness.Settings) -> dict[str, Any]:
+    """The settings an eval summary records: the models, the unit decomposition and the judge its runs used."""
     return {
         "harness": s.harness,
         "model": s.model,
@@ -71,6 +73,8 @@ def models(s: harness.Settings) -> dict[str, str]:
         "decompose": os.environ.get("ARBITER_DECOMPOSE", "ocr"),
         "review_from": os.environ.get("ARBITER_REVIEW_FROM", ""),
         "decide": os.environ.get("ARBITER_DECIDE", ""),
+        "judge": os.environ.get("ARBITER_JUDGE", "auto"),
+        **({"judge_clef": clef.stats()} if clef.STATS else {}),
     }
 
 

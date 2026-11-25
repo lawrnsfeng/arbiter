@@ -11,6 +11,7 @@ from typing import Any
 
 from .. import HOME, agents, harness
 from ..model import Axis, Group
+from . import clef
 from .common import (
     NON_WORD,
     PR_URL,
@@ -59,7 +60,10 @@ def fetch() -> None:
 
 
 def _judge(finding: dict[str, Any], comment: str) -> bool | None:
-    """True or False from the judge; None when the judge failed, so the pair is not scored."""
+    """True or False from the judge; None when the judge failed, so the pair is not scored. Clef answers first
+    while the free Workers AI allowance lasts and it is confident; otherwise the LLM judge decides."""
+    if (same := clef.same_concern(f"{finding['file']}:{finding['line']} {finding['claim']}", comment)) is not None:
+        return same
     prompt = (
         "Do these describe the same underlying issue in a code change? Answer with only "
         '{"match": true} or {"match": false}.\n\n'

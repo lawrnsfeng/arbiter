@@ -495,6 +495,34 @@ precision, goes behind a switch):
 - The union of two runs merged by location reached F2 0.240 against 0.196–0.198 for a single run: +1 reference
   (langflow 6044). That is the same direction as the T-03 re-judge (ledger T-03), on 5 more items.
 
+### 3.10 Clef as the matching judge: calibration (2026-11-25)
+
+Every main finding of the three wave 2a arms that has a reference in its file, deduplicated: 45 findings and 166
+finding/reference pairs. Sonnet (the `aacr` judge prompt) named 13 of the pairs as matches. Clef and Clef-flash
+then answered each pair alone ("same concern" or "different"), with their confidence.
+
+| Model | Confidence cut | Pairs answered | Agree with Sonnet | Findings with no Sonnet call |
+|---|---|---|---|---|
+| Clef | none | 166 (100%) | 163 (98.2%) | — |
+| Clef | 0.7 | 153 (92%) | 153 (100%) | 35/45 (78%) |
+| Clef | **0.8 (default)** | 148 (89%) | 148 (100%) | 33/45 (73%) |
+| Clef | 0.9 | 130 (78%) | 130 (100%) | 23/45 (51%) |
+| Clef-flash | none | 166 (100%) | 162 (97.6%) | — |
+| Clef-flash | 0.8 | 34 (20%) | 34 (100%) | — |
+| Clef-flash | 0.9 | 0 | — | 0 |
+
+Clef's 3 disagreements were matches Sonnet saw and Clef missed, all at confidence below 0.5. A finding goes to
+Clef alone only when every one of its pairs clears the cut, so one doubtful pair sends the whole finding to Sonnet.
+The calibration used about 1,300 neurons for Clef's 166 pairs, about 8 per pair; the 9,000-neuron daily share covers
+roughly 1,000 pairs. With only 13 matches in the sample, the agreement on matches rests on few cases.
+
+End to end, `arbiter eval aacr rescore` of the three wave 2a arms with `--judge auto` gave the same table as the
+Sonnet-only rescore in §3.9 (every arm, union and decide dismissal count identical). Clef answered 152 pairs and
+sent 12 low-confidence pairs, with their findings, to Sonnet.
+
+A first run returned no Clef answers: one HTTP 429 was read as the daily quota and stopped Clef for the day. Only
+Workers AI's daily-allocation error stops it now; a plain rate limit falls back for that one call.
+
 ## 4. Verdict-level view (r2)
 
 - Of the 15 functional bug cases, 10 ended with a BLOCK verdict.

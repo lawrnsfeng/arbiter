@@ -41,6 +41,11 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
   commits) and T-01 (`ARBITER_SAST_CANDIDATES=1`, uncovered analyzer hits on added lines become verifier
   candidates). **Approach:** the next-ranked items of the accuracy research. Together they scored F2 0.196 vs 0.198
   for master on 5 AACR PRs, and none showed a visible effect (benchmarks §3.9), so the three code paths are off.
+- Clef (Cloudflare's decision model) as the first pass of the `aacr` and `martian` matching judge, only inside the
+  free daily Workers AI allowance and only at confidence 0.8 or more; otherwise the Sonnet judge decides.
+  **Approach:** the user asked for a fast decision model that costs nothing; matching is a reading judgment, where
+  decision models stay close to LLMs. On 166 wave-2a pairs it agreed with Sonnet on every pair it answered and left
+  73% of findings without a Sonnet call (benchmarks §3.10).
 - `arbiter eval aacr rescore`: judge several finished runs in one pass with one judge, plus their union.
   **Approach:** separate runs were judged on different days, so judge drift hid small differences.
 - Leader study `research/research-leader-approaches.md` (Augment, Qodo 2.0 and PR-Agent, cubic, alibaba

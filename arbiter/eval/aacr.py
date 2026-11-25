@@ -19,6 +19,7 @@ from typing import Any
 from .. import HOME, agents, harness
 from ..findings import NEAR
 from ..model import Axis, Group
+from . import clef
 from .common import (
     NON_WORD,
     PR_URL,
@@ -128,12 +129,26 @@ def _prepare(item: dict[str, Any]) -> tuple[Path, str] | None:
     return repo, base
 
 
+def _ref_text(c: dict[str, Any]) -> str:
+    return f"[{c['category']}] lines {c['from_line']}-{c['to_line']}: {c['note']}"
+
+
 def _judge(f: dict[str, Any], refs: list[tuple[int, dict[str, Any]]]) -> list[int] | None:
     """Indices (into the PR's comments) of the references that express the finding's concern; None when the
-    judge failed twice, so the finding is "unjudged", not a false positive."""
-    listing = "\n".join(
-        f"{k}. [{c['category']}] lines {c['from_line']}-{c['to_line']}: {c['note']}" for k, (_, c) in enumerate(refs, 1)
-    )
+    judge failed twice, so the finding is "unjudged", not a false positive. Clef answers each pair first while the
+    free allowance lasts; any pair it cannot answer confidently sends the whole finding to the LLM judge."""
+    finding = f"{f['file']}:{f['line']} {f['claim']} {f.get('fix', '')}".strip()
+    matches = []
+    for i, c in refs:
+        if (same := clef.same_concern(finding, _ref_text(c))) is None:
+            return _llm_judge(f, refs)
+        if same:
+            matches.append(i)
+    return matches
+
+
+def _llm_judge(f: dict[str, Any], refs: list[tuple[int, dict[str, Any]]]) -> list[int] | None:
+    listing = "\n".join(f"{k}. {_ref_text(c)}" for k, (_, c) in enumerate(refs, 1))
     prompt = (
         "Which reference comments express the same concern as the generated review comment? Answer with only "
         '{"matches": [numbers]}, an empty list if none.\n\n'
