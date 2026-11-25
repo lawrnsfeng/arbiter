@@ -45,7 +45,7 @@ Owned dependencies (DB, queue, cache) run real, via testcontainers or the repo's
 
 ## Procedure
 1. **Clauses.** Split every requirement sentence into atomic EARS clauses `C<n>` (`obligations.md`), keeping the verbatim quote. Add the complement clause for every conditional clause.
-2. **Questions.** Log every ambiguity as `Q<n>`: inclusive or exclusive bounds, exact error text or code, an unspecified unhappy action, an unnamed sink.
+2. **Questions.** Log every ambiguity as `Q<n>`: inclusive or exclusive bounds, exact error text or code, whether a specified body, message or record is exact or a minimum (extra fields allowed), an unspecified unhappy action, an unnamed sink.
    - Interactive session: ask them all in one batch, then record the answers.
    - Running as an agent, or unanswered: leave `answer: null` and mark the dependent obligations `blocked-on Q<n>`.
    - Never guess. This overrides any spec tool's "make an informed guess" default.
@@ -72,10 +72,11 @@ Owned dependencies (DB, queue, cache) run real, via testcontainers or the repo's
    - **Sinks.** Assert on the sink with a bounded poll. Negative async checks wait for a positive completion signal first.
    - **Negative oracle.** `N` covers every channel in the inventory.
    - **Fault proof.** Every injected fault records `trigger_proof`: a journal hit, a toxic counter, a failpoint hit.
+   - **Open questions.** No assertion, parametrized case or property/model rule may pin behaviour that depends on an open `Q`. Move that input into the blocked obligation's skipped test.
 7. **Assemble tests.**
    - Each test has one When action, or one command sequence.
    - Each test has at most one invalid or unhappy obligation.
-   - Titles follow `obligations.md`. Write `obligations.json` and `<slug>.matrix.md` (below) before any test code.
+   - Titles follow `obligations.md`. Write `<slug>.obligations.json` and `<slug>.matrix.md` (below) before any test code.
 8. **Determinism.** Every test:
    - seeds its own data through the API or a factory, in its own tenant or a per-run database;
    - uses `page.clock` and a server clock for time;

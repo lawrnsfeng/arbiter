@@ -86,12 +86,13 @@ Field rules:
 
 The designer adds `"tests": [{"id": "T1", "file": "<path>", "title": "<title>", "obligations": ["O1"]}]` at top level.
 
-The judge adds these fields to each obligation in its own copy:
-`"tests": ["T1"]`, `"grade": "O0|O1|O2|O3"`, `"coverage": "hit|miss|not measured: <reason>"`,
+The judge adds these fields to each obligation in its own copy (for `tests`, use the designer's `T<n>` instead when its file exists):
+`"tests": ["<file>::<test name>"]`, `"grade": "O0|O1|O2|O3"`, `"coverage": "hit|miss|not measured: <reason>"`,
 `"mutants": {"killed_oracle": ["M3"], "killed_incidental": [], "survived": ["M4"]}`,
 `"spec_mutants": {"distinguished": ["SM2"], "missed": []}`,
 `"gap": null | "GAP-MISSING" | "GAP-ORACLE" | "GAP-UNREACHED" | "GAP-PSEUDO" | "GAP-QUESTION" | "GAP-FLAKY"`,
-`"needed": "<exact assertion on which channel that would close the gap>"`.
+`"needed": "<exact assertion on which channel that would close the gap>"`,
+`"origin": "blind | designer"`.
 
 ## `<slug>.matrix.md`
 One table rendered from `obligations.json`, one row per obligation:

@@ -19,9 +19,9 @@ The thresholds are a synthesis, not a published standard. They are anchored on S
 
 How each row is applied:
 - **Measurement failures.** A row that could not be measured (no build, coverage would not flush, mutation tooling failed) reads `not measured: <reason>`. The verdict is then at best GAPS. `--static-only` makes R4–R7 and R10 `not measured: static-only`.
-- **Open questions.** `GAP-QUESTION` obligations (open `Q`) do not count against R1–R3. Any open `Q` caps the verdict at GAPS, because the requirement itself is incomplete.
+- **Open questions.** `GAP-QUESTION` obligations (open `Q`) do not count against R1–R3. R4, R6 and R8 likewise leave out the uncovered branches, survivors and spec mutants that an open `Q` explains, and their value states `(n tied to open Q)`. Any open `Q` caps the verdict at GAPS, because the requirement itself is incomplete.
 - **Unhappy-path grades (R2).** R2 counts an unhappy obligation as O3 only when all three hold:
   - the assertion discriminates against every other action type;
   - its fault test proves the fault fired;
   - the obligation has a killed mutant or a covered branch.
-- **Gap reports.** Each gap is written as: `O<n> (<clause>) needs <exact assertion> on <channel>`. Never report a percentage alone.
+- **Gap reports.** Each gap is written as `GAP-<TYPE> O<n> (<clause>): needs <exact assertion> on channel <channel>[; surviving mutant M<n> (<what it changes>)]`. Never report a percentage alone.

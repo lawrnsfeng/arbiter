@@ -11,6 +11,7 @@ Decide whether the suite is ground truth for the requirements. Agreement between
 References:
 - `../e2e-design/references/obligations.md`: the format.
 - `../e2e-design/references/unhappy.md`: §10 taxonomy, §0–§9 oracles.
+- `../e2e-design/references/techniques.md`: technique details, §2–§4.
 - `references/adequacy.md`: coverage commands per stack in §2, mutation in §4, spec mutation in §5, smells in §6.
 - `references/judging-current.md`: overrides `adequacy.md` where they conflict.
 - `references/rubric.md`: the verdict.
@@ -34,6 +35,7 @@ References:
 
   If `base...HEAD` has no non-test changes, there is no baseline: skip step 8 and set R10 to `not measured: no baseline`.
 - **Scope:** non-test source files changed in `base...HEAD`. If that set is empty, use the non-test source files that the suite's coverage hits in step 5.
+- **`--static-only`:** skip steps 2, 5, 6 and 8, and the dynamic confirmation in step 7. Set R4–R7 and R10 to `not measured: static-only`. R9 then reports step 3's findings plus the tests the suite source shows as quarantined, or as skip/`fixme` without a `blocked-on Q<n>` reason; flakiness is not measured.
 
 ## Procedure
 1. **Blind derivation.** Read the requirements only. Do not open the suite, the code, `*.obligations.json` or `*.matrix.md` yet.
@@ -41,19 +43,19 @@ References:
      - EARS clauses with complements;
      - questions;
      - the channel inventory, reading only config and infrastructure files (compose, env, routes, queue names) for this;
-     - obligations from every technique in `e2e-design/references/techniques.md` §2;
+     - obligations from every technique in `../e2e-design/references/techniques.md` §2–§4;
      - all 14 unhappy classes per clause;
      - each `must-not` clause.
    - Then a second pass over the same requirements, aimed at **recall only**: list obligations the first pass missed, and add them. A second pass never removes an obligation.
-2. **Stability.** Run the suite 3× in a worktree, `git worktree add --detach $OUT/wt HEAD`, using the repo's e2e command.
+2. **Stability.** Create the worktree with `git worktree add --detach $OUT/wt HEAD`. Then apply the working tree's suite state to it: copy in every file that `git status --porcelain --untracked-files=all --no-renames -- <suite paths>` lists as untracked, added or modified, and delete the ones it lists as deleted, so an uncommitted suite is judged as it stands. Uncommitted changes outside the suite paths are not copied: if `git status --porcelain` shows any, the evidence says "judged HEAD product code". Run the suite 3× there, using the repo's e2e command.
    - Record pass, fail, skip and duration per test.
    - Any test that changes outcome across runs is `GAP-FLAKY`.
-   - A test that is quarantined, skipped without a `blocked-on Q<n>` reason, or `fixme` covers nothing.
+   - A test that is quarantined, or skipped/`fixme` without a `blocked-on Q<n>` reason, covers nothing and counts against R9. A test skipped with a `blocked-on Q<n>` reason covers nothing but is not a defect.
    - If the suite cannot start, record the error, mark R4–R7 and R10 `not measured`, and continue statically.
-3. **Assertion audit (agent-written suites).** Run `git log -p base..HEAD` on the suite files. Every one of these in `base..HEAD` is reported as a coverage loss in the report:
+3. **Assertion audit (agent-written suites).** Run `git log -p base..HEAD` and `git diff HEAD` on the suite files. Every one of these, in `base..HEAD` or in the working tree, is reported as a coverage loss in the report (`in <commit>` or `in working tree`):
    - a weakened matcher (`toBe(x)` → `toBeTruthy()`/`toBeDefined()`, exact → `contains`);
    - a changed expected literal;
-   - an added `skip`/`fixme`/`xfail`;
+   - an added `skip`/`fixme`/`xfail` whose reason is not `blocked-on Q<n>`;
    - a deleted test.
 4. **Map and grade.**
    - **Strip first.** Copy each test with comments, titles, docstrings and `// spec:` headers removed. Grade the stripped copy.
@@ -64,9 +66,10 @@ References:
      - O2: right channel, coarse check;
      - O1: passes unless it crashes;
      - O0: nothing.
-   - **Smell cap.** Conditionals, loops, swallowed exceptions, first-party mocks or fixed sleeps cap the grade at O1 (`adequacy.md` §6).
+   - **Smell cap.** Conditionals, loops, swallowed exceptions, first-party mocks or fixed sleeps cap the grade at O1 (`adequacy.md` §6). Exception: in a `property` or `metamorphic` test, a loop over generated or parametrized inputs, or a stateful model's conditionals, is not a smell when every iteration reaches an unconditional assertion.
    - **Discrimination check.** For every unhappy obligation, take each other action type (`default`, `error`, `delegate`, `user-message`, `emit`). If an assertion would still pass with that action, the grade is at most O2.
    - Unhappy obligations below O3 are `GAP-ORACLE`.
+   - An obligation whose `status` is `blocked-on Q<n>`, with that `Q` still open, is `GAP-QUESTION`, not `GAP-MISSING`.
    - Only now open the designer's `*.obligations.json`, if any. List the obligations the designer has but the blind pass missed, and add them as `origin: designer` after checking each against the requirements text. Never use the designer's mapping as evidence.
 5. **Coverage (e2e only).** Build the system instrumented in `$OUT/wt`, using the stack's recipe in `adequacy.md` §2:
    - Go: `go build -cover -coverpkg=./...`, `GOCOVERDIR=$OUT/raw/cov`;
@@ -77,8 +80,8 @@ References:
 
    Then:
    - Run the suite once and stop the system gracefully so the counters flush.
-   - Report branch coverage for the in-scope files, with arid lines excluded (logging only, generated code).
-   - An uncovered branch tied to an obligation is `GAP-UNREACHED`.
+   - Report branch coverage for the in-scope files, with arid lines excluded (logging only, generated code). Where the stack gives no branch data (Go: block coverage; Rust stable: region coverage), report that measure and name it in R4's value.
+   - An uncovered branch tied to an obligation is `GAP-UNREACHED`, unless that obligation is `GAP-QUESTION`: then it counts as tied to an open `Q` in R4.
    - A covered branch tied to no obligation becomes a `Q`: the code does something the spec never mentions.
 6. **Mutation (in scope, covered lines only).** Write each mutant as `$OUT/raw/mutants/M<n>.patch`, then run them in this order:
    - (a) **Extreme.** One per in-scope function: return the zero or default value, or remove the body. At most 40.
@@ -88,15 +91,16 @@ References:
    Budget: drop duplicates and mutants that fail to compile. If more than 150 remain, keep every risk-H mutant, then sample the rest evenly.
 
    Mutation tool:
-   - If the stack's tool (StrykerJS command runner, mutmut, gremlins, cargo-mutants) can run the e2e command against the mutated server, it may run (a) and (b).
-   - Otherwise, and always for (c), use patch-apply: for each mutant, `git -C $OUT/wt apply M<n>.patch`, rebuild, run the tests mapped to the mutated file (else the whole suite), then `git -C $OUT/wt apply -R M<n>.patch`.
+   - If the stack's tool can run the e2e command against the mutated server, it may run (a) and (b): StrykerJS with the command runner, cosmic-ray (`test-command`), go-mutesting `--exec`, or gremlins / cargo-mutants with the e2e driver in a Go / Rust test that builds and spawns the mutated server. mutmut 3 cannot: it runs pytest in-process.
+   - Otherwise, and always for (c), use patch-apply: for each mutant, `git -C $OUT/wt apply $OUT/raw/mutants/M<n>.patch`, rebuild, run the tests mapped to the mutated file (else the whole suite), then `git -C $OUT/wt apply -R $OUT/raw/mutants/M<n>.patch`.
+   - Run every mutant under `timeout` set to 3× the slowest step-2 suite run, with a minimum of 60 s. Record that value in the report's evidence.
 
    Classify each outcome:
    - an assertion failed: **oracle kill**;
    - crash, 5xx page, timeout or locator not found: **incidental kill**;
    - all passed: **survived**.
 
-   For each survivor, either write a one-line equivalence argument or record `GAP-ORACLE` (decision, boundary or targeted mutant) or `GAP-PSEUDO` (extreme mutant), with the assertion that would kill it.
+   For each survivor, either write a one-line equivalence argument, mark it tied to open `Q<n>` when it changes only behaviour that an open `Q` leaves undecided, or record `GAP-ORACLE` (decision, boundary or targeted mutant) or `GAP-PSEUDO` (extreme mutant), with the assertion that would kill it.
 7. **Spec mutants.** For each obligation, write 2–4 `SM<n>`:
    - negate the condition;
    - shift a boundary by one;
@@ -105,9 +109,9 @@ References:
    - swap the sink;
    - drop a `must-not`.
 
-   Decide statically whether ≥1 test would fail. Confirm ≥20% of the "distinguished" decisions by implementing the matching code mutant in step 6's loop.
+   Decide statically whether ≥1 test would fail. A missed spec mutant whose change an open `Q` leaves undecided is tied to that `Q`, not missed. Confirm ≥20% of the "distinguished" decisions by implementing the matching code mutant in step 6's loop.
 8. **Fail-to-pass (when a baseline exists).**
-   - `git worktree add --detach $OUT/base <base>`, then `git -C $OUT/base checkout HEAD -- <suite files>`.
+   - Record the reviewed commit, `REV=$(git rev-parse HEAD)`. Then `git worktree add --detach $OUT/base <base>`, `git -C $OUT/base checkout $REV -- <tracked suite files>`, and apply the step-2 suite changes (copies and deletions) there as well.
    - Run the tests that map to obligations of new behaviour. Each must fail on the baseline.
    - A test that passes there is miscredited: it does not cover the new obligation.
 9. **Verdict.** Apply `references/rubric.md` row by row.
