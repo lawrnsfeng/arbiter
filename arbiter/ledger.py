@@ -1,4 +1,5 @@
-"""The decision ledger: docs/decisions.jsonl is the source; docs/decisions.md is rendered from it."""
+"""The decision ledger: docs/decisions.jsonl is the source; docs/decisions.md and the README's review-technique table
+are rendered from it."""
 
 import argparse
 import json
@@ -9,6 +10,9 @@ from . import HOME, ArbiterExit
 LEDGER = HOME / "docs" / "decisions.jsonl"
 RENDERED = HOME / "docs" / "decisions.md"
 HEADER = HOME / "docs" / "decisions.header.md"
+README = HOME / "README.md"
+TECH_BEGIN, TECH_END = "<!-- techniques:begin (arbiter ledger render) -->", "<!-- techniques:end -->"
+TECH_AREAS = ("architecture", "models", "units", "accuracy", "leader", "maintainability")  # review technique, not eval
 
 AREAS = {
     "architecture": "1. Architecture and pipeline",
@@ -107,6 +111,25 @@ def render(rows: list[dict[str, str | None]]) -> str:
     return "\n".join(out) + "\n"
 
 
+def techniques(rows: list[dict[str, str | None]]) -> str:
+    """README table: every adopted or switched review technique, so the README never lags the ledger."""
+    out = ["| ID | Technique | Status |", "|---|---|---|"]
+    for area in TECH_AREAS:
+        for r in rows:
+            if r["area"] == area and r["status"] in ("adopted", "switch"):
+                status = r["status"] + (f": {n}" if (n := r.get("status_note")) else "")
+                out.append("| " + " | ".join(_cell(c) for c in (r["id"], r["title"], status)) + " |")
+    return "\n".join(out)
+
+
+def readme_with(rows: list[dict[str, str | None]], text: str) -> str:
+    head, sep, rest = text.partition(TECH_BEGIN)
+    _, sep2, tail = rest.partition(TECH_END)
+    if not (sep and sep2):
+        raise ArbiterExit(2, f"arbiter: README.md lacks the {TECH_BEGIN} … {TECH_END} markers")
+    return f"{head}{TECH_BEGIN}\n{techniques(rows)}\n{TECH_END}{tail}"
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="arbiter ledger")
     ap.add_argument("action", choices=("list", "show", "render", "check"))
@@ -130,6 +153,7 @@ def main(argv: list[str]) -> int:
             print(json.dumps(hit, indent=2, ensure_ascii=False))
         case "render":
             RENDERED.write_text(render(rows))
+            README.write_text(readme_with(rows, README.read_text()))
         case "check":
             errors = check(rows)
             for e in errors:
@@ -137,5 +161,8 @@ def main(argv: list[str]) -> int:
             stale = not RENDERED.exists() or RENDERED.read_text() != render(rows)
             if stale:
                 print("docs/decisions.md is stale: run arbiter ledger render")
+            if (readme := README.read_text()) != readme_with(rows, readme):
+                stale = True
+                print("README.md review techniques are stale: run arbiter ledger render")
             return 1 if errors or stale else 0
     return 0
