@@ -21,6 +21,16 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
 
 ### Added
 
+- Two finder passes per unit by default (`--finder-passes 1|2`, `ARBITER_FINDER_PASSES`, default 2): each per-unit
+  finder runs twice with its own file order and the candidates merge by location; over the agent budget the second
+  pass is dropped last. **Approach:** three consistent results for merged passes (2026-11-25 re-judge, wave 2a union,
+  wave 2b); wave 2b on 10 AACR Python PRs gave F2 0.281 against 0.221 for one pass, +4 references, precision −0.022,
+  +68% model calls ([benchmarks §3.11](docs/benchmarks.md)).
+- `--decide` may not dismiss a maintainability, idiom, design or docs finding with a `measure` or `precedent`; such a
+  dismissal is ignored and counted as `refused`. **Approach:** wave 2a's decide dismissed ComfyUI 7952's only
+  maintainability reference; backed findings are evidence, not noise (MA-01).
+- README "Review techniques" table rendered from the ledger by `arbiter ledger render`; `arbiter ledger check` fails
+  when it is stale. **Approach:** the user asked that the README always list every applied technique.
 - Decision ledger as `docs/decisions.jsonl` with `arbiter ledger list|show|render|check`; `docs/decisions.md` is
   generated. **Approach:** the user asked for a structured, queryable ledger; the markdown tables could only be
   grepped and drifted in column layout between sections.

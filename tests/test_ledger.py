@@ -5,6 +5,7 @@ def test_real_ledger_is_valid_and_rendered():
     rows = ledger.load()
     assert ledger.check(rows) == []
     assert ledger.render(rows) == ledger.RENDERED.read_text()
+    assert ledger.readme_with(rows, readme := ledger.README.read_text()) == readme
 
 
 def _row(**kw):

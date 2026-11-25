@@ -9,6 +9,7 @@ REVIEW_FROM = "review with the arbiter checkout at DIR (its .venv), for A/B runs
 PR_HELP = "only PRs whose URL ends with this text (owner/repo/pull/N or repo/pull/N); repeatable"
 DECIDE = "one capped Opus decision call per review (exports ARBITER_DECIDE)"
 JUDGE = "auto (default): Clef first while the free Workers AI allowance lasts, else the LLM judge; sonnet: LLM only"
+PASSES = "per-unit finder passes merged by location (exports ARBITER_FINDER_PASSES)"
 
 
 def _non_negative(text: str) -> int:
@@ -45,6 +46,7 @@ def main(argv: list[str]) -> int:
     m.add_argument("--pr", action="append", help=PR_HELP)
     m.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
     m.add_argument("--decide", action="store_const", const="1", help=DECIDE)
+    m.add_argument("--finder-passes", choices=("1", "2"), help=PASSES)
     m.add_argument("--judge", choices=("auto", "sonnet"), help=JUDGE)
     w = sub.add_parser("swr", help="SWR-Bench: fetch the pinned upstream, draw the sample, run and judge")
     w.add_argument("action", choices=("fetch", "sample", "run"))
@@ -75,6 +77,7 @@ def main(argv: list[str]) -> int:
     r.add_argument("--decompose", choices=[d.value for d in Decompose], help="review units (exports ARBITER_DECOMPOSE)")
     r.add_argument("--review-from", metavar="DIR", help=REVIEW_FROM)
     r.add_argument("--decide", action="store_const", const="1", help=DECIDE)
+    r.add_argument("--finder-passes", choices=("1", "2"), help=PASSES)
     r.add_argument("--judge", choices=("auto", "sonnet"), help=JUDGE)
     a = ap.parse_args(argv)
     return {"seeded": seeded, "martian": martian, "swr": swr, "aacr": aacr}[a.suite].main(a)

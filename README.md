@@ -69,7 +69,7 @@ Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-re
 ```bash
 arbiter run [--repo .] [--base REF] [--effort quick|standard|deep] \
   [--lang python,go,rust,typescript] [--harness omp|claude] [--model M] [--verify-model M] [--out RUN] [--jobs N] [--max-agents N] \
-  [--decompose ocr|hier|hier-split] [--decide]
+  [--decompose ocr|hier|hier-split] [--decide] [--finder-passes 1|2]
 ```
 
 The report is `RUN/report.md` (human) and `RUN/report.json` (machine). `report.md` opens with the verdict, the
@@ -86,7 +86,14 @@ dismisses noise among non-blocking findings, flags must-fix findings it doubts a
 (unverified, never blocking). It is strict: once per run (a claim file in `RUN`), no retry, no tools, and omp's
 `--max-cost` cap `ARBITER_DECIDE_MAX_USD` (default `1.00`, at most 5). Only an Opus model is accepted
 (`ARBITER_DECIDE_MODEL`, default `anthropic/claude-opus-5-5`), and only through omp. Every omp call arbiter makes
-loads `arbiter/omp-overlay.yml`, which turns omp's advisor off.
+loads `arbiter/omp-overlay.yml`, which turns omp's advisor off. The decide call may not dismiss a maintainability,
+idiom, design or docs finding that cites a measured fact (`measure`) or a repo precedent (`precedent`): arbiter keeps
+such a finding in place and counts the dismissal as `refused` in the coverage.
+
+Every per-unit finder runs twice by default (in deep mode, every finder not already run three times), each pass
+with its own file order, and the candidates are merged by location before the verifier ([benchmarks
+§3.11](docs/benchmarks.md)). `--finder-passes 1` (or `ARBITER_FINDER_PASSES=1`) runs one pass. Over the agent
+budget, the second pass is the last thing dropped, after deep mode's k.
 
 Three recall techniques measured in wave 2a are off by default ([benchmarks §3.9](docs/benchmarks.md)):
 `ARBITER_BASE_READS=1` gives finders and the verifier the base checkout path, `ARBITER_COCHANGE=1` lists files
@@ -135,10 +142,55 @@ The decision ledger is `docs/decisions.jsonl`; `docs/decisions.md` is rendered f
 | Finders per unit | A1a A1b A2 A3 A6a | A1a A1b A1c A2 A3 A6a A6b A6c A6d | same as standard |
 | Once per run | A0 | A0 SPEC | A0 SPEC |
 | Conditional | none | triggered A4 A5 A5b A7 A8 A9 | same as standard |
-| k passes | 1 | 1 | 3 for A1a A1b A2 A3 A4 |
+| k passes | 2 | 2 | 3 for A1a A1b A2 A3 A4, 2 for the rest |
 | Verifier | 1 vote | 3 lenses | 3 lenses |
 | Proof rungs | E1 E3 | E1–E6 E8 | E1–E9 |
 | Code judo | off | should-fix only | blockers with an E1 measured fact |
+
+## Review techniques
+
+Every technique the review applies today, on by default or behind a switch. The table is rendered from the decision
+ledger by `arbiter ledger render`, and `arbiter ledger check` (part of `make check`) fails when it is stale. Proposed,
+deferred and dropped ideas are in [docs/decisions.md](docs/decisions.md).
+
+<!-- techniques:begin (arbiter ledger render) -->
+| ID | Technique | Status |
+|---|---|---|
+| A-02 | Stdlib-only package | adopted |
+| A-04 | Proof agent restricted to `arbiter sandbox exec` | adopted: open concern |
+| A-05 | Hard proof gate: a functional finding blocks only with a confirmed proof at an accepted rung | adopted |
+| A-07 | 3-lens disprove panel with a never-auto-dismiss CWE list | adopted |
+| A-09 | Merge findings at one location under the highest-priority axis | adopted: open concern |
+| A-10 | Fail closed when more than 25% of agent calls fail | adopted |
+| A-11 | Proofs run one at a time | adopted |
+| A-12 | bubblewrap sandbox: network off, `$HOME` hidden, env cleared | adopted: open concern |
+| A-16 | omp advisor forced off on every arbiter call; one strictly capped Opus decision call per review (`--decide`) | adopted: opt-in, wave 2a |
+| M-02 | Haiku finders, Sonnet verifier, proof agent and judge | adopted: confirmed 2026-11-24 |
+| M-03 | Resolve models from omp roles (`arbiter-finder` or `smol`; `arbiter-verify`) | adopted |
+| M-04 | Cost ceiling `ARBITER_BLOCKED_MODELS` (default `opus,fable`) applied to the resolved model | adopted |
+| M-05 | Preflight each model: read a file, answer JSON | adopted |
+| U-01 | OCR-style units: at most 150 changed lines, hunk chunks, merge up to 10 files | adopted: default |
+| U-02 | Hierarchical split: package → module → definition → method → statement (Python, `ast`) | switch: `--decompose hier` |
+| U-05 | Changed-symbol manifest and signature map per unit, built with zero model calls | switch |
+| U-06 | Accept findings in any changed hunk of the PR; cluster by changed symbol | switch |
+| U-07 | One contract pass per PR for signature changes | switch |
+| T-01 | SAST hits as verifier candidates, with a CWE-specific lens | switch: `ARBITER_SAST_CANDIDATES=1`, wave 2a |
+| T-03 | Repeated cheap finder passes merged by location (k=2 per unit at quick and standard effort) | adopted: default, wave 2b; `ARBITER_FINDER_PASSES=1` for one pass |
+| T-04 | Co-change neighbour map from `git log` | switch: `ARBITER_COCHANGE=1`, wave 2a |
+| T-12 | Place a verified (panel TRUE_POSITIVE) but unproven finding in the main section as should-fix when the proof could not run for environment reasons (dependency fetch failed), instead of in Suspected; blocking still needs a proof | adopted: wave 1, 2026-11-24 |
+| T-13 | Repair a finding with empty `evidence_lines` from its `file:line` instead of rejecting it | adopted: wave 1, 2026-11-24 |
+| T-18 | Anchor a finding by its quoted code snippet (OCR `existing_code`: match the diff hunks, then the whole file, then one LLM relocation) instead of rejecting findings with a bad line or empty evidence | adopted: wave 1, 2026-11-24, merged with T-13; hunk match only |
+| T-19 | Let finders read the base side (OCR #1915: `side: old` on read and search tools); today they see the base only as `-` lines in the diff | switch: `ARBITER_BASE_READS=1`, wave 2a |
+| T-27 | Reasoning before verdict: finders write `trigger` and `evidence_lines` before `claim` and `severity` | adopted: wave 2a |
+| T-31 | Check linked tickets and specs for requirement gaps | adopted: existing |
+| T-32 | Treat PR title, description, commits and tickets as untrusted | adopted: existing |
+| T-34 | Runtime verifier that also lists what it could not observe | adopted: existing |
+| T-35 | "Only post what could change a merge decision" | adopted: in part |
+| MA-01 | Maintainability is a first-class axis: it reduces future pain (user decision, 2026-11-24) | adopted |
+| MA-03 | Deterministic maintainability facts (Python `ast`, base vs head): complexity, nesting, length, params, file crossing 1,000 lines | adopted: wave 1 |
+| MA-04 | A6d readability agent: names, dead code, complexity, nesting, magic numbers, flag arguments | adopted: wave 1, open concern |
+| MA-05 | Blocking policy: a maintainability finding may block only with a block-eligible measured fact or a repo rule heading marked `[block]`; otherwise should-fix (user decision, 2026-11-24) | adopted: wave 1 |
+<!-- techniques:end -->
 
 ## Models
 
