@@ -147,6 +147,14 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
   - **Approach:** callers outside the diff are a main miss `[DH-D1]`; one call per PR, not per unit, keeps the cost
     at +1 call `[DH-§4.4]`.
 - `CHANGELOG.md`.
+- `e2e-design` and `e2e-judge` skills, with `e2e-designer` and `e2e-judge` agents that `make install` /
+  `make install-claude` link into `~/.omp/agent/agents` and `~/.claude/agents`.
+  - **Approach:** the 2025-26 practice in `research/research-e2e-*.md` (EARS clauses, blind re-derivation,
+    stripped-assertion grading, targeted mutants); on a 5-clause fixture the judge rated a 3-test suite WEAK with
+    every planted gap named, and rated the designer's suite GAPS with only open requirement questions left.
+- Claude Code plugin manifest (`.claude-plugin/plugin.json`, `marketplace.json`): `claude plugin install
+  arbiter@arbiter` installs every skill and agent.
+  - **Approach:** symlinks need a checkout; a plugin installs from GitHub. `claude plugin validate` passes.
 
 ## [0.2.0] - 2026-11-23
 
