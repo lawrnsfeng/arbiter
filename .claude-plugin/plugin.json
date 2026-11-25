@@ -1,0 +1,6 @@
+{
+  "name": "arbiter",
+  "description": "Evidence-gated code review skills (arbiter-review, python-review, go-review, rust-review, ts-review; they need the arbiter CLI from `make install`) and the e2e-design / e2e-judge skills and agents for ground-truth e2e suites",
+  "author": {"name": "Lawrence Feng"},
+  "repository": "https://github.com/lawrnsfeng/arbiter"
+}

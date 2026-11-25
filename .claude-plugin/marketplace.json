@@ -1,0 +1,8 @@
+{
+  "name": "arbiter",
+  "description": "arbiter: evidence-gated code review and e2e suite design/judging for Claude Code",
+  "owner": {"name": "Lawrence Feng"},
+  "plugins": [
+    {"name": "arbiter", "source": "./", "description": "Evidence-gated code review and e2e-design / e2e-judge skills and agents"}
+  ]
+}

@@ -31,11 +31,13 @@ Later research:
 - [research/research-accuracy-techniques.md](research/research-accuracy-techniques.md) (2026-11-23): other accuracy techniques (voting, cascades, SAST triage, co-change context…), ranked for cheap models
 - [research/research-learned-rules.md](research/research-learned-rules.md) (2026-11-23): learning review rules from past PRs/MRs, suppression, rule mining, risks, phased plan
 - [research/research-code-quality-platforms.md](research/research-code-quality-platforms.md) (2026-11-23): Codacy, SonarQube, Qlty, DeepSource, Semgrep Pro, Snyk, CodeQL: what to leverage
+- [research/research-e2e-best-practices.md](research/research-e2e-best-practices.md) (2026-11-25): e2e suite design and adequacy judging, synthesised from `research-e2e-{design,adequacy,unhappy,current,prior-art}.md`
 
 Skills and agent prompts:
 - [skills/arbiter-review/SKILL.md](skills/arbiter-review/SKILL.md): the core launcher
 - [skills/arbiter-review/references/](skills/arbiter-review/references/): the shared material, listed in the table below
 - Language skills, each with `references/` (canon, tools, idioms, design, severity, security, cookbook): [python-review](skills/python-review/), [go-review](skills/go-review/), [rust-review](skills/rust-review/), [ts-review](skills/ts-review/)
+- [skills/e2e-design/](skills/e2e-design/) and [skills/e2e-judge/](skills/e2e-judge/): design a ground-truth e2e suite from requirements, and judge an existing one; [agents/](agents/) runs each as a subagent (`e2e-designer`, `e2e-judge`)
 
 | File | Contents |
 |---|---|
@@ -56,13 +58,15 @@ Evaluation data:
 ## Install
 
 ```bash
-make install          # `arbiter` on PATH (uv tool, editable) + skills linked into ~/.omp/agent/skills
-make install-claude   # optional: also link the skills into ~/.claude/skills (Claude Code)
+make install          # `arbiter` on PATH (uv tool, editable) + skills linked into ~/.omp/agent/skills, agents into ~/.omp/agent/agents
+make install-claude   # optional: also link the skills into ~/.claude/skills and the agents into ~/.claude/agents (Claude Code)
 make check            # ruff, mypy and the unit tests (no network, no LLM)
 make uninstall        # removes the tool and only the symlinks that point into this checkout
 ```
 
-Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-review`, `ts-review`.
+Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-review`, `ts-review`, `e2e-design`, `e2e-judge`. Agents: `e2e-designer`, `e2e-judge`.
+
+Claude Code can load the same skills and agents as a plugin instead of `make install-claude` (use one or the other, or each appears twice): `claude plugin marketplace add lawrnsfeng/arbiter`, then `claude plugin install arbiter@arbiter`. Plugin components are namespaced (`arbiter:e2e-judge`). The review skills still need the CLI from `make install`. From a checkout, `claude --plugin-dir .` loads it without installing.
 
 ## Run
 
