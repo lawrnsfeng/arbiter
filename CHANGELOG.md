@@ -21,6 +21,25 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
 
 ### Added
 
+- The owner's Python rulebook in `rulebook/python/` (R1–R89): every clause of the owner's rules kept, examples
+  rewritten in neutral domains, one stdlib-`ast` detector per rule where syntax decides it (10 `ast`, 76
+  `ast+semantic`, 3 `semantic`), and `## LLM scan` instructions for what only a model can judge. `rulebook/rulekit.py`
+  is the detector contract, `replay.py` checks every rule on its own examples and validates folder layout, and
+  `scan.py` traverses a codebase reporting every rule exactly once (`--diff REF` keeps only hits in changed code).
+  **Approach:** the feasibility run showed regexes miss or over-match, so detectors walk `ast` and receive every
+  module at once for cross-file rules; two independent reviewers compared each rule with the transcript, checked
+  privacy against a denylist, and ran every detector on every other rule's correct example until zero defects.
+  The owner's rulings after the first pass are clauses marked "owner ruling": R1 covers every magic literal
+  (thresholds and business keywords detected), a self-only derived member is a property even when named `*_path`
+  (R6, R29), the model class is chosen by need (pydantic dataclass for data-only records, `BaseModel` when dumped or
+  validated model-wide, `dataclasses.dataclass` when the repo does not depend on pydantic; R26, R81, R89), and
+  review markers exist only during a live review (R75).
+- `python-refactor` skill and `refactorer` agent: apply the rulebook and perform the refactors without changing
+  behaviour (green tests before and after each fix, snapshots, never commits), ledgering every rule as fixed,
+  model-found, reverted, needs-owner, clean or n/a. `report.json` gains `refactor` (needed, finding ids, base) and
+  `report.md` a "Refactor needed" section when clean-code findings hit Python files; the review skills hand off to
+  the refactorer. **Approach:** the owner wants review to own behaviour and a separate refactorer to own clean
+  code; a trial run on a scratch repo (6 fixed, 2 needs-owner, outputs equal before/after) drove 15 skill fixes.
 - Two finder passes per unit by default (`--finder-passes 1|2`, `ARBITER_FINDER_PASSES`, default 2): each per-unit
   finder runs twice with its own file order and the candidates merge by location; over the agent budget the second
   pass is dropped last. **Approach:** three consistent results for merged passes (2026-11-25 re-judge, wave 2a union,

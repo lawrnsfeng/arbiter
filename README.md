@@ -32,12 +32,18 @@ Later research:
 - [research/research-learned-rules.md](research/research-learned-rules.md) (2026-11-23): learning review rules from past PRs/MRs, suppression, rule mining, risks, phased plan
 - [research/research-code-quality-platforms.md](research/research-code-quality-platforms.md) (2026-11-23): Codacy, SonarQube, Qlty, DeepSource, Semgrep Pro, Snyk, CodeQL: what to leverage
 - [research/research-e2e-best-practices.md](research/research-e2e-best-practices.md) (2026-11-25): e2e suite design and adequacy judging, synthesised from `research-e2e-{design,adequacy,unhappy,current,prior-art}.md`
+- [research/research-leader-approaches.md](research/research-leader-approaches.md) (2026-11-24): Augment, Qodo 2.0, cubic, alibaba OpenCodeReview and AACR-Bench: what the leaders do that arbiter missed
+- [research/research-report-ux.md](research/research-report-ux.md) (2026-11-26): the human-facing report design (layers, five markup components, UML-style diagrams, the eight reporting situations S1–S8, `report.json` schema, render stack, plan), synthesised from `research-report-{cognition,prior-art,render-stack,components,situations}.md` plus the [mock-ups](research/mockups/); how it was produced, with the prompts, is in [research-report-log.md](research/research-report-log.md)
+- [research/refactorer-context.md](research/refactorer-context.md) (2026-11-26, draft): context for a refactorer specialist: how design and clean code are reviewed today, where a user rulebook plugs in, measured maintainability recall, open concerns; draft Fable prompt in [research/prompts/](research/prompts/)
+- [research/rulebook-feasibility/README.md](research/rulebook-feasibility/README.md) (2026-11-26): can the owner's × / ✓ rulebook become scanners that miss nothing? Sample OOP rules run on 3,819 sentry files
+- [rulebook/](rulebook/README.md): the owner's Python rulebook, R1–R89 (OOP, design patterns, maintainability), one folder per rule with clauses, × / ✓ examples, a stdlib-`ast` detector and/or model-scan instructions; `replay.py` curates it, `scan.py` runs every rule over code (`--diff REF` for changed code only)
 
 Skills and agent prompts:
 - [skills/arbiter-review/SKILL.md](skills/arbiter-review/SKILL.md): the core launcher
 - [skills/arbiter-review/references/](skills/arbiter-review/references/): the shared material, listed in the table below
 - Language skills, each with `references/` (canon, tools, idioms, design, severity, security, cookbook): [python-review](skills/python-review/), [go-review](skills/go-review/), [rust-review](skills/rust-review/), [ts-review](skills/ts-review/)
 - [skills/e2e-design/](skills/e2e-design/) and [skills/e2e-judge/](skills/e2e-judge/): design a ground-truth e2e suite from requirements and their approved examples, judge it before the change exists (`--stage design`, which freezes the suite), then prove the change with one evidence record per obligation (`--stage evidence`, [evidence ladder](skills/e2e-judge/references/evidence.md)); [agents/](agents/) runs each as a subagent (`e2e-designer`, `e2e-judge`)
+- [skills/python-refactor/](skills/python-refactor/SKILL.md) and the `refactorer` agent: apply the rulebook and perform the refactors, behaviour-preserving (tests green before and after, never commits); scope defaults to uncommitted changes, `--scope branch` or `all` on request. Review stays on behaviour: when a review's `report.json` has `refactor.needed` (clean-code findings on Python files), the review skills hand off to the refactorer
 
 | File | Contents |
 |---|---|
@@ -64,7 +70,7 @@ make check            # ruff, mypy and the unit tests (no network, no LLM)
 make uninstall        # removes the tool and only the symlinks that point into this checkout
 ```
 
-Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-review`, `ts-review`, `e2e-design`, `e2e-judge`. Agents: `e2e-designer`, `e2e-judge`.
+Skills: `arbiter-review` (core launcher), `python-review`, `go-review`, `rust-review`, `ts-review`, `python-refactor`, `e2e-design`, `e2e-judge`. Agents: `refactorer`, `e2e-designer`, `e2e-judge`.
 
 Claude Code can load the same skills and agents as a plugin instead of `make install-claude` (use one or the other, or each appears twice): `claude plugin marketplace add lawrnsfeng/arbiter`, then `claude plugin install arbiter@arbiter`. Plugin components are namespaced (`arbiter:e2e-judge`). The review skills still need the CLI from `make install`. From a checkout, `claude --plugin-dir .` loads it without installing.
 
