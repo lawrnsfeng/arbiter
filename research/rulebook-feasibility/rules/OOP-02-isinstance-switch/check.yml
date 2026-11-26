@@ -1,0 +1,11 @@
+rules:
+  - id: OOP-02
+    languages: [python]
+    severity: WARNING
+    message: isinstance type switch; move the behaviour into the types or use singledispatch
+    # an elif chain nests as if/else, so the tail of a 3-branch chain matches again; the runner keeps the outermost
+    pattern: |
+      if isinstance($X, $A):
+          ...
+      elif isinstance($X, $B):
+          ...

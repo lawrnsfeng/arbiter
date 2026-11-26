@@ -21,6 +21,10 @@ blocking finding on ground truth. This skill only launches it and relays the rep
 3. Read `RUN/report.md`. Relay it verbatim, followed by one line with the verdict and the exit code.
 4. Do not add, re-rank or soften findings. The report is the review.
 5. If the exit code is 2–5, print the stderr line and stop.
+6. If `RUN/report.json` has `refactor.needed: true` (clean-code findings on Python files) and you can launch agents,
+   launch the `refactorer` agent with the repo, `--scope branch --base <refactor.base>` and the path of
+   `RUN/report.json`, then relay its report after the review's. Otherwise the report's "Refactor needed" line is the
+   handoff. The review itself never refactors.
 
 Exit codes: `0` no Block findings · `1` Block findings present · `2` usage/config error · `3` empty diff ·
 `4` diff too large · `5` internal failure.

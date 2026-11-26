@@ -34,11 +34,28 @@ def test_report_tiers_requirements_and_patches(tmp_path):
     assert md.count("```suggestion") == 2
     assert "+2 more" in md
     out = json.loads((tmp_path / "report.json").read_text())
+    assert out["refactor"]["needed"] is False  # idiom nits alone do not call the refactorer
+    assert "## Refactor needed" not in md
     assert {(f["id"], f["tier"], f["sarif_level"]) for f in out["findings"][:3]} == {
         ("f001", "must-fix", "error"),
         ("f002", "should-fix", "warning"),
         ("f003", "verify", "warning"),
     }
+
+
+def test_report_hands_clean_code_findings_to_refactorer(tmp_path):
+    plan = {"repo": str(tmp_path), "base": "c" * 40, "head": "d" * 40, "effort": "standard"}
+    allf = [
+        _f("f001", "should-fix", "main"),
+        _f("f002", "should-fix", "main", axis="design", group="evolvability", line=7),
+        _f("f003", "should-fix", "suspected", axis="maintainability", group="evolvability", file="ui.ts"),
+    ]
+    report.write(tmp_path, plan, allf, "pass")
+    md = (tmp_path / "report.md").read_text()
+    assert "1 clean-code finding(s) (#2): hand off to the refactorer" in md
+    assert f"--scope branch --base {'c' * 12}" in md
+    out = json.loads((tmp_path / "report.json").read_text())
+    assert out["refactor"] == {"needed": True, "findings": ["f002"], "scope": "branch", "base": "c" * 40}
 
 
 def test_validate_candidate_drops_bad_extras():

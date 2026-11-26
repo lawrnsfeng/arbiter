@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<title>INCOMPLETE, no verdict: cal.com 30a92a4..5fd11f9 (arbiter review, sample mock-up)</title>
+<style>
+:root {
+  --ok: #0072B2;   --ok-w: #e6f1f8;
+  --warn: #E69F00; --warn-w: #fdf3dc;
+  --stop: #D55E00; --stop-w: #fbe9df;
+  --unk: #CC79A7;  --unk-w: #f8eaf2;
+  --nm: #8a8f99;   --nm-w: #f1f2f4;
+  --ink: #1b1b1f; --muted: #555b66; --line: #d6d9e0; --wash: #f5f6f8; --paper: #fff;
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+  --glyph: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", "Apple Symbols", sans-serif;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); }
+.page { max-width: 980px; margin: 0 auto; padding: 16px 16px 48px; }
+h1, h2, p, ul, ol, table, pre { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+h2 { font-size: 1.15rem; line-height: 1.25; font-weight: 650; margin-top: 22px; }
+a { color: var(--ok); text-underline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--ok); outline-offset: 2px; }
+code, pre, .loc { font-family: var(--mono); font-size: .86em; }
+code { background: var(--wash); padding: .05em .3em; border-radius: 3px; overflow-wrap: anywhere; }
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+.g { font-family: var(--glyph); font-weight: 400; }
+.flagbar { border: 8px solid transparent; border-image: repeating-linear-gradient(135deg, #F0E442 0 10px, #1b1b1f 10px 20px) 8; padding: 8px 12px; margin-bottom: 12px; font-size: .9rem; }
+.flag { display: inline-block; background: #F0E442; color: #000; font-weight: 700; padding: 1px 8px; border: 2px solid #000; margin-right: .5em; }
+.run { font-size: .875rem; color: var(--muted); margin-bottom: 8px; }
+/* INCOMPLETE is neither the pass colour nor the block colour: grey, dashed. */
+.verdict { border: 3px dashed var(--nm); border-left: 12px solid var(--nm); background: var(--nm-w); padding: 16px 20px 18px; }
+.verdict h1 { font-size: clamp(1.7rem, 1.1rem + 2.4vw, 2.6rem); line-height: 1.08; font-weight: 700; }
+.verdict .why { margin-top: 8px; font-size: 1.04rem; max-width: 62ch; }
+.next { margin-top: 10px; padding: 8px 12px; background: var(--paper); border: 2px solid var(--ink); max-width: 62ch; }
+.next b { margin-right: .5em; }
+.counts { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 10px; font-size: .9rem; }
+pre { background: var(--wash); padding: 10px 12px; overflow-x: auto; line-height: 1.45; border-left: 3px solid var(--line); margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rows > li { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 4px 12px; padding: 8px 0 8px 10px; border-top: 1px solid var(--line); border-left: 6px solid var(--c); }
+.rows > li:last-child { border-bottom: 1px solid var(--line); }
+.rows { margin-top: 6px; }
+.rows .k { font-weight: 600; white-space: nowrap; }
+.ok   { --c: var(--ok); }
+.warn { --c: var(--warn); }
+.unk  { --c: var(--unk); }
+.nm   { --c: var(--nm); }
+.do { border: 2px solid var(--ink); border-top: 10px solid var(--ink); padding: 10px 14px 6px; margin-top: 22px; }
+.do h2 { margin-top: 0; }
+.do ol { counter-reset: s; margin-top: 4px; }
+.do li { counter-increment: s; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+.do li::before { content: counter(s); font-weight: 700; }
+.do .what { font-weight: 650; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+thead th { font-size: .82rem; font-weight: 600; color: var(--muted); border-bottom: 2px solid var(--ink); }
+tbody th { font-weight: 400; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+details { border-top: 1px solid var(--line); }
+details > summary { cursor: pointer; padding: 8px 2px; }
+.eng { margin-top: 26px; }
+.eng > details:last-of-type { border-bottom: 1px solid var(--line); }
+.fold { padding: 6px 0 14px; }
+@media (max-width: 560px) {
+  body { font-size: 15px; }
+  .page { padding: 10px 12px 32px; }
+  .verdict { padding: 12px 12px 14px; border-left-width: 8px; }
+  .rows > li { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="flagbar"><span class="flag">Sample data</span>The cal.com run with 27 agent calls made to fail. The rule is real (<code>arbiter/pipeline.py</code> <code>_withhold</code>: more than 25% failed calls withholds a passing verdict, exit 5). The numbers, times and errors are invented.</p>
+
+<p class="run"><b>arbiter review</b> · cal.com <span class="loc">30a92a4..5fd11f9</span> · standard · 17 files · 31 min 05 s · exit 5</p>
+
+<!-- 1. State: a word that is not a success word -->
+<section class="verdict" aria-labelledby="v">
+  <h1 id="v"><span class="g" aria-hidden="true">–</span> INCOMPLETE: no verdict</h1>
+  <p class="why">27 of 92 agent calls failed; the limit is 25%. arbiter withheld the verdict. This is not a PASS and not a BLOCK.</p>
+  <p class="next"><b>Next</b>Rerun when the provider answers again: <code>arbiter run --base 30a92a4</code>. Do not merge on this report.</p>
+  <p class="counts"><span><b>65</b> calls answered</span><span><b>27</b> failed</span><span><b>0</b> proven blockers so far</span></p>
+</section>
+
+<!-- 2. What failed: the cause and the exact error -->
+<h2 id="h-failed">What failed: the model provider refused 27 calls</h2>
+<p>HTTP 429 (rate limit) between 02:14 and 02:21. Each call was retried once after 30 s and failed again.</p>
+<pre>arbiter: verifier harness error, retrying in 30s: 429 Too Many Requests: rate_limit_error
+arbiter: 27 of 92 agent calls failed; verdict withheld (report &lt;run&gt;/report.md)</pre>
+
+<!-- 3. What still stands, 4. what is not known -->
+<h2 id="h-stands">What still stands</h2>
+<ul class="rows">
+  <li class="warn"><span class="k"><span class="g" aria-hidden="true">▲&#xFE0E;</span> 1 should fix</span><span><code>sed -i ''</code> breaks on GNU sed, <span class="loc">scripts/test-gcal-webhooks.sh:68</span>. Proven: the repro test exits 1, after the fix 0. A later failure does not undo a proof.</span></li>
+  <li class="ok"><span class="k"><span class="g" aria-hidden="true">✔&#xFE0E;</span> semgrep</span><span>Ran clean on all 5 package roots.</span></li>
+  <li class="ok"><span class="k"><span class="g" aria-hidden="true">✔&#xFE0E;</span> 4 of 6 units</span><span>u01, u02, u05, u06: every finder and verifier call answered.</span></li>
+</ul>
+
+<h2 id="h-unknown">What is not known</h2>
+<ul class="rows">
+  <li class="unk"><span class="k"><span class="g" aria-hidden="true">○</span> 2 units</span><span>u03 (CredentialActionsDropdown.tsx) and u04 (cache repository): 9 of 14 finder runs failed. "No finding" there is not a result.</span></li>
+  <li class="unk"><span class="k"><span class="g" aria-hidden="true">○</span> 5 candidates</span><span>Raised by a finder, never read by a verifier. <a href="#cands">List</a></span></li>
+  <li class="nm"><span class="k"><span class="g" aria-hidden="true">–</span> 3 gates</span><span>eslint, tsc and jest gave no result: the tools were not installed.</span></li>
+</ul>
+
+<!-- 5. The needed action, as a command -->
+<aside class="do" aria-labelledby="h-do">
+  <h2 id="h-do">What you can do</h2>
+  <ol>
+    <li><div><p class="what">Rerun the review</p><p><code>arbiter run --base 30a92a4 --effort standard</code></p><p class="small muted">A rerun starts from zero: about 28 minutes, nothing is reused.</p></div></li>
+    <li><div><p class="what">Fix the proven should-fix now</p><p class="small muted">It stands whatever the rerun finds.</p></div></li>
+  </ol>
+</aside>
+
+<section class="eng" aria-labelledby="h-eng">
+  <h2 id="h-eng">For engineers: 2 folded views</h2>
+  <details id="calls">
+    <summary><b>Failed calls:</b> 27, all HTTP 429, in 7 minutes</summary>
+    <div class="fold scroll" tabindex="0" role="group" aria-label="Failed calls table, scrollable">
+      <table style="min-width:520px">
+        <thead><tr><th scope="col">Role</th><th scope="col">Calls</th><th scope="col">Failed</th><th scope="col">Retried</th><th scope="col">Last error</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">finders, u03 and u04</th><td class="num">14</td><td class="num">9</td><td class="num">9</td><td><code>429 rate_limit_error</code></td></tr>
+          <tr><th scope="row">finders, other units</th><td class="num">44</td><td class="num">0</td><td class="num">0</td><td>none</td></tr>
+          <tr><th scope="row">verifier</th><td class="num">33</td><td class="num">18</td><td class="num">18</td><td><code>429 rate_limit_error</code></td></tr>
+          <tr><th scope="row">intent (A0)</th><td class="num">1</td><td class="num">0</td><td class="num">0</td><td>none</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details id="cands">
+    <summary><b>Candidates never verified:</b> 5</summary>
+    <div class="fold">
+      <p class="small muted">Sample rows. The generated report lists each with its <code>path:line</code> and claim, as unverified.</p>
+      <ul class="small">
+        <li><span class="loc">CredentialActionsDropdown.tsx:53</span> duplicated credentials.delete mutation</li>
+        <li><span class="loc">CredentialActionsDropdown.tsx:79</span> icon-only button has no accessible name</li>
+        <li><span class="loc">CredentialActionsDropdown.tsx:89</span> hard-coded "en-US" locale</li>
+        <li><span class="loc">deleteCache.handler.ts:25</span> plain Error becomes a 500</li>
+        <li><span class="loc">_router.tsx:29</span> inline input schema</li>
+      </ul>
+    </div>
+  </details>
+</section>
+
+</div>
+<script>
+// A link into a closed fold opens it; open all before printing.
+const reveal = () => { let e = location.hash && document.getElementById(location.hash.slice(1)); for (; e; e = e.parentElement) if (e.tagName === 'DETAILS') e.open = true; };
+addEventListener('hashchange', reveal); reveal();
+addEventListener('beforeprint', () => document.querySelectorAll('details').forEach(d => d.open = true));
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+MOCK-UP · S2 live progress for `arbiter run` · research/research-report-situations.md §3 S2
+Run: cal.com 30a92a4..5fd11f9 (eval/results/martian/20261123233602/calcom-cal-com-pull-22532).
+REAL from the run: 17 files, 6 units, 15 gate runs, 59 agent runs, 33 verifier calls, 7 proofs (6 confirmed),
+  16 candidates, 8 findings, wall time 27:46, the ERESOLVE install failure, the three gates with no result.
+SAMPLE: the time per stage (the run records only the total; the nine values sum to 27:46), the finder
+  counter (41/51), the heartbeat ages and the "typical 13-47 min" range (from the task brief).
+Today arbiter prints the run path, then nothing for 27 minutes, then `verdict PASS · report <path>`.
+
+Rules shown
+  1 One status line, rewritten in place: stage k/n, a real counter, elapsed, typical range, last-event age.
+  2 One line per finished stage: its duration and its result in <= 8 words.
+  3 A result that is already lost is said when it is lost (line "!" at 1:38), with the consequence.
+  4 Proven findings appear when proven, must-fix first. Nothing else interrupts.
+  5 No percent bar and no single ETA: stage lengths differ 100x and a stalled bar reads as a hang.
+  6 Glyph + word, never colour alone. Width <= 100 columns. No line per tool call.
+
+
+== A. TTY, 1:38 after start =====================================================================
+
+arbiter review · cal.com 30a92a4..5fd11f9 · standard · 17 files, 6 units
+✔ 1 prepare      1:38  sandbox built
+! deps install failed in 5 of 5 package roots (npm ERESOLVE)
+  -> eslint, tsc and jest will give no result. The review continues. Ctrl-C to stop and fix first.
+▶ 2/9 gates      0/15 runs · 1:38 elapsed · typical run 13-47 min · last event 0 s ago
+
+
+== B. TTY, 12:40 ================================================================================
+
+arbiter review · cal.com 30a92a4..5fd11f9 · standard · 17 files, 6 units
+✔ 1 prepare      1:38  sandbox built
+! deps install failed in 5 of 5 package roots (npm ERESOLVE)
+  -> eslint, tsc and jest will give no result. The review continues. Ctrl-C to stop and fix first.
+✔ 2 gates        1:25  1 of 4 gave a result: semgrep clean
+✔ 3 intent       1:10  14 requirements; threat model drafted by arbiter
+▶ 4/9 finders    41/51 agent runs · 12:40 elapsed · typical run 13-47 min · last event 8 s ago
+
+
+== C. TTY, 24:10: the first proven finding ======================================================
+
+✔ 4 finders     11:20  51 agent runs, 0 failed
+✔ 5 merge        0:06  16 candidates; 4 dropped by intake rules, not judged
+✔ 6 verify       6:40  33 verifier calls: 8 kept, 3 false positives, 1 duplicate
+▲ should fix, proven: scripts/test-gcal-webhooks.sh:68 `sed -i ''` breaks on GNU sed
+▶ 7/9 proofs     3/7 attempted · 24:10 elapsed · typical run 13-47 min · last event 21 s ago
+
+
+== D. End of run: the S1 verdict line takes the place of the status line =======================
+
+✔ 7 proofs       5:05  6 of 7 confirmed
+✔ 8 final gate   0:12  8 findings reported
+✔ 9 report       0:10  written
+
+▲ PASS with follow-ups · 0 must fix · 1 should fix · 6 to check by hand · 7 optional · 27:46
+Next: fix #1 or reply `decision: <why>`, then do the 6 checks.
+Report: <run>/report.html                                                              exit 0
+
+
+== E. CI log (not a TTY): one line per stage change, a heartbeat when a stage runs > 5 min ======
+
+00:00 arbiter review cal.com 30a92a4..5fd11f9 standard · 17 files, 6 units · run <run>
+01:38 ok   1/9 prepare    sandbox built
+01:38 WARN deps install failed in 5 of 5 package roots (npm ERESOLVE): eslint, tsc, jest will give no result
+03:03 ok   2/9 gates      1 of 4 gave a result: semgrep clean
+04:13 ok   3/9 intent     14 requirements; threat model drafted by arbiter
+09:13 ..   4/9 finders    22/51 agent runs
+14:13 ..   4/9 finders    47/51 agent runs
+15:33 ok   4/9 finders    51 agent runs, 0 failed
+15:39 ok   5/9 merge      16 candidates; 4 dropped by intake rules, not judged
+20:39 ..   6/9 verify     25/33 verifier calls
+22:19 ok   6/9 verify     8 kept, 3 false positives, 1 duplicate
+24:02 FIND should-fix proven scripts/test-gcal-webhooks.sh:68
+27:24 ok   7/9 proofs     6 of 7 confirmed
+27:36 ok   8/9 final gate 8 findings reported
+27:46 ok   9/9 report     <run>/report.html
+27:46 PASS with follow-ups · 0 must fix · 1 should fix · 6 to check by hand · 7 optional · exit 0
+
+
+== F. The same events for tools: <run>/progress.jsonl (one object per line above) ===============
+
+{"t":98.0,"stage":"prepare","n":1,"of":9,"state":"done","result":"sandbox built"}
+{"t":98.0,"level":"warn","lost":["eslint","tsc","npm test"],"cause":"npm ERESOLVE in 5/5 roots"}
+{"t":760.0,"stage":"finders","n":4,"of":9,"state":"running","done":41,"total":51}

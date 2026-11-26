@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Mock: the generator computes sha256 hashes for style and script instead of 'unsafe-inline' (research-report-ux.md §5). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<title>PASS with follow-ups: cal.com 30a92a4..5fd11f9 (arbiter review, mock-up)</title>
+<style>
+:root {
+  /* Okabe-Ito. Status is never colour alone: every use carries a glyph and a word. */
+  --ok: #0072B2;   --ok-w: #e6f1f8;
+  --warn: #E69F00; --warn-w: #fdf3dc;
+  --stop: #D55E00; --stop-w: #fbe9df;
+  --unk: #CC79A7;  --unk-w: #f8eaf2;
+  --opt: #56B4E9;  --opt-w: #eaf5fc;
+  --nm: #8a8f99;   --nm-w: #f1f2f4;
+  --ink: #1b1b1f; --muted: #555b66; --line: #d6d9e0; --wash: #f5f6f8; --paper: #fff;
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+  --glyph: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", "Apple Symbols", sans-serif;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); }
+.page { max-width: 1240px; margin: 0 auto; padding: 16px 16px 48px; }
+h1, h2, h3, h4, p, ul, ol, dl, figure, table, pre { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+h2 { font-size: 1.25rem; line-height: 1.25; font-weight: 650; }
+h3 { font-size: 1rem; font-weight: 650; }
+a { color: var(--ok); text-underline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--ok); outline-offset: 2px; border-radius: 2px; }
+code, pre, .loc { font-family: var(--mono); font-size: .86em; }
+code { background: var(--wash); padding: .05em .3em; border-radius: 3px; overflow-wrap: anywhere; }
+.loc { overflow-wrap: anywhere; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+.g { font-family: var(--glyph); font-weight: 400; }
+
+/* status chip: left edge = status, then glyph, then word */
+.st { display: inline-flex; gap: .35em; align-items: baseline; padding: .05em .55em .1em .4em; border-left: 4px solid var(--c); background: var(--w); font-weight: 600; white-space: nowrap; border-radius: 0 3px 3px 0; }
+.ok   { --c: var(--ok);   --w: var(--ok-w); }
+.warn { --c: var(--warn); --w: var(--warn-w); }
+.stop { --c: var(--stop); --w: var(--stop-w); }
+.unk  { --c: var(--unk);  --w: var(--unk-w); }
+.opt  { --c: var(--opt);  --w: var(--opt-w); }
+.nm   { --c: var(--nm);   --w: var(--nm-w); }
+
+/* L0 verdict band */
+.top { display: flex; flex-wrap: wrap; gap: 4px 20px; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.top .run { font-size: .875rem; color: var(--muted); }
+.verdict { border-left: 12px solid var(--c); background: var(--w); padding: 16px 20px 18px; }
+.verdict h1 { font-size: clamp(1.7rem, 1.1rem + 2.4vw, 2.6rem); line-height: 1.08; font-weight: 700; letter-spacing: -.01em; }
+.verdict .why { margin-top: 8px; font-size: 1.04rem; max-width: 62ch; }
+.verdict .next { margin-top: 10px; padding: 8px 12px; background: var(--paper); border: 2px solid var(--ink); max-width: 62ch; }
+.verdict .next b { margin-right: .5em; }
+.counts { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 10px; font-size: .9rem; }
+.counts b { font-variant-numeric: tabular-nums; }
+
+/* layout */
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 24px 36px; margin-top: 24px; align-items: start; }
+.side > * + * { margin-top: 18px; }
+.wide { margin-top: 24px; }
+
+/* L1: the one list of what needs the reader */
+.needs > li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; padding: 10px 10px 10px 8px; border-top: 1px solid var(--line); border-left: 6px solid var(--c); counter-increment: need; }
+.needs > li:last-child { border-bottom: 1px solid var(--line); }
+.needs { counter-reset: need; margin-top: 8px; }
+.needs .num::before, .needs li.unk .what::before { content: counter(need); font-weight: 700; font-variant-numeric: tabular-nums; }
+.needs li.unk .what::before { margin-right: .5em; }
+.needs input { width: 18px; height: 18px; margin: 4px 0 0; accent-color: var(--ink); display: block; }
+.needs .what { font-weight: 650; }
+.needs p { max-width: 70ch; }
+.needs .why { font-size: .92rem; }
+.needs details { margin-top: 6px; }
+.kind { font-size: .84rem; font-weight: 600; white-space: nowrap; }
+.tag { font-size: .84rem; color: var(--muted); }
+
+/* requirement strip: one cell per requirement */
+.cells { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 8px; }
+.cells a { display: grid; place-items: center; width: 22px; height: 22px; background: var(--c); color: #000; text-decoration: none; font-family: var(--glyph); font-size: 12px; line-height: 1; }
+.cells .ok a { color: #fff; }
+.cells a:hover { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* tables */
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+thead th { font-size: .82rem; font-weight: 600; color: var(--muted); border-bottom: 2px solid var(--ink); padding-bottom: 5px; }
+tbody th { font-weight: 400; }
+.matrix th[scope=row] { border-left: 5px solid var(--c); overflow-wrap: anywhere; }
+.matrix th[scope=row] b { margin-right: .4em; }
+.matrix { font-size: .92rem; }
+.reason { display: block; font-size: .84rem; color: var(--muted); margin-top: 2px; }
+.notmeasured { padding: 8px 12px; border: 2px dashed var(--nm); font-size: .9rem; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar { display: inline-block; height: 12px; background: var(--ink); vertical-align: middle; min-width: 2px; }
+.barcell { width: 34%; min-width: 120px; white-space: nowrap; }
+
+/* folds */
+details { border-top: 1px solid var(--line); }
+details > summary { cursor: pointer; padding: 8px 2px; }
+details > summary:hover { background: var(--wash); }
+.needs details, .side details { border-top: 0; }
+.needs details > summary, .side details > summary { padding: 2px 0; color: var(--ok); }
+.fold { padding: 6px 0 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+/* one outer fold for the engineer's views: closed on a phone, opened by script on a wide screen */
+#eng { border-bottom: 1px solid var(--line); }
+#eng > summary { font-size: 1.05rem; padding: 10px 2px; }
+#eng > details { margin-left: 14px; }
+pre { background: var(--wash); padding: 10px 12px; overflow-x: auto; line-height: 1.45; border-left: 3px solid var(--line); }
+pre .n { color: var(--muted); user-select: none; margin-right: 1em; }
+pre mark { background: var(--warn-w); color: inherit; outline: 1px solid var(--warn); }
+.ba { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ba h4 { font-size: .875rem; font-weight: 600; margin-bottom: 4px; }
+.ba pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; }
+.kv dt { color: var(--muted); font-size: .875rem; }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 8px; font-size: .84rem; }
+.legend .st { font-weight: 500; }
+.raw li, .notes li { padding: 3px 0; }
+
+/* diagrams */
+figure svg { display: block; max-width: 100%; height: auto; }
+figure svg text { font-family: var(--sans); fill: var(--ink); }
+figure svg .m { font-family: var(--mono); }
+figcaption { font-size: .875rem; color: var(--muted); margin-top: 6px; max-width: 74ch; }
+.trace svg { min-width: 760px; }
+.uml svg { min-width: 380px; }
+
+/* sample panel: hatched frame so it cannot be read as run data */
+.sample { padding: 16px; border: 10px solid transparent; border-image: repeating-linear-gradient(135deg, #F0E442 0 10px, #1b1b1f 10px 20px) 10; background: var(--paper); }
+.sample .flag { display: inline-block; background: #F0E442; color: #000; font-weight: 700; padding: 2px 10px; border: 2px solid #000; }
+.sample .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 24px 36px; margin-top: 18px; align-items: start; }
+.branch > li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+.branch .d { font-family: var(--glyph); font-size: 26px; line-height: 1; color: var(--c); }
+.branch .state { font-weight: 650; }
+
+button { font: inherit; font-size: .875rem; padding: 2px 10px; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 3px; cursor: pointer; }
+
+@media (max-width: 1000px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .sample .grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  body { font-size: 15px; }
+  .page { padding: 10px 12px 32px; }
+  .verdict { padding: 12px 12px 14px; border-left-width: 8px; }
+  .needs > li { padding: 8px 6px 8px 6px; grid-template-columns: 22px minmax(0, 1fr); }
+  .ba, .kv { grid-template-columns: minmax(0, 1fr); }
+  .kv dd { margin-bottom: 6px; }
+  .sample { padding: 10px; border-width: 8px; }
+}
+@media print { .noprint { display: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="top">
+  <p class="run"><b>arbiter review</b> · cal.com <span class="loc">30a92a4..5fd11f9</span> · standard · 17 files · 27 min 46 s</p>
+  <p class="noprint"><button type="button" id="toggle" aria-pressed="false">Open all details</button></p>
+</header>
+
+<!-- ============ L0: can I merge, what next ============ -->
+<section class="verdict warn" aria-labelledby="v">
+  <h1 id="v"><span class="g" aria-hidden="true">▲&#xFE0E;</span> PASS with follow-ups</h1>
+  <p class="why">No proven blocker. One proven should-fix. Six things arbiter could not verify; one of them was raised as a blocker.</p>
+  <p class="next"><b>Next</b>Fix <a href="#n1">item 1</a> or reply <code>decision: &lt;why&gt;</code>. Then do checks <a href="#n2">2 to 7</a> by hand.</p>
+  <p class="counts"><span><b>0</b> must fix</span><span><b>1</b> should fix</span><span><b>6</b> to check by hand</span><span><b>7</b> optional</span></p>
+</section>
+
+<div class="cols">
+
+<!-- ============ L1: the one list of what needs the reader ============ -->
+<section aria-labelledby="h-needs" id="needs">
+  <h2 id="h-needs">7 things need you: 1 fix, 6 checks</h2>
+  <ol class="needs">
+    <li class="warn" id="n1"><span class="num" aria-hidden="true"></span><div>
+      <p><span class="st warn kind"><span class="g" aria-hidden="true">▲&#xFE0E;</span> should fix</span> <span class="what" id="f002"><code>sed -i ''</code> breaks on GNU sed</span></p>
+      <p class="why">On Linux the .env stays unchanged and the script still prints success. Proven by a failing test.</p>
+      <p><span class="loc">scripts/test-gcal-webhooks.sh:68</span> <span class="tag">· errors · R11 · proven E4</span></p>
+      <details>
+        <summary>Evidence and fix</summary>
+        <div class="fold">
+<pre><span class="n">67</span>if grep -q '^GOOGLE_WEBHOOK_URL=' "$ENV_FILE"; then
+<span class="n">68</span>  <mark>sed -i '' -E "s|^GOOGLE_WEBHOOK_URL=.*|GOOGLE_WEBHOOK_URL=$TUNNEL_URL|" "$ENV_FILE"</mark>
+<span class="n">  </span>…
+<span class="n">73</span>echo "✅ Updated GOOGLE_WEBHOOK_URL in $ENV_FILE to $TUNNEL_URL"</pre>
+          <div>
+            <p class="small">Proof run: <code>bash arbiter_proofs/arbiter_proof_f002.sh</code></p>
+            <div class="ba">
+              <div><h4><span class="st stop"><span class="g" aria-hidden="true">✖&#xFE0E;</span> before the fix: exit 1</span></h4>
+<pre>--- .env after:
+GOOGLE_WEBHOOK_URL=https://old.tunnelmole.net
+RESULT: env NOT updated despite success message</pre></div>
+              <div><h4><span class="st ok"><span class="g" aria-hidden="true">✔&#xFE0E;</span> after the fix: exit 0</span></h4>
+<pre>--- .env after:
+GOOGLE_WEBHOOK_URL=https://new-abc.tunnelmole.net
+RESULT: env updated</pre></div>
+            </div>
+          </div>
+          <dl class="kv">
+            <dt>Trigger</dt><dd>The script runs on Linux and .env already contains GOOGLE_WEBHOOK_URL.</dd>
+            <dt>Fix</dt><dd>Check sed's exit status, or use <code>sed -i.bak</code> and remove the .bak file.</dd>
+            <dt>Expected because</dt><dd>Line 73 prints "Updated GOOGLE_WEBHOOK_URL". After that message .env must hold the new URL.</dd>
+          </dl>
+        </div>
+      </details>
+    </div></li>
+
+    <li class="unk" id="n2"><input type="checkbox" id="k2" aria-describedby="w2"><div>
+      <p><label class="what" for="k2">Run lint, type check and tests yourself</label></p>
+      <p class="why" id="w2">eslint, tsc and jest gave no result: the tools were not installed. Only semgrep analysed code. <a href="#gates">Gates</a></p></div></li>
+    <li class="unk" id="n3"><input type="checkbox" id="k3" aria-describedby="w3"><div>
+      <p><label class="what" for="k3">Confirm R12, R13 and R14 are in this PR</label></p>
+      <p class="why" id="w3">No version bump, no getSchedule change (#22574), no integrations-handler change in the diff. Raised as a <span class="st stop"><span class="g" aria-hidden="true">✖&#xFE0E;</span> blocker</span>, dropped unjudged.</p>
+      <p><span class="loc">apps/web/package.json:11</span></p></div></li>
+    <li class="unk" id="n4"><input type="checkbox" id="k4" aria-describedby="w4"><div>
+      <p><label class="what" for="k4">R3: is the cache menu limited to subscribed calendars?</label></p>
+      <p class="why" id="w4">No code reads <code>googleChannelId</code>. Dropped unjudged.</p>
+      <p><span class="loc">CredentialActionsDropdown.tsx:69</span></p></div></li>
+    <li class="unk" id="n5"><input type="checkbox" id="k5" aria-describedby="w5"><div>
+      <p><label class="what" for="k5">R6: should deleteCache go through the repository?</label></p>
+      <p class="why" id="w5">It calls <code>prisma.calendarCache.deleteMany</code> directly. Dropped unjudged.</p>
+      <p><span class="loc">deleteCache.handler.ts:28</span></p></div></li>
+    <li class="unk" id="n6"><input type="checkbox" id="k6" aria-describedby="w6"><div>
+      <p><label class="what" for="k6">R7: add an assertion for <code>updateManyByCredentialId</code></label></p>
+      <p class="why" id="w6">The existing test is reported to pass with the new call removed. Dropped unjudged.</p>
+      <p><span class="loc">CalendarService.test.ts:1024</span></p></div></li>
+    <li class="unk" id="n7"><input type="checkbox" id="k7" aria-describedby="w7"><div>
+      <p><label class="what" for="k7">Review the shell script and the migration by hand</label></p>
+      <p class="why" id="w7">No rules for .sh, .sql, .prisma or .json. The ops axis did not trigger. The threat model is arbiter's own draft.</p></div></li>
+  </ol>
+  <p class="small muted" style="margin-top:6px"><span class="g" aria-hidden="true">▲&#xFE0E;</span> proven: fix it. <span class="g" aria-hidden="true">○</span> raised, never verified: check it.</p>
+</section>
+
+<!-- ============ L1 summary of requirements; the matrix is L2 ============ -->
+<div class="side">
+  <section aria-labelledby="h-req" id="reqs">
+    <h2 id="h-req">14 requirements: 1 at risk, 6 need a human</h2>
+    <ol class="cells" aria-label="14 requirements, R1 to R14, one cell each">
+      <li class="ok"><a href="#matrix" aria-label="R1: no conflict found">✔&#xFE0E;</a></li>
+      <li class="ok"><a href="#matrix" aria-label="R2: no conflict found">✔&#xFE0E;</a></li>
+      <li class="unk"><a href="#matrix" aria-label="R3: needs a human">○</a></li>
+      <li class="ok"><a href="#matrix" aria-label="R4: no conflict found">✔&#xFE0E;</a></li>
+      <li class="ok"><a href="#matrix" aria-label="R5: no conflict found">✔&#xFE0E;</a></li>
+      <li class="unk"><a href="#matrix" aria-label="R6: needs a human">○</a></li>
+      <li class="unk"><a href="#matrix" aria-label="R7: needs a human">○</a></li>
+      <li class="ok"><a href="#matrix" aria-label="R8: no conflict found">✔&#xFE0E;</a></li>
+      <li class="ok"><a href="#matrix" aria-label="R9: no conflict found">✔&#xFE0E;</a></li>
+      <li class="ok"><a href="#matrix" aria-label="R10: no conflict found">✔&#xFE0E;</a></li>
+      <li class="warn"><a href="#matrix" aria-label="R11: at risk">▲&#xFE0E;</a></li>
+      <li class="unk"><a href="#matrix" aria-label="R12: needs a human">○</a></li>
+      <li class="unk"><a href="#matrix" aria-label="R13: needs a human">○</a></li>
+      <li class="unk"><a href="#matrix" aria-label="R14: needs a human">○</a></li>
+    </ol>
+    <p class="counts" style="margin-top:6px"><span><b>0</b> not met</span><span><b>1</b> at risk</span><span><b>6</b> need a human</span><span><b>7</b> no conflict found</span></p>
+    <details id="matrix">
+      <summary>Show the requirements</summary>
+      <div class="fold">
+        <table class="matrix">
+          <thead><tr><th scope="col">Requirement</th><th scope="col">Status</th><th scope="col">Item</th></tr></thead>
+          <tbody>
+            <tr><th scope="row" class="warn"><b>R11</b>Add test-gcal-webhooks.sh, which updates .env</th>
+              <td><span class="g" aria-hidden="true">▲&#xFE0E;</span> at risk<span class="reason">.env not updated on Linux</span></td><td><a href="#n1">1</a>, <a href="#optional">f001</a></td></tr>
+            <tr><th scope="row" class="unk"><b>R3</b>Dropdown only for subscribed calendars</th>
+              <td><span class="g" aria-hidden="true">○</span> needs a human<span class="reason">googleChannelId is never read</span></td><td><a href="#n4">4</a></td></tr>
+            <tr><th scope="row" class="unk"><b>R6</b>Cache access through the repository</th>
+              <td><span class="g" aria-hidden="true">○</span> needs a human<span class="reason">deleteCache calls Prisma directly</span></td><td><a href="#n5">5</a></td></tr>
+            <tr><th scope="row" class="unk"><b>R7</b>Webhook refresh updates SelectedCalendar.updatedAt</th>
+              <td><span class="g" aria-hidden="true">○</span> needs a human<span class="reason">no test asserts the new call</span></td><td><a href="#n6">6</a></td></tr>
+            <tr><th scope="row" class="unk"><b>R12</b>Integrations handler returns no value</th>
+              <td><span class="g" aria-hidden="true">○</span> needs a human<span class="reason">change not found in the diff</span></td><td><a href="#n3">3</a></td></tr>
+            <tr><th scope="row" class="unk"><b>R13</b>#22574: getSchedule returns 400</th>
+              <td><span class="g" aria-hidden="true">○</span> needs a human<span class="reason">change not found in the diff</span></td><td><a href="#n3">3</a></td></tr>
+            <tr><th scope="row" class="unk"><b>R14</b>Release v5.5.1</th>
+              <td><span class="g" aria-hidden="true">○</span> needs a human<span class="reason">version not bumped in the diff</span></td><td><a href="#n3">3</a></td></tr>
+          </tbody>
+        </table>
+        <p class="small"><span class="g" aria-hidden="true">✔&#xFE0E;</span> No conflict found on the other 7: R1 updatedAt column and migration · R2 actions dropdown · R4 deleteCache mutation · R5 cacheUpdatedAt in connectedCalendars · R8 inline disconnect dialog · R9 translation keys · R10 <code>npx tsx</code> for dev:cron.</p>
+        <p class="small muted">"No conflict found": the spec check ran and no reported finding touches the requirement. It does not prove the requirement is implemented or tested.</p>
+      </div>
+    </details>
+    <p class="small muted">R ids and finding links: joined by hand for this mock-up.</p>
+  </section>
+
+  <p class="notmeasured"><span class="st nm"><span class="g" aria-hidden="true">–</span> not measured</span> Branches, tests, oracle strength. <a href="#sample">Sample of that view</a></p>
+</div>
+</div>
+
+<!-- ============ L2 and L3: everything else, folded ============ -->
+<section class="wide" aria-label="Details for engineers">
+<details class="eng" id="eng">
+  <summary><b>For engineers:</b> 9 views, none needed to act on the verdict</summary>
+
+  <details id="gates">
+    <summary><b>Gates:</b> 1 of 4 gave a result</summary>
+    <div class="fold">
+      <div class="scroll" tabindex="0" role="group" aria-label="Gates table, scrollable">
+      <table style="min-width:620px">
+        <thead><tr><th scope="col">Gate</th><th scope="col">Result</th><th scope="col">Runs</th><th scope="col">Exit</th><th scope="col">What the log shows</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">semgrep p/typescript</th><td><span class="st ok"><span class="g" aria-hidden="true">✔&#xFE0E;</span> ran clean</span></td><td class="num">5</td><td class="num">0</td><td>JSON output, files scanned, no rule hit.</td></tr>
+          <tr><th scope="row">eslint</th><td><span class="st nm"><span class="g" aria-hidden="true">–</span> no result</span></td><td class="num">5</td><td class="num">1</td><td><code>npx canceled due to missing packages … ["eslint@10.15.0"]</code>; 0 bytes of output.</td></tr>
+          <tr><th scope="row">tsc</th><td><span class="st nm"><span class="g" aria-hidden="true">–</span> no result</span></td><td class="num">4</td><td class="num">1</td><td><code>ENOTCACHED … registry.npmjs.org/tsc</code>: npx found no local tsc and could not fetch one; 0 bytes of output.</td></tr>
+          <tr><th scope="row">npm test</th><td><span class="st nm"><span class="g" aria-hidden="true">–</span> no result</span></td><td class="num">1</td><td class="num">127</td><td><code>sh: 1: jest: not found</code> in packages/platform/atoms.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="small"><b>The command ran, the tool did not.</b> <code>gates.json</code> records all 15 runs as <code>status: ran</code>, and the old report printed "ran, exit 1". The ten failing runs each ended in 1.4 to 4.6 s with the launcher's error on stderr (<code>exec/&lt;id&gt;.json</code>): npx or npm exited before eslint, tsc or jest started.</p>
+      <p class="small"><b>Root cause:</b> <code>npm install --ignore-scripts --no-package-lock</code> exited 1 with <code>ERESOLVE</code> in all 5 package roots, on head and on base (<code>sandbox.json</code>, 10 of 10 fetches). <code>sandbox.json</code> still reports <code>status: ready</code>.</p>
+    </div>
+  </details>
+
+  <details id="trace-r11">
+    <summary><b>R11 trace:</b> 2 proofs, 0 repo tests</summary>
+    <div class="fold">
+      <figure class="trace scroll" tabindex="0" role="group" aria-label="Requirement trace for R11, scrollable">
+        <svg viewBox="0 0 800 204" width="800" height="204" role="img" aria-labelledby="tr-t tr-d">
+          <title id="tr-t">Requirement trace for R11</title>
+          <desc id="tr-d">R11 leads to two code locations in scripts/test-gcal-webhooks.sh. Line 68 has a reproduction test that exits 1 before the fix and 0 after, and carries should-fix item 1. Line 58 has a reproduction test with the same result and carries optional finding f001. Repo tests on these lines were not measured.</desc>
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1b1b1f"/></marker></defs>
+          <g font-size="12"><text x="0" y="14" style="fill:#555b66">Requirement</text><text x="215" y="14" style="fill:#555b66">Code</text><text x="430" y="14" style="fill:#555b66">Proof run</text><text x="640" y="14" style="fill:#555b66">Finding</text></g>
+          <rect x="0" y="28" width="180" height="150" fill="#fdf3dc"/><rect x="0" y="28" width="6" height="150" fill="#E69F00"/>
+          <text x="16" y="56" font-size="15" font-weight="700">▲ R11 at risk</text>
+          <text x="16" y="82" font-size="12.5">Adds scripts/</text><text x="16" y="100" font-size="12.5">test-gcal-webhooks.sh,</text><text x="16" y="118" font-size="12.5">which updates .env</text>
+          <g stroke="#1b1b1f" stroke-width="1.5" fill="none" marker-end="url(#ah)">
+            <path d="M180 66H213"/><path d="M395 66H428"/><path d="M605 66H638"/>
+            <path d="M180 140H213"/><path d="M395 140H428"/><path d="M605 140H638"/>
+          </g>
+          <g fill="#fff" stroke="#1b1b1f" stroke-width="1.2"><rect x="215" y="42" width="180" height="48"/><rect x="215" y="116" width="180" height="48"/><rect x="430" y="42" width="175" height="48"/><rect x="430" y="116" width="175" height="48"/></g>
+          <text x="225" y="62" font-size="13" font-weight="700">line 68</text><text x="225" y="80" font-size="11.5" class="m">sed -i '' -E "s|…|"</text>
+          <text x="225" y="136" font-size="13" font-weight="700">line 58</text><text x="225" y="154" font-size="11.5" class="m">cleanup → exit 0</text>
+          <text x="440" y="62" font-size="13" font-weight="700">✔ repro test, E4</text><text x="440" y="80" font-size="12">exit 1, after fix exit 0</text>
+          <text x="440" y="136" font-size="13" font-weight="700">✔ repro test, E4</text><text x="440" y="154" font-size="12">exit 1, after fix exit 0</text>
+          <rect x="640" y="42" width="160" height="48" fill="#fdf3dc"/><rect x="640" y="42" width="6" height="48" fill="#E69F00"/>
+          <text x="654" y="62" font-size="13" font-weight="700">▲ item 1 should fix</text><text x="654" y="80" font-size="12">.env not updated</text>
+          <rect x="640" y="116" width="160" height="48" fill="#eaf5fc"/><rect x="640" y="116" width="6" height="48" fill="#56B4E9"/>
+          <text x="654" y="136" font-size="13" font-weight="700">▽ f001 optional</text><text x="654" y="154" font-size="12">failure paths exit 0</text>
+          <text x="215" y="198" font-size="12" style="fill:#555b66">– not measured: repo tests that cover lines 58 and 68</text>
+        </svg>
+      </figure>
+    </div>
+  </details>
+
+  <details id="optional">
+    <summary><b>Optional:</b> 7 findings, none blocking</summary>
+    <div class="fold">
+      <p class="small muted">5 proven, 2 backed by a repo precedent.</p>
+      <div class="scroll" tabindex="0" role="group" aria-label="Optional findings table, scrollable">
+      <table style="min-width:760px">
+        <thead><tr><th scope="col">Finding</th><th scope="col">Where</th><th scope="col">Evidence</th><th scope="col">Fix</th></tr></thead>
+        <tbody>
+          <tr id="f001"><th scope="row"><b>f001</b> Failure paths call cleanup, which does <code>exit 0</code></th><td class="loc">scripts/test-gcal-webhooks.sh:58</td><td>proven E4: repro exits 1, after fix 0 · R11</td><td>Pass an exit code: <code>cleanup 1</code> on failure paths.</td></tr>
+          <tr id="f007"><th scope="row"><b>f007</b> Plain <code>Error</code> becomes a 500, not NOT_FOUND</th><td class="loc">packages/trpc/server/routers/viewer/calendars/deleteCache.handler.ts:25</td><td>proven E4: <code>Error code: undefined</code>, after fix <code>TRPCError code: NOT_FOUND</code> · R4</td><td>Throw <code>new TRPCError({ code: "NOT_FOUND" })</code>.</td></tr>
+          <tr id="f005"><th scope="row"><b>f005</b> Icon-only button has no accessible name</th><td class="loc">packages/features/apps/components/CredentialActionsDropdown.tsx:79</td><td>proven E1: 0 <code>aria-label</code> in the file · R2</td><td>Add <code>aria-label={t("more_options")}</code>.</td></tr>
+          <tr id="f006"><th scope="row"><b>f006</b> Hard-coded <code>"en-US"</code> locale</th><td class="loc">packages/features/apps/components/CredentialActionsDropdown.tsx:89</td><td>proven E1: line 89; the file already uses useLocale · R2</td><td>Use the locale from useLocale.</td></tr>
+          <tr id="f011"><th scope="row"><b>f011</b> <code>npx tsx</code> is not pinned (CWE-829)</th><td class="loc">apps/web/package.json:11</td><td>proven E1: 0 <code>"tsx"</code> entries in both package.json files · R10</td><td>Add <code>tsx</code> to devDependencies.</td></tr>
+          <tr id="f004"><th scope="row"><b>f004</b> Duplicated credentials.delete mutation</th><td class="loc">packages/features/apps/components/CredentialActionsDropdown.tsx:53</td><td>precedent: DisconnectIntegration.tsx:26 · R2</td><td>Extract a shared hook.</td></tr>
+          <tr id="f009"><th scope="row"><b>f009</b> Inline input schema (rule ET74)</th><td class="loc">packages/trpc/server/routers/viewer/calendars/_router.tsx:29</td><td>precedent: setDestinationCalendar.schema.ts:3 · R4</td><td>Add deleteCache.schema.ts.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </details>
+
+  <details id="funnel">
+    <summary><b>Candidates:</b> 16 raised, 4 never judged</summary>
+    <div class="fold">
+      <dl class="kv small">
+        <dt><span class="g" aria-hidden="true">▲&#xFE0E; ▽</span> 8 reported</dt><dd>1 should fix, 7 optional.</dd>
+        <dt>3 false positives</dt><dd>The verifier read the code and voted them down: f003 (docs), f008 (errors), f010 (design).</dd>
+        <dt>1 duplicate</dt><dd>Merged with another candidate at the same location.</dd>
+        <dt><span class="g" aria-hidden="true">○</span> 4 never judged</dt><dd>3 spec candidates had no proof plan; 1 test candidate pointed outside the changed lines. These are <a href="#n3">checks 3 to 6</a>.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details id="units">
+    <summary><b>Units:</b> 6 units, findings in 3</summary>
+    <div class="fold">
+      <div class="scroll" tabindex="0" role="group" aria-label="Units table, scrollable">
+      <table style="min-width:620px">
+        <thead><tr><th scope="col">Unit</th><th scope="col">What it holds</th><th scope="col">Files</th><th scope="col" class="barcell">Changed lines</th><th scope="col">Findings</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">u03</th><td>CredentialActionsDropdown.tsx</td><td class="num">1</td><td class="barcell"><span class="bar" style="width:80%"></span> 157</td><td>f004, f005, f006</td></tr>
+          <tr><th scope="row">u04</th><td>calendar-cache repository, lib repositories, atoms wrapper</td><td class="num">7</td><td class="barcell"><span class="bar" style="width:48.4%"></span> 95</td><td>none</td></tr>
+          <tr><th scope="row">u01</th><td>test-gcal-webhooks.sh, package.json, common.json</td><td class="num">3</td><td class="barcell"><span class="bar" style="width:44.8%"></span> 88</td><td>item 1, f001, f011</td></tr>
+          <tr><th scope="row">u06</th><td>tRPC calendars router and handlers</td><td class="num">3</td><td class="barcell"><span class="bar" style="width:28.5%"></span> 56</td><td>f007, f009</td></tr>
+          <tr><th scope="row">u05</th><td>schema.prisma, migration.sql</td><td class="num">2</td><td class="barcell"><span class="bar" style="width:5.6%"></span> 11</td><td>none</td></tr>
+          <tr><th scope="row">u02</th><td>googlecalendar CalendarService.ts</td><td class="num">1</td><td class="barcell"><span class="bar" style="width:1.5%"></span> 3</td><td>none</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="small muted">410 changed lines. No dependency edges between units were recorded, so there is no component diagram.</p>
+    </div>
+  </details>
+
+  <details id="effort">
+    <summary><b>Effort:</b> 59 agent runs, 6 of 7 proofs</summary>
+    <div class="fold">
+      <dl class="kv">
+        <dt>Agent runs</dt><dd>59, none failed, none skipped. Verifier calls: 33.</dd>
+        <dt>Axes</dt><dd>20 of 21 checked. Not triggered: ops.</dd>
+        <dt>Proofs</dt><dd>7 attempted, 6 confirmed. The first attempt for item 1 errored; the second confirmed it.</dd>
+        <dt>Models</dt><dd>finder and verifier: anthropic/claude-sonnet-5-5, through omp.</dd>
+        <dt>Sandbox</dt><dd>reported ready; all 10 dependency installs failed (see <a href="#gates">Gates</a>). Wall time 1666.1 s.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details id="sample">
+    <summary><b>Branches, tests:</b> not measured; a sample</summary>
+    <div class="fold">
+      <p>Nothing in this fold describes cal.com. It shows what the view holds after an e2e-judge run.</p>
+      <div class="sample">
+        <p><span class="flag">Sample data</span> A made-up <code>refund()</code> function. Not from the cal.com run.</p>
+
+        <section aria-labelledby="s-m">
+          <h3 id="s-m" style="margin-top:14px">1 of 3 sample requirements is fully asserted</h3>
+          <div class="scroll" tabindex="0" role="group" aria-label="Sample requirement matrix, scrollable">
+          <table style="min-width:620px">
+            <thead><tr><th scope="col">Requirement</th><th scope="col">Branches</th><th scope="col">Tests, oracle</th><th scope="col">Finding</th><th scope="col">Gap</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">R1 refund over the limit returns 409</th><td><span class="g" aria-hidden="true" style="color:var(--ok)">◆</span> asserted</td><td>2, <span class="g" aria-hidden="true">✔&#xFE0E;</span> O3</td><td>none</td><td>none</td></tr>
+              <tr><th scope="row">R2 closed account is refused with 403</th><td><span class="g" aria-hidden="true" style="color:#9a6a00">◈</span> covered, not asserted</td><td>2, <span class="g" aria-hidden="true">▲&#xFE0E;</span> O1</td><td>#1</td><td>403 never asserted</td></tr>
+              <tr><th scope="row">R3 retry on a 503 from the gateway</th><td><span class="g" aria-hidden="true" style="color:var(--stop)">◇</span> side never taken</td><td>0, <span class="g" aria-hidden="true">–</span> none</td><td>none</td><td>no test reaches the 503 side</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </section>
+
+        <div class="grid">
+          <section aria-labelledby="s-b">
+            <h3 id="s-b">Branch strip for <code>refund()</code>: <span class="g" aria-hidden="true">◆ ◈ ◇</span> 1 of 3 decisions asserted</h3>
+            <ol class="branch" style="margin-top:8px">
+              <li class="ok"><span class="d" aria-hidden="true">◆</span><div><p><span class="state">D1 asserted</span> <code>refund.py:42 if amount &gt; limit</code></p>
+                <p class="small">Both sides taken: <code>test_over_limit</code>, <code>test_refund_ok</code>. Mutant M3 (<code>&gt;</code> to <code>&gt;=</code>) killed by an assertion.</p></div></li>
+              <li class="warn"><span class="d" aria-hidden="true" style="color:#9a6a00">◈</span><div><p><span class="state">D2 covered, not asserted</span> <code>refund.py:47 if not account.active</code></p>
+                <p class="small">Both sides taken: <code>test_closed_acct</code>, <code>test_refund_ok</code>. Mutant M5 (drop the 403 return) survived. Needs <code>assert resp.status == 403</code>.</p></div></li>
+              <li class="stop"><span class="d" aria-hidden="true">◇</span><div><p><span class="state">D3 one side never taken</span> <code>refund.py:55 if resp.status == 503</code></p>
+                <p class="small">False side: <code>test_refund_ok</code>. True side: no test. The retry path has never run.</p></div></li>
+            </ol>
+            <p class="small muted" style="margin-top:10px">Read the strip first. Open the diagram only when the order of the decisions matters.</p>
+          </section>
+
+          <figure class="uml scroll" tabindex="0" role="group" aria-label="UML activity diagram for refund(), scrollable">
+            <svg viewBox="0 0 440 520" width="440" height="520" role="img" aria-labelledby="u-t u-d">
+              <title id="u-t">UML activity diagram of the sample refund() function</title>
+              <desc id="u-d">Three decisions in order. D1 amount over limit: yes returns 409, taken by test_over_limit; no continues, taken by test_refund_ok; asserted. D2 account active: no returns 403, taken by test_closed_acct, mutant M5 survived so the 403 is not asserted; yes continues to gateway.refund. D3 status equals 503: yes goes to retry and back to gateway.refund, never taken; no writes the audit row and ends, taken by test_refund_ok.</desc>
+              <defs>
+                <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1b1b1f"/></marker>
+                <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#D55E00"/></marker>
+              </defs>
+              <g stroke="#1b1b1f" stroke-width="1.6" fill="none" marker-end="url(#a1)">
+                <path d="M150 27V52"/><path d="M168 70H288"/><path d="M400 70H415"/>
+                <path d="M150 88V150"/><path d="M168 170H288"/><path d="M400 170H415"/>
+                <path d="M150 188V244"/><path d="M150 278V330"/>
+                <path d="M150 368V424"/><path d="M150 458V488"/>
+              </g>
+              <g stroke="#D55E00" stroke-width="1.6" fill="none" stroke-dasharray="6 4" marker-end="url(#a2)">
+                <path d="M168 350H288"/><path d="M345 334V262H217"/>
+              </g>
+              <circle cx="150" cy="20" r="7" fill="#1b1b1f"/>
+              <g fill="none" stroke="#1b1b1f" stroke-width="1.6"><circle cx="425" cy="70" r="8"/><circle cx="425" cy="170" r="8"/><circle cx="150" cy="498" r="8"/></g>
+              <g fill="#1b1b1f"><circle cx="425" cy="70" r="4.2"/><circle cx="425" cy="170" r="4.2"/><circle cx="150" cy="498" r="4.2"/></g>
+              <path d="M150 52l18 18-18 18-18-18z" fill="#0072B2" stroke="#0072B2" stroke-width="2"/>
+              <path d="M150 152l18 18-18 18-18-18z" fill="#fff" stroke="#E69F00" stroke-width="2.5"/><path d="M150 161l9 9-9 9-9-9z" fill="#E69F00"/>
+              <path d="M150 332l18 18-18 18-18-18z" fill="#fff" stroke="#D55E00" stroke-width="2.5"/>
+              <g text-anchor="end"><text x="124" y="66" font-size="12" font-weight="700">D1 asserted</text><text x="124" y="82" font-size="11.5" class="m">amount &gt; limit</text>
+                <text x="124" y="160" font-size="12" font-weight="700">D2 not</text><text x="124" y="174" font-size="12" font-weight="700">asserted</text><text x="124" y="190" font-size="11.5" class="m">account.active</text>
+                <text x="124" y="340" font-size="12" font-weight="700">D3 side</text><text x="124" y="354" font-size="12" font-weight="700">never taken</text><text x="124" y="370" font-size="11.5" class="m">status == 503</text></g>
+              <g fill="#fff" stroke="#1b1b1f" stroke-width="1.4"><rect x="290" y="54" width="110" height="32" rx="12"/><rect x="290" y="154" width="110" height="32" rx="12"/><rect x="85" y="246" width="130" height="32" rx="12"/><rect x="85" y="426" width="130" height="32" rx="12"/></g>
+              <rect x="290" y="334" width="110" height="32" rx="12" fill="#fff" stroke="#D55E00" stroke-width="1.6" stroke-dasharray="6 4"/>
+              <g text-anchor="middle" font-size="12.5"><text x="345" y="75">return 409</text><text x="345" y="175">return 403</text><text x="150" y="267">gateway.refund()</text><text x="345" y="355">retry, max 3</text><text x="150" y="447">write audit row</text></g>
+              <g font-size="11.5"><text x="176" y="63">[yes]</text><text x="158" y="106">[no]</text><text x="176" y="163">[no]</text><text x="158" y="206">[yes]</text><text x="176" y="343" style="fill:#a34700">[yes]</text><text x="158" y="386">[no]</text></g>
+              <g font-size="10.5" class="m"><text x="176" y="86">test_over_limit</text><text x="158" y="121">test_refund_ok</text><text x="176" y="186">test_closed_acct</text><text x="158" y="221">test_refund_ok</text><text x="158" y="401">test_refund_ok</text></g>
+              <text x="176" y="366" font-size="11.5" font-weight="700" style="fill:#a34700">no test</text>
+              <text x="290" y="206" font-size="11.5" font-weight="700" style="fill:#7a5300">M5 survived:</text><text x="290" y="221" font-size="11.5" style="fill:#7a5300">403 not asserted</text>
+            </svg>
+            <figcaption>UML activity diagram, 12 nodes. Each decision node carries its branch-strip state. Solid edges name the test that takes them. Dashed edges were never taken.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details id="raw">
+    <summary><b>Raw data:</b> 8 files of this run</summary>
+    <div class="fold">
+      <p class="small muted">The generated report embeds these in a JSON viewer (L3). The mock links to the files.</p>
+      <ul class="raw small">
+        <li><a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/report.json">report.json</a> 8 reported findings and the coverage record</li>
+        <li><a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/final.json">final.json</a> verified candidates with their placement</li>
+        <li><a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/rejected.json">rejected.json</a> 4 candidates dropped by intake rules</li>
+        <li><a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/votes.json">votes.json</a> the verifier's reasoning per candidate</li>
+        <li><a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/gates.json">gates.json</a> 15 gate runs; <a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/sandbox.json">sandbox.json</a> 10 dependency fetches</li>
+        <li><a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/intent.json">intent.json</a> 14 claims and the drafted threat model</li>
+        <li><a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/plan.json">plan.json</a> units, files and hunks</li>
+        <li><a href="../../eval/results/martian/20261123233602/calcom-cal-com-pull-22532/report.md">report.md</a> the 185-line report this design replaces</li>
+      </ul>
+    </div>
+  </details>
+
+  <details id="about">
+    <summary><b>About:</b> legend, parts made by hand</summary>
+    <div class="fold">
+      <p class="legend" aria-label="Legend">
+        <span class="st stop"><span class="g" aria-hidden="true">✖&#xFE0E;</span> must fix, not met</span>
+        <span class="st warn"><span class="g" aria-hidden="true">▲&#xFE0E;</span> should fix, at risk</span>
+        <span class="st unk"><span class="g" aria-hidden="true">○</span> needs a human</span>
+        <span class="st ok"><span class="g" aria-hidden="true">✔&#xFE0E;</span> no conflict found</span>
+        <span class="st opt"><span class="g" aria-hidden="true">▽</span> optional</span>
+        <span class="st nm"><span class="g" aria-hidden="true">–</span> not measured, no result</span>
+      </p>
+      <ul class="notes small">
+        <li>Hand-written for <a href="../research-report-ux.md">research-report-ux.md</a>. Every cal.com fact comes from the run directory.</li>
+        <li>Added by hand, because the run predates them: requirement ids R1 to R14 (14 unnumbered claims, numbered in order); finding-to-requirement links (joined by the file or symbol each claim names; the run has no <code>addresses</code> field); finding titles (shortened from each claim; the schema adds <code>header</code>).</li>
+        <li>Tiers follow <code>arbiter/report.py</code> <code>tier()</code>: one should-fix, seven nits shown as optional.</li>
+        <li>"Dropped unjudged": an intake rule removed the candidate before any verifier read it.</li>
+        <li>Evidence words in this run: "proven E4" = a reproduction test that fails before the fix and passes after; "proven E1" = a check of the code text, such as a count of matches; "precedent" = a file in the repo that already does it the other way.</li>
+        <li>On a screen of 1000 px or wider the requirements fold and the engineers' fold start open.</li>
+      </ul>
+    </div>
+  </details>
+</details>
+</section>
+</div>
+
+<script>
+// Open or close every fold; open all before printing.
+const btn = document.getElementById('toggle'), all = () => document.querySelectorAll('details');
+btn.addEventListener('click', () => {
+  const open = btn.getAttribute('aria-pressed') !== 'true';
+  all().forEach(d => d.open = open);
+  btn.setAttribute('aria-pressed', String(open));
+  btn.textContent = open ? 'Close all details' : 'Open all details';
+});
+addEventListener('beforeprint', () => all().forEach(d => d.open = true));
+// A link to something inside a closed fold opens the folds around it.
+const reveal = () => { let e = location.hash && document.getElementById(location.hash.slice(1)); for (; e; e = e.parentElement) if (e.tagName === 'DETAILS') e.open = true; };
+addEventListener('hashchange', reveal); reveal();
+// Wide screens have room beside the list: start with the requirement matrix open.
+if (matchMedia('(min-width: 1000px)').matches) for (const id of ['matrix', 'eng']) document.getElementById(id).open = true;
+</script>
+</body>
+</html>
