@@ -14,5 +14,8 @@ argument-hint: "[base-ref] [--effort quick|standard|deep]"
 3. The first stdout line is the RUN path. Read `RUN/report.md` and relay it verbatim, followed by one line with the verdict and the exit code.
 4. Do not add, re-rank or soften findings. The report is the review.
 5. If the exit code is 2–5, print the stderr line and stop.
+6. If `RUN/report.json` has `refactor.needed: true` and you can launch agents, launch the `refactorer` agent with
+   the repo, `--scope branch --base <refactor.base>` and the path of `RUN/report.json`, then relay its report after
+   the review's. Otherwise the report's "Refactor needed" line is the handoff. The review itself never refactors.
 
 References for this language live in `references/` and are loaded by arbiter automatically.

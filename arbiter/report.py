@@ -7,7 +7,7 @@ from typing import Any
 
 from . import findings as F
 from .agents import axis_owners
-from .model import AXIS_PRIORITY, Axis, Effort, Finding, Placement, ProofResult, Severity, Tier
+from .model import AXIS_PRIORITY, Axis, Effort, Finding, Group, Placement, ProofResult, Severity, Tier
 from .plan import Plan
 from .rundir import RunDir
 
@@ -163,6 +163,12 @@ def _coverage(p: Plan, cov: dict[str, Any]) -> Iterator[str]:
     yield f"- wall time: {cov.get('wall_time_s', '?')} s"
 
 
+def refactor_handoff(numbered: list[Finding], base: str) -> dict[str, Any]:
+    """Clean-code findings on Python files hand off to the refactorer; the review itself stays on behaviour."""
+    ids = [f["id"] for f in numbered if Axis(f["axis"]).group == Group.EVOLVABILITY and str(f["file"]).endswith(".py")]
+    return {"needed": bool(ids), "findings": ids, "scope": "branch", "base": base}
+
+
 def write(run_path: Path, p: Plan, allf: list[Finding], verdict: str) -> None:
     run = RunDir(run_path)
     cov, gates, intent = run.load("coverage.json", {}), run.load("gates.json", {}), run.load("intent.json", {})
@@ -173,6 +179,7 @@ def write(run_path: Path, p: Plan, allf: list[Finding], verdict: str) -> None:
     n = {t: len(fs) for t, fs in by_tier.items()}
     numbered = [f for t in NUMBERED for f in by_tier[t]]
     num = {id(f): i for i, f in enumerate(numbered, 1)}
+    refactor = refactor_handoff(numbered, p["base"])
     key = "follow-ups" if verdict == "pass" and (n[Tier.SHOULD] or n[Tier.VERIFY]) else verdict
     label = {
         "block": "🔴 BLOCK",
@@ -218,6 +225,16 @@ def write(run_path: Path, p: Plan, allf: list[Finding], verdict: str) -> None:
         md += [f"- `{f['file']}:{f['line']}` {f['axis']}: {f['claim']}" for f in pre]
         md += [f"- gate: `{x['cmd']}` also fails on base" for x in pre_gates]
         md.append("")
+    if refactor["needed"]:
+        refs = ", ".join(f"#{num[id(f)]}" for f in numbered if f["id"] in refactor["findings"])
+        md += [
+            "## Refactor needed",
+            "",
+            f"{len(refactor['findings'])} clean-code finding(s) ({refs}): hand off to the refactorer "
+            f"(`python-refactor --scope branch --base {p['base'][:12]}`), which applies the owner's rulebook "
+            "with tests green before and after.",
+            "",
+        ]
     md += [f"<details><summary>Axes checked ({len(AXIS_PRIORITY)})</summary>", "", *axes_rows(reported, cov), ""]
     md += ["</details>", "", "<details><summary>Coverage</summary>", ""]
     md += [
@@ -237,6 +254,7 @@ def write(run_path: Path, p: Plan, allf: list[Finding], verdict: str) -> None:
             "effort": p["effort"],
             "requirements": reqs,
             "decision": decision,
+            "refactor": refactor,
             "findings": [{**f, "tier": tier(f), "sarif_level": SARIF[tier(f)]} for f in reported],
             "coverage": cov,
         },
