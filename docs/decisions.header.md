@@ -22,3 +22,4 @@ Source keys (`[DV-S4]`, `[DH-D10]`, `[AT-…]`, `[LR-…]`, `[CQ-…]`, `[LD1]`)
 | CQ | `research/research-code-quality-platforms.md` |
 | DH | `research/research-decompose-hierarchical.md` |
 | LD | `research/research-leader-approaches.md` |
+| RC, RP, RS, RM, RA | `research/research-report-{cognition,prior-art,render-stack,components,situations}.md`, synthesised in `research/research-report-ux.md` |

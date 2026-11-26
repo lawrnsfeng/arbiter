@@ -21,6 +21,12 @@ Keys used in [methodology.md](methodology.md) and [benchmarks.md](benchmarks.md)
 | `AI-` | `research/research-ai-review-systems.md` | sections §1–§4 (pipelines, systems, benchmarks, techniques) |
 | `PM-` | `research/prior-mint-review-research.md` | OCR, mattpocock, Google eng-practices, pstack code judo |
 | canon keys (`P8`, `EP3`, `C-GOOD-ERR`, `GSD`…) | `research/review-<lang>.md` §1 | per-language canon tables |
+| `RC` | `research/research-report-cognition.md` (2026-11-26) | §1 (RC1–RC56); findings F1–F59; ranked rules §3 |
+| `RP` | `research/research-report-prior-art.md` (2026-11-26) | §1 (RP01–RP55); patterns P1–P23 §3 |
+| `RS` | `research/research-report-render-stack.md` (2026-11-26) | §1 (RS1–RS39) |
+| `RM` | `research/research-report-components.md` (2026-11-26) | its source table; synthesis in `research/research-report-ux.md`, session log in `research/research-report-log.md` |
+| `RA` | `research/research-report-situations.md` (2026-11-26) | its source table (RA1–RA57); how an agent reports per situation S1–S8 |
+| own keys per file | `research/research-e2e-{design,adequacy,unhappy,current,prior-art}.md` (2026-11-25), synthesised in `research/research-e2e-best-practices.md` | each file's source table; cited from `skills/e2e-design/references/` and `skills/e2e-judge/references/` |
 
 Claims tagged `[from memory]` or `[secondary]` in the research files were not checked against a primary
 page. They are marked the same way here.
