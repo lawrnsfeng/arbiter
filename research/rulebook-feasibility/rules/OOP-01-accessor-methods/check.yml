@@ -1,0 +1,30 @@
+rules:
+  - id: OOP-01
+    languages: [python]
+    severity: WARNING
+    message: Java-style accessor; use a public attribute or @property
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  def $F(self):
+                      return self.$A
+              - pattern: |
+                  def $F(self):
+                      "..."
+                      return self.$A
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^get_\w+$
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  def $F(self, $V):
+                      self.$A = $V
+              - pattern: |
+                  def $F(self, $V):
+                      "..."
+                      self.$A = $V
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^set_\w+$

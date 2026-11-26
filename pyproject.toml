@@ -24,6 +24,8 @@ testpaths = ["tests"]
 [tool.ruff]
 target-version = "py313"
 line-length = 120
+# rule examples violate on purpose and use undefined names; they are parsed, never run
+extend-exclude = ["rulebook/python/*/bad.py", "rulebook/python/*/good.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "PIE", "RET", "PTH", "PERF", "FURB", "RUF", "PL"]

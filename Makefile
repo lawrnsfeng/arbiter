@@ -52,7 +52,8 @@ test:
 	uv run pytest -q
 
 check:
-	uv run ruff check arbiter tests
-	uv run ruff format --check arbiter tests
+	uv run ruff check arbiter tests rulebook
+	uv run ruff format --check arbiter tests rulebook
 	uv run mypy
 	uv run pytest -q
+	uv run python rulebook/replay.py
