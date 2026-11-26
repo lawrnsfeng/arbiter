@@ -155,6 +155,17 @@ the §5 A/B passes its acceptance rule ([roadmap](docs/roadmap.md) P4).
 - Claude Code plugin manifest (`.claude-plugin/plugin.json`, `marketplace.json`): `claude plugin install
   arbiter@arbiter` installs every skill and agent.
   - **Approach:** symlinks need a checkout; a plugin installs from GitHub. `claude plugin validate` passes.
+- `e2e-judge --stage design|evidence`: the design stage judges a suite before the change exists (new-behaviour
+  tests must fail by assertion on their channel, unchanged ones pass) and freezes it (`freeze.json`); the evidence
+  stage completes fail-to-pass from the freeze, flags any frozen test that changed (R12) and writes one
+  `evidence.json` record per obligation on the E0–E5 ladder (R13), with an example → observed → level → proof
+  table. `e2e-design` reads approved examples and entry points, can split obligations across the repo's own test
+  layers (`--layers`), and runs new tests fail-first.
+  - **Approach:** a green run alone does not show a test can fail; the freeze records that it did, before the
+    change. On a 5-clause fixture with the feature stubbed out, the design stage found 6 gaps, the designer closed
+    them in one round, and every design row went STRONG; after implementation all 13 rows were STRONG with 29/29
+    open obligations at E4. Weakening one shared assertion after the freeze turned the verdict WEAK (R12), with
+    each affected obligation named.
 
 ## [0.2.0] - 2026-11-23
 
